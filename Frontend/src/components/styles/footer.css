@@ -1,9 +1,4 @@
-body {
-  margin: 0;
-  font-family: "Manrope", sans-serif;
-}
-
-*{
+ *{
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -79,34 +74,48 @@ body {
 
 
 
-/* button */
-.primary-btn-login{
-    height: 3rem;
-    width: 9rem;
-    border-radius: 2rem;
-    background-color: white;
-    font-weight: 600;
 
+.footer-container{
+    color: var(--bg-card);
+    margin-top: 6rem;
+    min-height: 70vh;
+    height: auto;
+    background: var(--btn-primary);
+    padding: 1rem;
+}
+
+.foot-head{
+    font-family: var(--font-tertiary);
+    /* white-space: nowrap; */
     
 }
-.primary-btn-login:hover{
-    background:var(--btn-primary-hover);
-    color:var(--color-cream);
-    transition: var(--transition );
-
+.foot-btn{
+    display: flex;
+    justify-content: end;
+    margin-top: 3rem;
+    padding-bottom: 2rem;
 }
-.primary-btn-register{
+.btn{
     height: 3rem;
     width: 9rem;
     border-radius: 2rem;
-    background-color:var(--btn-primary-hover);
+    background-color: var(--btn-secondary-hover);
     font-weight: 600;
     color: white;
-    
 }
-.primary-btn-register:hover{
-    background:white;
-    color:black;
-    transition: var(--transition );
+.btn:hover{
+    background: white !important;
+    color: black;
+}
+
+@media (max-width:990px){
+    .foot-btn{
+        justify-content: start  ;
+        padding-bottom: 0.2rem;
+    }
+    .social-media{
+        display: flex;
+        justify-content: start !important;
+    }
 
 }
