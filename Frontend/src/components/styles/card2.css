@@ -1,0 +1,142 @@
+.cards2 {
+  margin-top: 5rem;
+}
+ 
+.cards2 .card2 {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 20rem;
+  width: 28vw;
+  color: white;
+  cursor: pointer;
+  transition: 400ms;
+}
+ 
+/* gradient layer */
+.cards2 .card2::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(160deg, var(--color-accent), var(--color-primary));
+}
+ 
+/* ===== marquee content, sits above the gradient ===== */
+ 
+.card2 .marquee-label {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 14px;
+}
+ 
+.card2 .marquee-label .dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff7a59;
+  margin-right: 6px;
+  animation: blink 1.4s infinite;
+  vertical-align: middle;
+}
+ 
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+ 
+.card2 .marquee-wrap {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 30px,
+    #000 calc(100% - 30px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 30px,
+    #000 calc(100% - 30px),
+    transparent 100%
+  );
+}
+ 
+.card2 .marquee-track {
+  display: flex;
+  width: max-content;
+  animation: scroll 18s linear infinite;
+}
+ 
+.card2:hover .marquee-track {
+  animation-play-state: paused;
+}
+ 
+@keyframes scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+ 
+.card2 .item-group {
+  display: flex;
+  align-items: center;
+}
+ 
+.card2 .item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 22px;
+  white-space: nowrap;
+  font-size: 16px;
+  color: #fff;
+  font-family: Georgia, "Iowan Old Style", serif;
+}
+ 
+.card2 .item .ring {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.4px solid #fff;
+  flex-shrink: 0;
+}
+ 
+.card2 .item.alert .ring {
+  border-color: #ff7a59;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+ 
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 122, 89, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(255, 122, 89, 0);
+  }
+}
+ 
+.card2 .sep {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 12px;
+}

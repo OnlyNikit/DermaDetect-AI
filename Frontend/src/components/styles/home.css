@@ -1,0 +1,505 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+
+    --font-secondary:"IBM Plex Sans", sans-serif;
+    --font--primary:"IBM Plex Mono", sans-serif;
+    --font-tertiary:"Space Grotesk", sans-serif;
+  /* ==========================
+      Brand Colors
+  ========================== */
+
+  --color-primary: #05668d;     /* Baltic Blue */
+  --color-secondary: #004d57;   /* Teal */
+  --color-accent: #00a896;      /* Verdigris */
+  --color-success: #02c39a;     /* Mint Leaf */
+  --color-cream: #f0f3bd;       /* Cream */
+
+  /* ==========================
+      Backgrounds
+  ========================== */
+
+  --bg-main: #ffffff;
+  --bg-section: #f0f3bd;
+  --bg-card: #ffffff;
+  --bg-footer: #05668d;
+
+  /* ==========================
+      Text
+  ========================== */
+
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #ffffff;
+
+  /* ==========================
+      Buttons
+  ========================== */
+
+  --btn-primary: #05668d;
+  --btn-primary-hover: #04506f;
+
+  --btn-secondary: #02c39a;
+  --btn-secondary-hover: #00a896;
+
+  /* ==========================
+      Borders & Shadow
+  ========================== */
+
+  --border-color: #e5e7eb;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.15);
+
+  /* ==========================
+      Border Radius
+  ========================== */
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  /* ==========================
+      Transition
+  ========================== */
+
+  --transition: all 0.3s ease;
+}
+
+
+.main-container{
+    min-height: 50vh;
+    /* background: pink; */
+    /* display: flex;
+    justify-content:space-between; */
+    
+    
+}
+
+.container-left{
+    margin-top: 4rem;
+    padding: 2rem;
+    text-wrap: noWrap;
+    
+}
+.heading h1{
+    line-height: 1.06;
+    
+    font-size: clamp(34px, 4.2vw, 54px);;
+    font-weight:600;
+    font-family: "Space Grotesk", sans-serif;
+    color: var(--color-secondary);
+}
+
+.highlight{
+    color: var(--color-primary);
+}
+
+.description h4{
+    margin-top: 2rem;
+    font-size:clamp(1rem, 1.2vw, 1.2rem);
+    color: var(--text-primary);
+    line-height: 1.4;
+    
+}
+
+.hero-btns{
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+    font-family:var(--font--primary);
+
+}
+
+
+.card-head {
+    margin-top: 4rem;
+    color: var(--color-secondary);
+    text-align: center;
+}
+
+.card-head h2 {
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: normal;      /* nowrap hata do */
+    word-break: break-word;   /* agar bahut lamba word ho */
+}
+
+.card-des {
+    text-align: center;
+    white-space: normal;      /* nowrap hata do */
+    line-height: 1.6;
+    max-width: 700px;
+    margin: 1rem auto 0;
+}
+
+.scan{
+    padding: 3rem;
+    
+}
+
+/* animatied cards */
+.cards {
+  margin-top: 5rem;
+  margin-bottom: 5rem;
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+}
+
+.cards .card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  
+  flex-direction: column;
+  /* text-align: center; */
+  height: 20rem;
+  width: 28  vw;
+  border-radius: 2rem;
+  color: white;
+  cursor: pointer;
+  transition: 400ms;
+}
+
+/* gradient layer - isse dikhne ke liye position/inset zaroori tha */
+.cards .card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* text ko gradient ke upar rakhne ke liye */
+.cards .card p {
+  position: relative;
+  z-index: 1;
+}
+
+.card.red::before {
+  background: linear-gradient(160deg, var(--color-primary), var(--color-secondary));
+}
+
+.card.blue::before {
+  background: linear-gradient(160deg, var(--color-accent), var(--color-primary));
+}
+
+.card.green::before {
+  background: linear-gradient(160deg, var(--color-success), var(--color-accent));
+}
+
+/* subtle accent border-glow on hover, color-matched per card */
+.card.red:hover { box-shadow: var(--shadow-lg), 0 0 0 1px var(--color-primary) inset; }
+.card.blue:hover { box-shadow: var(--shadow-lg), 0 0 0 1px var(--color-accent) inset; }
+.card.green:hover { box-shadow: var(--shadow-lg), 0 0 0 1px var(--color-success) inset; }
+
+.cards .card p.tip {
+  font-size: 0.9em;
+  padding: 1.3rem;
+  font-family: var(--font--primary);
+}
+
+.cards .card p.second-text {
+  font-size: 1.6em;
+  font-family: var(--font-tertiary);
+  font-weight: 600;
+  padding:0 0 0 1.3rem;
+  
+}
+
+.cards .card p.third-text{
+    font-size: 1.2em;
+    font-family: var(--font-secondary);
+    padding: 1.3rem;
+    
+}
+
+.cards .card:hover {
+  transform: scale(1.1, 1.1);
+}
+
+.cards:hover > .card:not(:hover) {
+  filter: blur(10px);
+  transform: scale(0.9, 0.9);
+}
+
+@media (max-width:1157px){
+  .cards{
+    flex-direction: column;
+  }
+
+  .cards .card{
+    height: 20rem;
+    width: 100%;
+  }
+}
+
+@media (max-width:756px) {
+    .card-des{
+        text-wrap: wrap;
+    }
+
+    
+}
+
+
+@media (max-width:992px){
+
+    .main-container{
+        justify-content: center;
+        padding: 4rem 0;
+        
+    }
+
+    .container-left{
+        text-align: center;
+        padding: 1rem;
+        margin: 0;
+    }
+
+    .hero-btns{
+        justify-content: center;
+    }
+
+}
+
+
+@media (max-width:768px){
+
+    .heading h1{
+        font-size: clamp(2rem, 8vw, 3rem);
+    }
+
+    .description h4{
+        padding: 0.6rem;
+        font-size: 1rem;
+    }
+
+    .hero-btns{
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        padding: 0.6rem;
+    }
+
+    .hero-btns form{
+        width: 100%;
+    }
+
+    .hero-btns button{
+        width: 100%;
+    }
+
+}
+
+
+@media (max-width:480px){
+
+    .container-left{
+        padding: .5rem;
+    }
+
+    .heading h1{
+        line-height: 1.2;
+    }
+
+    .description{
+        margin-top: 1.5rem;
+    }
+
+    .hero-btns{
+        margin-top: 2rem;
+        padding: 1.8rem;
+    }
+
+}
+
+/* ! diseaase name contaienr */
+
+.cards2 {
+  margin-top: 5rem;
+  margin-bottom: 7rem;
+}
+ 
+.cards2 .card2 {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 20rem;
+  width: 100vw;
+  color: white;
+  cursor: pointer;
+  transition: 900ms;
+}
+ 
+/* gradient layer */
+.cards2 .card2::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(160deg, var(--color-accent), var(--color-primary));
+}
+ 
+/* ===== marquee content, sits above the gradient ===== */
+ 
+.card2 .marquee-label {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 14px;
+}
+ 
+.card2 .marquee-label .dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff7a59;
+  margin-right: 6px;
+  animation: blink 1.9s infinite;
+  vertical-align: middle;
+}
+ 
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+ 
+.card2 .marquee-wrap {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 30px,
+    #000 calc(100% - 30px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 30px,
+    #000 calc(100% - 30px),
+    transparent 100%
+  );
+}
+ 
+.card2 .marquee-track {
+  display: flex;
+  width: max-content;
+  animation: scroll 18s linear infinite;
+}
+ 
+.card2:hover .marquee-track {
+  animation-play-state: paused;
+}
+ 
+@keyframes scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+ 
+.card2 .item-group {
+  display: flex;
+  align-items: center;
+}
+ 
+.card2 .item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 22px;
+  white-space: nowrap;
+  font-size: 4rem;
+  font-weight: 600;
+  color: #fff;
+  font-family: var(--font--primary);
+}
+ 
+.card2 .item .ring {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.4px solid #fff;
+  flex-shrink: 0;
+}
+ 
+.card2 .item.alert .ring {
+  border-color: #ff7a59;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+ 
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 122, 89, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(255, 122, 89, 0);
+  }
+}
+ 
+.card2 .sep {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 12px;
+}
+
+@media (max-width:450px){
+  .card2 .item{
+    font-size: 2rem;
+  }
+ 
+}
+
+.feature {
+  margin-top: 6rem;
+  padding-left: clamp(1rem, 3vw, 2rem);
+}
+
+.item1 {
+  padding-bottom: clamp(1rem, 2vw, 2rem);
+  color: var(--btn-primary-hover);
+  font-family: var(--font-tertiary);
+}
+
+.item1 li {
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.item1 p {
+  font-size: clamp(0.9rem, 1.5vw, 1rem);
+  line-height: 1.6;
+  color: #666;
+}
+
+@media (max-width:991px){
+  .feature{
+    margin: 0;
+  }
+}

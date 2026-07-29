@@ -1,0 +1,234 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  
+  
+}
+
+:root {
+  /* ==========================
+      Brand Colors
+  ========================== */
+
+  --color-primary: #05668d;     /* Baltic Blue */
+  --color-secondary: #028090;   /* Teal */
+  --color-accent: #00a896;      /* Verdigris */
+  --color-success: #02c39a;     /* Mint Leaf */
+  --color-cream: #f0f3bd;       /* Cream */
+
+  /* ==========================
+      Backgrounds
+  ========================== */
+
+  --bg-main: #EEF2EF;
+  --bg-section: #f0f3bd;
+  --bg-card: #ffffff;
+  --bg-footer: #05668d;
+
+  /* ==========================
+      Text
+  ========================== */
+
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #ffffff;
+
+  /* ==========================
+      Buttons
+  ========================== */
+
+  --btn-primary: #05668d;
+  --btn-primary-hover: #04506f;
+
+  --btn-secondary: #02c39a;
+  --btn-secondary-hover: #00a896;
+
+  /* ==========================
+      Borders & Shadow
+  ========================== */
+
+  --border-color: #e5e7eb;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.15);
+
+  /* ==========================
+      Border Radius
+  ========================== */
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  /* ==========================
+      Transition
+  ========================== */
+
+  --transition: all 0.3s ease;
+}
+
+.navbar{
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: 6rem;
+    width: 100%;
+    background:rgb(242, 252, 255);
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    box-shadow: 0 0 0.3rem  black;
+}
+
+.nav-links{
+    display: flex;
+    flex-direction: row;    
+    justify-content: center;
+    align-items: center;
+    gap:2rem;
+    list-style: none;
+    font-weight: 600;
+    padding-top: 1rem;
+    right: 0;
+    font-family:"IBM Plex Mono", monospace;;
+    
+}
+.logo-img img{
+    height: 3.5rem;
+    object-fit: contain;
+}
+.links{
+    display:flex;
+    align-items: center;
+    gap:2rem;
+}
+
+.nav-links li  a{
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.nav-links li a:hover{
+    color: var(--btn-primary-hover);
+}
+
+.btn-container{
+    display:flex;
+    gap: 1rem ;
+}
+
+.primary-btn{
+    height: 3rem;
+    width: 9rem;
+    border-radius: 2rem;
+    border: 1px solid black ;
+    background-color: white;
+    font-weight: 600;
+     font-family:"IBM Plex Mono", monospace;;
+
+    
+}
+.primary-btn:hover{
+    background:var(--btn-primary-hover);
+    color:var(--color-cream);
+    border: none;
+    transition: var(--transition );
+
+}
+.secondary-btn{
+    height: 3rem;
+    width: 9rem;
+    border-radius: 2rem;
+    border: none;
+    background-color:var(--btn-primary-hover);
+    font-weight: 600;
+    line-height:1.2;
+    color: white;
+     font-family:"IBM Plex Mono", monospace;;
+    
+}
+.secondary-btn:hover{
+    background:white;
+    border: 1px solid black;
+    color:black;
+    transition: var(--transition );
+
+}
+.menu-icon{
+    display: none;
+}
+.mobile-btn{
+    display: none;
+}
+
+.icon{
+    display: none   ;
+}
+
+@media (max-width:1095px) {
+    .menu-icon{
+        display: flex;
+        font-size: 1.6rem;
+    }
+
+    .nav-links{
+        display: none;
+    }
+    .nav-links li a {
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:.5rem;  
+    }
+
+    .nav-links.active{
+        display:grid;
+        grid-template-columns: repeat(2,1fr);
+
+        position:absolute;
+        top:100%;
+        right:1rem;
+        background: rgb(242, 252, 255);
+
+        width:20rem;
+
+        background:var();
+        border-radius:12px;
+        box-shadow:0 10px 30px rgba(0,0,0,.15);
+
+        padding:1rem;   
+        gap:1rem;
+    }
+    .mobile-btn{
+        display: flex;
+    }
+
+    .btn-container{
+        display: none;
+    }
+    .icon{
+        display: flex;
+        
+        
+    }
+
+    .mobile-btn{
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    grid-column: 1 / -1;   /* Full width row */
+    margin-top: .5rem;
+}
+
+.mobile-btn form{
+    flex: 1;
+}
+
+.mobile-btn button{
+    width: 9rem;
+}
+}
