@@ -1,4 +1,5 @@
 import React from "react";
+import {Link} from "react-router-dom"
 import "../components/styles/home.css";
 // import  "../components/styles/card2.css";
 import ButtonPrimary from "../components/ui/ButtonPrimary";
@@ -6,19 +7,20 @@ import Buttonsecondary from "../components/ui/ButtonSecondary";
 import ScanAnimation from "../assets/animations/SkinScanHero";
 import ScanSvg from "../assets/animations/skin-scan.svg";
 
+import skinproblem from "../components/ui/Skinproblem"
+import SkinProblems from "../components/ui/Skinproblem";
+
 const diseases = [
+  "Acne",
   "Eczema",
   "Psoriasis",
-  "Melanoma",
-  "Acne Vulgaris",
-  "Rosacea",
-  "Vitiligo",
-  "Dermatitis",
   "Ringworm",
+  "Vitiligo",
+  "Melanoma",
   "Basal Cell Carcinoma",
-  "Urticaria",
-  "Impetigo",
-  "Lichen Planus",
+  "Squamous Cell Carcinoma",
+  "Melanocytic Nevus (Mole)",
+  "Warts",
 ];
 
 export default function Home() {
@@ -38,16 +40,16 @@ export default function Home() {
             <div className="description">
               <h4>
                 Upload medical images, receive AI-assisted analysis,
-                <br /> understand potential risks, and monitor your health{" "}
-                <br /> through an intuitive platform.
+                 understand potential risks,and monitor your health{" "}
+                 through an intuitive platform.
               </h4>
               <div className="hero-btns">
-                <form action="/getstart">
+                <Link to="/choose">
                   <Buttonsecondary>Get Started</Buttonsecondary>
-                </form>
-                <form action="/about">
+                </Link>
+                <Link to="about">
                   <ButtonPrimary>Learn More</ButtonPrimary>
-                </form>
+                </Link>
               </div>
             </div>
           </div>
@@ -59,7 +61,7 @@ export default function Home() {
           </div>
         </div>
       </div>
-
+              <SkinProblems/>
       <div className="container">
         <hr />
         <div className="row">
@@ -135,7 +137,7 @@ export default function Home() {
             <div className="marquee-track">
               {items.map((name, i) => (
                 <div className="item-group" key={i}>
-                  <div className={`item alert}`}>
+                  <div className={`item alert`}>
                     <span className="ring"></span>
                     <span>{name}</span>
                   </div>
@@ -154,7 +156,7 @@ export default function Home() {
               <div className="card red">
                 <p className="tip">NOT A DIAGNOSIS</p>
                 <p className="second-text ">
-                  OncoGaurdian AIflags what deserves a closer look. A licensed
+                  DermaDetect AI flags what deserves a closer look. A licensed
                   dermatologist always makes the final call.
                 </p>
                 {/* <p className="third-text">

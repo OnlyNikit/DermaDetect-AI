@@ -3,9 +3,10 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  
-  
 }
+
+/* Import a cleaner modern font pairing */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 
 :root {
   /* ==========================
@@ -65,170 +66,299 @@
   --radius-full: 999px;
 
   /* ==========================
+      Typography
+  ========================== */
+
+  --font--primary: 'Outfit', 'Inter', sans-serif;
+
+  /* ==========================
       Transition
   ========================== */
 
-  --transition: all 0.3s ease;
+  --transition: all 0.25s ease;
+
+  /* Navbar height — reused for body offset since navbar is now fixed */
+  --navbar-height: 5.5rem;
 }
 
-.navbar{
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    height: 6rem;
-    width: 100%;
-    background:rgb(242, 252, 255);
-    display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-    box-shadow: 0 0 0.3rem  black;
+/* Navbar is fixed, so push page content down by its height.
+   Add this on your layout wrapper / body if content hides behind navbar */
+body {
+  padding-top: var(--navbar-height);
 }
 
-.nav-links{
+/* ========================== Navbar shell ========================== */
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  height: var(--navbar-height);
+  width: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 clamp(1.25rem, 5vw, 3.5rem);
+  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid var(--border-color);
+  font-family: var(--font--primary);
+}
+
+.logo-img img {
+  height: 3rem;
+  width: auto;
+  object-fit: contain;
+  transition: var(--transition);
+}
+
+.logo-img img:hover {
+  transform: scale(1.05);
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  position: relative;
+}
+
+/* ========================== Nav links ========================== */
+
+.nav-links {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  list-style: none;
+  font-weight: 500;
+  font-family: var(--font--primary);
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
+.nav-links li {
+  position: relative;
+}
+
+.nav-links li a {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  padding: 0.35rem 0.1rem;
+  position: relative;
+  transition: var(--transition);
+}
+
+/* Underline indicator that grows from center on hover */
+.nav-links li a::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 0%;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+  transform: translateX(-50%);
+  transition: width 0.25s ease;
+}
+
+.nav-links li a:hover {
+  color: var(--color-primary);
+  transform: scale(1.08);
+}
+
+.nav-links li a:hover::after {
+  width: 100%;
+}
+
+/* Active page — bold, colored, permanent underline */
+.nav-links li a.active {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.nav-links li a.active::after {
+  width: 100%;
+}
+
+.nav-links li a .icon {
+  display: none;
+}
+
+.mobile-btn {
+  display: none;
+}
+
+/* ========================== Buttons ========================== */
+
+.btn-container {
+  display: flex;
+  gap: 1rem;
+}
+
+.primary-btn,
+.secondary-btn {
+  height: 2.75rem;
+  min-width: 8rem;
+  padding: 0 1.25rem;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-family: var(--font--primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.primary-btn {
+  border: 1.5px solid var(--color-primary);
+  background-color: var(--bg-card);
+  color: var(--color-primary);
+}
+
+.primary-btn:hover {
+  background: var(--btn-primary-hover); 
+  border-color: var(--btn-primary-hover);
+  color: var(--text-light);
+  transform: scale(1.04);
+}
+
+.secondary-btn {
+  border: none;
+  background-color: var(--btn-primary);
+  color: var(--text-light);
+}
+
+.secondary-btn:hover {
+  /* background-color: var(--btn-primary-hover); */
+  /* box-shadow: var(--shadow-md); */
+  transform: scale(1.04);
+}
+
+/* ========================== Mobile menu icon ========================== */
+
+.menu-icon {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.4rem;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.menu-icon:hover {
+  color: var(--color-primary);
+  background: var(--bg-section);
+}
+
+/* ========================== Responsive ========================== */
+
+@media (max-width: 1095px) {
+  :root {
+    --navbar-height: 4.75rem;
+  }
+
+  .menu-icon {
     display: flex;
-    flex-direction: row;    
-    justify-content: center;
-    align-items: center;
-    gap:2rem;
-    list-style: none;
-    font-weight: 600;
-    padding-top: 1rem;
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .nav-links li a {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .nav-links li a .icon {
+    display: inline-flex;
+    font-size: 1.1rem;
+  }
+
+  .nav-links li a::after {
+    display: none;
+  }
+
+  .nav-links.active {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem 1rem;
+
+    position: absolute;
+    top: calc(100% + 0.75rem);
     right: 0;
-    font-family:"IBM Plex Mono", monospace;;
-    
-}
-.logo-img img{
-    height: 3.5rem;
-    object-fit: contain;
-}
-.links{
-    display:flex;
-    align-items: center;
-    gap:2rem;
-}
+    width: 18rem;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    padding: 1.25rem;
 
-.nav-links li  a{
-    text-decoration: none;
-    color: var(--text-primary);
-}
+    animation: menuDrop 0.25s ease;
+  }
 
-.nav-links li a:hover{
-    color: var(--btn-primary-hover);
-}
+  .nav-links.active li a {
+    padding: 0.6rem 0.5rem;
+    border-radius: var(--radius-sm);
+  }
 
-.btn-container{
-    display:flex;
-    gap: 1rem ;
-}
+  .nav-links.active li a:hover {
+    background: var(--bg-section);
+    transform: scale(1.03);
+  }
 
-.primary-btn{
-    height: 3rem;
-    width: 9rem;
-    border-radius: 2rem;
-    border: 1px solid black ;
-    background-color: white;
-    font-weight: 600;
-     font-family:"IBM Plex Mono", monospace;;
+  .nav-links.active li a.active {
+    background: var(--bg-section);
+  }
 
-    
-}
-.primary-btn:hover{
-    background:var(--btn-primary-hover);
-    color:var(--color-cream);
-    border: none;
-    transition: var(--transition );
-
-}
-.secondary-btn{
-    height: 3rem;
-    width: 9rem;
-    border-radius: 2rem;
-    border: none;
-    background-color:var(--btn-primary-hover);
-    font-weight: 600;
-    line-height:1.2;
-    color: white;
-     font-family:"IBM Plex Mono", monospace;;
-    
-}
-.secondary-btn:hover{
-    background:white;
-    border: 1px solid black;
-    color:black;
-    transition: var(--transition );
-
-}
-.menu-icon{
-    display: none;
-}
-.mobile-btn{
-    display: none;
-}
-
-.icon{
-    display: none   ;
-}
-
-@media (max-width:1095px) {
-    .menu-icon{
-        display: flex;
-        font-size: 1.6rem;
+  @keyframes menuDrop {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
     }
-
-    .nav-links{
-        display: none;
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
-    .nav-links li a {
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        gap:.5rem;  
-    }
+  }
 
-    .nav-links.active{
-        display:grid;
-        grid-template-columns: repeat(2,1fr);
-
-        position:absolute;
-        top:100%;
-        right:1rem;
-        background: rgb(242, 252, 255);
-
-        width:20rem;
-
-        background:var();
-        border-radius:12px;
-        box-shadow:0 10px 30px rgba(0,0,0,.15);
-
-        padding:1rem;   
-        gap:1rem;
-    }
-    .mobile-btn{
-        display: flex;
-    }
-
-    .btn-container{
-        display: none;
-    }
-    .icon{
-        display: flex;
-        
-        
-    }
-
-    .mobile-btn{
+  .mobile-btn {
     display: flex;
     justify-content: center;
-    gap: 1rem;
-    grid-column: 1 / -1;   /* Full width row */
-    margin-top: .5rem;
-}
+    gap: 0.75rem;
+    grid-column: 1 / -1;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+  }
 
-.mobile-btn form{
+  .mobile-btn li {
     flex: 1;
-}
+    list-style: none;
+  }
 
-.mobile-btn button{
-    width: 9rem;
-}
+  .mobile-btn .primary-btn,
+  .mobile-btn .secondary-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .btn-container {
+    display: none;
+  }
 }

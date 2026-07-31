@@ -98,6 +98,7 @@
 .btn{
     height: 3rem;
     width: 9rem;
+    white-space: nowrap;
     border-radius: 2rem;
     background-color: var(--btn-secondary-hover);
     font-weight: 600;
