@@ -1,0 +1,284 @@
+/* ----------------------------------------------------------
+   Common Skin Problems section
+   Palette: clinical mint + deep ink + coral alert accent
+---------------------------------------------------------- */
+
+:root {
+
+    --font-secondary:"IBM Plex Sans", sans-serif;
+    --font--primary:"IBM Plex Mono", sans-serif;
+    --font-tertiary:"Space Grotesk", sans-serif;
+  /* ==========================
+      Brand Colors
+  ========================== */
+
+  --color-primary: #05668d;     /* Baltic Blue */
+  --color-secondary: #004d57;   /* Teal */
+  --color-accent: #00a896;      /* Verdigris */
+  --color-success: #02c39a;     /* Mint Leaf */
+  --color-cream: #f0f3bd;       /* Cream */
+
+  /* ==========================
+      Backgrounds
+  ========================== */
+
+  --bg-main: #ffffff;
+  --bg-section: #f0f3bd;
+  --bg-card: #ffffff;
+  --bg-footer: #05668d;
+
+  /* ==========================
+      Text
+  ========================== */
+
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #ffffff;
+
+  /* ==========================
+      Buttons
+  ========================== */
+
+  --btn-primary: #05668d;
+  --btn-primary-hover: #04506f;
+
+  --btn-secondary: #02c39a;
+  --btn-secondary-hover: #00a896;
+
+  /* ==========================
+      Borders & Shadow
+  ========================== */
+
+  --border-color: #e5e7eb;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.15);
+
+  /* ==========================
+      Border Radius
+  ========================== */
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  /* ==========================
+      Transition
+  ========================== */
+
+  --transition: all 0.3s ease;
+}
+
+/* ----------------------------------------------------------
+   Common Skin Problems section
+   Uses the app's global :root theme tokens (colors, fonts,
+   radius, shadow, transition) — no local overrides.
+---------------------------------------------------------- */
+
+.skin-section {
+ 
+  padding: 72px 24px;
+  font-family: var(--font-secondary);
+  color: var(--text-primary);
+}
+
+.skin-section__header {
+  max-width: 640px;
+  margin: 0 auto 44px;
+  text-align: center;
+}
+
+.skin-section__eyebrow {
+  display: inline-block;
+  font-family: var(--font--primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-secondary);
+  margin-bottom: 10px;
+}
+
+.skin-section__title {
+  font-family: var(--font-tertiary);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  margin: 0 0 12px;
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
+}
+
+.skin-section__subtitle {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Grid: 3 cols desktop -> 2 tablet -> 1 mobile */
+.skin-grid {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .skin-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .skin-grid {
+    grid-template-columns: 1fr;
+  }
+  .skin-section {
+    padding: 48px 16px;
+  }
+}
+
+/* Card + scroll-reveal animation */
+.skin-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition), opacity 0.6s ease, translate 0.6s ease;
+  opacity: 0;
+  translate: 0 24px;
+  will-change: transform, opacity;
+}
+
+.skin-section.is-visible .skin-card {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.skin-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Real photo container — bigger ratio (4:3) so photos read clearly */
+.card-visual {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+
+.card-visual__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-visual .card-swatch__id {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+/* Colored swatch stands in for a reference photo — same enlarged ratio,
+   built from the theme's brand colors so it stays on-brand */
+.card-swatch {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 14px;
+}
+
+.card-swatch__id {
+  font-family: var(--font--primary);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-light);
+  background: rgba(5, 102, 141, 0.35);
+  padding: 4px 9px;
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(2px);
+}
+
+.card-swatch--acne {
+  background-image: url(../../assets/images/acne.png);
+  object-fit: contain;
+  /* background: white; */
+}
+.card-swatch--ringworm {
+  background: white;
+}
+.card-swatch--psoriasis {
+  background: white;
+}
+.card-swatch--vitiligo {
+  background: white;
+  }
+.card-swatch--warts {
+  background:white;
+}
+
+.card-body {
+  padding: 18px 20px 22px;
+  background: linear-gradient(135deg, var(--color-secondary), var(--color-accent));
+}
+
+.card-tag {
+  display: inline-block;
+  font-family: var(--font--primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-secondary);
+  background: var(--color-cream);
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  margin-bottom: 10px;
+}
+
+.card-name {
+  font-family: var(--font-tertiary);
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--text-light);
+}
+
+.card-desc {
+  font-size: 14px;
+  line-height: 1.55;
+  color: white;
+  margin: 0;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .skin-card {
+    transition: none;
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+.card-visual{
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    background: white;
+}
+
+.card-visual__img{
+    width:100%;
+    height:100%;
+    object-fit:cover;   /* ya contain */
+    display:block;
+}

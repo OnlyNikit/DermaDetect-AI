@@ -17,7 +17,7 @@ function Footer() {
                 </h2>
               </div>
               <div className="col-12 col-lg-5 foot-btn">
-                <form action="#">
+                <form action="/choose">
                   <button type="submit" className="btn">
                     Scan a photo
                   </button>
