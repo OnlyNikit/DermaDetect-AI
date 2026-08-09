@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
 
-.dermascan-root {
+:root {
   --font-secondary:"IBM Plex Sans", sans-serif;
   --font--primary:"IBM Plex Mono", sans-serif;
   --font-tertiary:"Space Grotesk", sans-serif;
@@ -114,7 +114,7 @@
   font-size: 16px;
   color: var(--text-secondary);
   text-align: center;
-  max-width: 480px;
+  max-width: 520px;
   margin-top: 14px;
   line-height: 1.6;
   opacity: 0;
@@ -123,22 +123,26 @@
 
 .ds-cards {
   display: flex;
-  gap: 28px;
+  gap: 24px;
   margin-top: 52px;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: stretch;
   position: relative;
   z-index: 1;
+  max-width: 920px;
 }
 
 .ds-card {
   --accent: var(--color-primary);
   position: relative;
-  width: 280px;
+  width: 268px;
+  display: flex;
+  flex-direction: column;
   background: var(--bg-card);
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 36px 28px 30px;
+  padding: 36px 24px 26px;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
   cursor: pointer;
@@ -148,8 +152,9 @@
   text-align: center;
 }
 
-.ds-card:nth-child(1) { animation-delay: 0.26s; }
-.ds-card:nth-child(2) { animation-delay: 0.36s; }
+.ds-card:nth-child(1) { animation-delay: 0.22s; }
+.ds-card:nth-child(2) { animation-delay: 0.30s; }
+.ds-card:nth-child(3) { animation-delay: 0.38s; }
 
 .ds-card:hover {
   transform: translateY(-6px);
@@ -175,9 +180,9 @@
 
 .ds-icon-wrap {
   position: relative;
-  width: 84px;
-  height: 84px;
-  margin: 0 auto 22px;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -195,15 +200,15 @@
 .ds-icon-wrap svg {
   position: relative;
   z-index: 1;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   stroke: var(--accent);
 }
 
 .ds-card-title {
   font-family: var(--font-tertiary);
   font-weight: 600;
-  font-size: 19px;
+  font-size: 18px;
   margin-bottom: 8px;
 }
 
@@ -213,7 +218,7 @@
   color: var(--text-secondary);
   line-height: 1.55;
   margin-bottom: 14px;
-  min-height: 40px;
+  min-height: 56px;
 }
 
 .ds-card-desc strong {
@@ -249,15 +254,27 @@
   border-radius: var(--radius-full);
   border: none;
   width: 100%;
+  margin-top: auto;
   transition: var(--transition);
 }
 
-.ds-card.camera .ds-card-cta {
+/* Option 1 — Scan from Smartphone (QR connect) */
+.ds-card.smartphone .ds-card-cta {
+  background: var(--btn-secondary);
+  color: var(--text-light);
+}
+.ds-card.smartphone .ds-card-cta:hover { background: var(--btn-secondary-hover); }
+.ds-card.smartphone .ds-icon-wrap svg { stroke: var(--color-accent); }
+.ds-card.smartphone .ds-icon-ring { border-color: var(--color-accent); }
+
+/* Option 2 — Scan on this device */
+.ds-card.thisdevice .ds-card-cta {
   background: var(--btn-primary);
   color: var(--text-light);
 }
-.ds-card.camera .ds-card-cta:hover { background: var(--btn-primary-hover); }
+.ds-card.thisdevice .ds-card-cta:hover { background: var(--btn-primary-hover); }
 
+/* Option 3 — Dedicated scan device (coming soon) */
 .ds-card.device { cursor: not-allowed; }
 .ds-card.device .ds-card-cta {
   background: var(--bg-section);
@@ -286,6 +303,16 @@
   padding: 5px 10px;
   border-radius: var(--radius-full);
   font-weight: 500;
+}
+
+.ds-badge.accent {
+  background: var(--color-accent);
+  color: var(--text-light);
+}
+
+.ds-badge.recommended {
+  background: var(--color-primary);
+  color: var(--text-light);
 }
 
 .ds-checkmark {
@@ -322,9 +349,150 @@
 }
 .ds-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ---------- QR connect modal ---------- */
+.ds-qr-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 77, 87, 0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+  opacity: 0;
+  animation: ds-fadeIn 0.25s ease forwards;
+}
+
+.ds-qr-modal {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px 28px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  transform: translateY(10px);
+  opacity: 0;
+  animation: ds-fadeUp 0.3s ease 0.05s forwards;
+}
+
+.ds-qr-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-section);
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+.ds-qr-close:hover { background: var(--border-color); color: var(--text-primary); }
+
+.ds-qr-title {
+  font-family: var(--font-tertiary);
+  font-weight: 600;
+  font-size: 19px;
+  margin-bottom: 6px;
+}
+
+.ds-qr-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+.ds-qr-frame {
+  width: 172px;
+  height: 172px;
+  margin: 0 auto 20px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.ds-qr-frame::before,
+.ds-qr-frame::after {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--color-accent);
+  opacity: 0.9;
+}
+.ds-qr-frame::before { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+.ds-qr-frame::after { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+.ds-qr-steps {
+  text-align: left;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ds-qr-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ds-qr-steps li .ds-step-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 168, 150, 0.12);
+  color: var(--color-secondary);
+  font-family: var(--font--primary);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.ds-qr-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font--primary);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-secondary);
+  background: var(--bg-section);
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+}
+
 @keyframes ds-fadeUp {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ds-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes ds-pulseDot {
   0%, 100% { box-shadow: 0 0 0 0 rgba(2,195,154,0.5); }
@@ -340,6 +508,11 @@
   .dermascan-root * { animation: none !important; transition: none !important; }
 }
 
+@media (max-width: 920px) {
+  .ds-cards { max-width: 580px; }
+}
+
 @media (max-width: 400px) {
   .ds-card { width: 100%; max-width: 300px; }
+  .ds-qr-frame { width: 148px; height: 148px; }
 }

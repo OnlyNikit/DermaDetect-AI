@@ -1,17 +1,11 @@
 const express = require("express");
-
 const router = express.Router();
 
-const reporController =require("../contollers/report.controller")
-//! reports routes
+const authMiddleware = require("../middlewares/auth");
+const { getReports, downloadReport, deleteReport } = require("../contollers/report.controller");
 
-router.post("/upload",reporController.upload);
+router.get("/", authMiddleware, getReports);
+router.get("/:id/download", authMiddleware, downloadReport);
+router.delete("/:id", authMiddleware, deleteReport);
 
-router.post("/analyze",reporController.analyze);
-
-router.get("/history",reporController.history)
-router.get("/:id",reporController.report)
-
-router.delete("/:id",reporController.deleteReport);
-
-module.exports=router;
+module.exports = router;

@@ -1,0 +1,91 @@
+
+  :root {
+
+      --font-secondary:"IBM Plex Sans", sans-serif;
+      --font--primary:"IBM Plex Mono", sans-serif;
+      --font-tertiary:"Space Grotesk", sans-serif;
+    /* ==========================
+        Brand Colors
+    ========================== */
+
+    --color-primary: #05668d;     /* Baltic Blue */
+    --color-secondary: #004d57;   /* Teal */
+    --color-accent: #00a896;      /* Verdigris */
+    --color-success: #02c39a;     /* Mint Leaf */
+    /* --color-cream: #f0f3bd;       Cream */
+  }
+
+
+.loader-wrapper {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: rgba(255, 255, 255, 0.95);
+
+  z-index: 9999;
+}
+
+/* From Uiverse.io by dovatgabriel */ 
+
+.ball {
+  position: relative;
+  bottom: 50px;
+  left: calc(100% - 20px);
+  width: 50px;
+  height: 50px;
+  background:var(--color-accent);
+  border-radius: 50%;
+  animation: ball-move8234 3s ease-in-out 1s infinite alternate;
+}
+
+.ball::after {
+  position: absolute;
+  content: '';
+  top: 25px;
+  right: 5px;
+  width: 5px;
+  height: 5px;
+  background: #000;
+  border-radius: 50%;
+}
+
+
+ .bar {
+  position: relative;
+  width: 500px;
+  max-width: 80vw;
+  height: 18px;
+
+  background: var(--color-success);
+  border-radius: 30px;
+
+  transform: rotate(-15deg);
+  animation: up-down6123 3s ease-in-out infinite alternate;
+
+}
+
+@keyframes up-down6123 {
+  from {
+    transform: rotate(-15deg);
+  }
+
+  to {
+    transform: rotate(15deg);
+  }
+}
+
+@keyframes ball-move8234 {
+  from {
+    left: calc(100% - 40px);
+    transform: rotate(360deg);
+  }
+
+  to {
+    left: calc(0% - 20px);
+    transform: rotate(0deg);
+  }
+}

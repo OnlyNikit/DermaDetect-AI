@@ -1,0 +1,454 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+  --font-secondary: "IBM Plex Sans", sans-serif;
+  --font-primary: "IBM Plex Mono", sans-serif;
+  --font-tertiary: "Space Grotesk", sans-serif;
+
+  --color-primary: #05668d;
+  --color-secondary: #004d57;
+  --color-accent: #00a896;
+  --color-success: #02c39a;
+  --color-cream: #f0f3bd;
+
+  --bg-main: #ffffff;
+  --bg-page: #f7f9f8;
+  /* changed: section bg moved off cream to a soft teal tint that matches the accent/success hues */
+  --bg-section: #e1f2ee;
+  --bg-card: #ffffff;
+  --bg-footer: #05668d;
+
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #ffffff;
+  /* changed: dedicated text color for anything sitting on --bg-section, tuned to the new teal tint */
+  --text-on-section: #0b6b60;
+
+  --btn-primary: #05668d;
+  --btn-primary-hover: #04506f;
+
+  --btn-secondary: #02c39a;
+  --btn-secondary-hover: #00a896;
+
+  --border-color: #e5e7eb;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.15);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  --transition: all 0.3s ease;
+}
+
+.skin-result-page {
+  width: 100%;
+  min-height: 100vh;
+  font-family: var(--font-secondary);
+  color: var(--text-primary);
+  background: var(--bg-page);
+  padding: 32px 16px 64px;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.skin-result-page *,
+.skin-result-page *::before,
+.skin-result-page *::after {
+  box-sizing: border-box;
+}
+
+/* ---------- Loading / error states ---------- */
+.sar-loading {
+  max-width: 480px;
+  margin: 80px auto 0;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 40px 32px;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  animation: sarFadeDown 0.4s ease forwards;
+}
+.sar-loading h2 {
+  font-family: var(--font-tertiary);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-secondary);
+  margin: 0 0 8px;
+}
+.sar-loading p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 18px;
+}
+
+/* ---------- Header ---------- */
+.sar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  opacity: 0;
+  animation: sarFadeDown 0.5s ease forwards;
+}
+
+.sar-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font-secondary);
+}
+.sar-back-btn:hover { color: var(--color-primary); transform: translateX(-2px); }
+
+.sar-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--btn-primary);
+  color: var(--text-light);
+  border: none;
+  padding: 10px 18px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+.sar-download-btn:hover { background: var(--btn-primary-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+.sar-hero {
+  text-align: center;
+  margin-bottom: 28px;
+  opacity: 0;
+  animation: sarFadeDown 0.5s ease 0.1s forwards;
+}
+.sar-hero h1 {
+  font-family: var(--font-tertiary);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--color-secondary);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.sar-hero p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+}
+.sar-meta {
+  margin-top: 10px;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+}
+
+/* ---------- Cards ---------- */
+.sar-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  margin-bottom: 20px;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: sarRiseIn 0.55s ease forwards;
+}
+.sar-card.sar-delay-1 { animation-delay: 0.15s; }
+.sar-card.sar-delay-2 { animation-delay: 0.25s; }
+.sar-card.sar-delay-3 { animation-delay: 0.35s; }
+.sar-card.sar-delay-4 { animation-delay: 0.45s; }
+
+.sar-card-title {
+  font-family: var(--font-tertiary);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-secondary);
+  padding: 18px 24px 0;
+}
+
+/* ---------- Result split ---------- */
+.sar-result-grid {
+  display: grid;
+  /* changed: image column widened to match the bigger frame */
+  grid-template-columns: 1.15fr 1fr;
+  gap: 0;
+}
+@media (max-width: 680px) {
+  .sar-result-grid { grid-template-columns: 1fr; }
+}
+
+.sar-image-panel {
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-section);
+}
+.sar-frame {
+  /* changed: bigger image frame */
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sar-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.sar-placeholder {
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
+
+.sar-info-panel {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.sar-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.sar-condition-name {
+  font-family: var(--font-tertiary);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-secondary);
+}
+
+.sar-confidence-row { display: flex; flex-direction: column; gap: 8px; }
+.sar-confidence-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.sar-confidence-value { font-weight: 600; color: var(--color-primary); font-family: var(--font-primary); }
+.sar-bar-track {
+  width: 100%;
+  height: 10px;
+  background: var(--bg-page);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.sar-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--color-accent), var(--color-primary));
+  width: 0%;
+  transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sar-severity-row { display: flex; align-items: center; gap: 10px; }
+.sar-severity-label { font-size: 12px; color: var(--text-secondary); }
+.sar-severity-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 4px rgba(2, 195, 154, 0.15);
+  animation: sarPulseDot 2s ease-in-out infinite;
+}
+.sar-severity-dot.medium { background: #d97706; box-shadow: 0 0 0 4px rgba(217,119,6,0.15); }
+.sar-severity-dot.high { background: #dc2626; box-shadow: 0 0 0 4px rgba(220,38,38,0.15); }
+.sar-severity-text { font-size: 14px; font-weight: 500; }
+
+.sar-status-pill {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  /* changed: matches new section bg */
+  color: var(--text-on-section);
+  background: var(--bg-section);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+}
+.sar-status-pill .sar-check {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--color-success);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* ---------- Summary grids (patient info + assessment) ---------- */
+.sar-summary-grid {
+  padding: 16px 24px 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 680px) {
+  .sar-summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.sar-summary-item {
+  background: var(--bg-section);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  transition: var(--transition);
+}
+.sar-summary-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.sar-field-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  /* changed: was gray, now matches the teal section bg */
+  color: var(--text-on-section);
+  margin-bottom: 4px;
+}
+.sar-field-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-secondary);
+}
+
+/* ---------- Explanation ---------- */
+.sar-explanation-body {
+  padding: 14px 24px 22px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+/* ---------- Disclaimer ---------- */
+.sar-disclaimer {
+  background: var(--bg-section);
+  border-left: 4px solid var(--btn-secondary);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin: 18px 24px 22px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.sar-disclaimer .sar-icon {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--btn-secondary-hover);
+}
+.sar-disclaimer p {
+  font-size: 13px;
+  /* changed: matches new section bg instead of generic dark gray */
+  color: var(--text-on-section);
+  line-height: 1.5;
+  margin: 0;
+}
+.sar-disclaimer strong { color: var(--color-secondary); }
+
+/* ---------- Actions ---------- */
+.sar-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  padding: 0 24px 28px;
+  flex-wrap: wrap;
+}
+.sar-btn {
+  font-family: var(--font-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 26px;
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.sar-btn-primary {
+  background: var(--btn-primary);
+  color: var(--text-light);
+  box-shadow: var(--shadow-sm);
+}
+.sar-btn-primary:hover { background: var(--btn-primary-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.sar-btn-secondary {
+  background: var(--bg-card);
+  color: var(--color-secondary);
+  border: 1.5px solid var(--border-color);
+}
+.sar-btn-secondary:hover { border-color: var(--btn-secondary); color: var(--btn-secondary-hover); transform: translateY(-2px); }
+
+.sar-btn:disabled,
+.sar-download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+@keyframes sarFadeDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes sarRiseIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes sarPulseDot {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(2, 195, 154, 0.15); }
+  50% { box-shadow: 0 0 0 7px rgba(2, 195, 154, 0.05); }
+}
+
+/* ==========================================
+   PDF GENERATION
+   Only .sar-report-content is captured for the PDF —
+   buttons/header live outside it, so nothing to hide here.
+   This just freezes animations so the capture is crisp.
+========================================== */
+
+.pdf-export,
+.pdf-export * {
+  animation: none !important;
+  transition: none !important;
+}
+
+.pdf-export.sar-report-content,
+.pdf-export .sar-card,
+.pdf-export .sar-hero {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.pdf-export .sar-bar-fill {
+  transition: none !important;
+}

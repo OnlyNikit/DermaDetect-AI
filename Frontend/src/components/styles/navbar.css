@@ -89,6 +89,7 @@ body {
 
 /* ========================== Navbar shell ========================== */
 
+
 .navbar {
   position: fixed;
   top: 0;
@@ -361,4 +362,111 @@ body {
   .btn-container {
     display: none;
   }
+}
+
+
+.profile-badge {
+  position: relative;
+  font-family: 'Inter', sans-serif;
+}
+ 
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-full);
+  padding: 6px 12px 6px 6px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+ 
+.profile-trigger:hover {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-sm);
+}
+ 
+.profile-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+ 
+.profile-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+ 
+.profile-caret {
+  font-size: 11px;
+  color: var(--text-secondary);
+  transition: var(--transition);
+}
+.profile-caret.up { transform: rotate(180deg); }
+ 
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 170px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 30;
+  animation: dropdownIn 0.18s ease;
+}
+ 
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+ 
+.dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  color: var(--text-primary);
+  text-decoration: none;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+ 
+.dropdown-item:hover {
+  background: var(--bg-section);
+}
+ 
+.dropdown-item.logout {
+  color: #d64545;
+  border-top: 1px solid var(--border-color);
+  margin-top: 2px;
+  padding-top: 10px;
+}
+ 
+@media (max-width: 400px) {
+  .profile-name { max-width: 70px; }
 }

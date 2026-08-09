@@ -1,0 +1,106 @@
+/* ===========================
+   FORCE FLOATING CHATBOT
+   =========================== */
+
+:root {
+  --font-secondary:"IBM Plex Sans", sans-serif;
+  --font--primary:"IBM Plex Mono", sans-serif;
+  --font-tertiary:"Space Grotesk", sans-serif;
+
+  --color-primary: #05668d;
+  --color-secondary: #004d57;
+  --color-accent: #00a896;
+  --color-success: #02c39a;
+  --color-cream: #f0f3bd;
+
+  --bg-main: #ffffff;
+  --bg-section: #f0f3bd;
+  --bg-card: #ffffff;
+  --bg-footer: #05668d;
+
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #ffffff;
+
+  --btn-primary: #05668d;
+  --btn-primary-hover: #04506f;
+
+  --btn-secondary: #02c39a;
+  --btn-secondary-hover: #00a896;
+
+  --border-color: #e5e7eb;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.15);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  --transition: all 0.3s ease;
+
+  width: 100%;
+  min-height: 100vh;
+  font-family: var(--font-secondary);
+  color: var(--text-primary);
+}
+
+.ddc-root {
+    position: static !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+
+.ddc-stage {
+    position: static !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Floating Button */
+.ddc-fab {
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    z-index: 999999 !important;
+    background: var(--color-accent) !important;
+    /* background: linear-gradient(135deg,#4274D9,#293681) !important */
+    
+}
+
+/* Dark Overlay */
+.ddc-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 999997 !important;
+}
+
+/* Chat Window */
+.ddc-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 420px !important;
+    max-width: 95vw !important;
+    height: 100vh !important;
+    z-index: 999998 !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+    .ddc-fab {
+        bottom: 18px !important;
+        right: 18px !important;
+    }
+
+    .ddc-sidebar {
+        width: 100vw !important;
+        max-width: 100vw !important;
+    }
+
+}

@@ -1,7 +1,11 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { AuthProvider } from "./components/context/AuthContext.jsx";
+import ScrollToTop from "./pages/ScrollToTop.jsx";
+import { LoaderProvider } from "./components/context/LoaderContext";
 
 import "./index.css";
 import App from "./App.jsx";
@@ -9,7 +13,22 @@ import App from "./App.jsx";
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <LoaderProvider>
+        <ScrollToTop />
+        <AuthProvider>
+          <App />
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            pauseOnHover
+            draggable
+            theme="colored"
+          />
+        </AuthProvider>
+      </LoaderProvider>
     </BrowserRouter>
   </StrictMode>,
 );

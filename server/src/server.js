@@ -1,6 +1,18 @@
+require("dotenv").config();
+const connectDB = require("./config/db");
 const app = require("./app");
 
-app.listen(8080,()=>{
+
+
+
+
+
+connectDB().catch((err)=>{
+    console.log(err);
+});
+let PORT = process.env.PORT;
+app.listen(PORT,()=>{
     console.log("server is running");
+    
 })
 

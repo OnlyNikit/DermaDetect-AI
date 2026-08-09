@@ -1,0 +1,123 @@
+.scan-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+  padding: 56px 20px 64px;
+  background: var(--bg-main);
+  overflow: hidden;
+}
+
+.scan-page__glow {
+  position: absolute;
+  top: -180px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 720px;
+  height: 420px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 168, 150, 0.16) 0%,
+    rgba(240, 243, 189, 0.12) 45%,
+    rgba(255, 255, 255, 0) 75%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.scan-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  max-width: 560px;
+  animation: rise-in 0.5s ease both;
+}
+
+.scan-eyebrow {
+  font-family: var(--font--primary);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.scan-title {
+  font-family: var(--font-tertiary);
+  font-weight: 700;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  color: var(--color-secondary);
+  margin: 0;
+}
+
+.scan-subtitle {
+  font-family: var(--font-secondary);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin: 0;
+  max-width: 420px;
+}
+
+.condition-chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.condition-chip {
+  font-family: var(--font--primary);
+  font-size: 0.75rem;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: var(--bg-section);
+  color: var(--color-secondary);
+  border: 1px solid rgba(5, 102, 141, 0.12);
+}
+
+.scan-main {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  animation: rise-in 0.6s ease 0.1s both;
+}
+
+.scan-footnote {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-secondary);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  max-width: 420px;
+  text-align: center;
+  margin: 0;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-header,
+  .scan-main {
+    animation: none;
+  }
+}

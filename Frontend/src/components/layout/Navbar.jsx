@@ -1,7 +1,9 @@
-import { React, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { React, useState, useEffect, useRef } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import "../styles/navbar.css";
 import Logo from "../../assets/images/logo1.png";
+import { useAuth } from "../context/AuthContext.jsx";
+import { toast } from "react-toastify";
 
 const NAV_ITEMS = [
   { to: "/", label: "Home", icon: "fa-house" },
@@ -12,9 +14,44 @@ const NAV_ITEMS = [
 ];
 
 function Navbar() {
+  const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
 
   const closeMenu = () => setMenu(false);
+  const { user, logout } = useAuth();
+
+  console.log("User in Navbar:", user);
+
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  // Close the dropdown when clicking outside it
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // if (!user) return null; // logged out -> render nothing (show a Login button instead in your navbar)
+  const initial = user?.fullName?.charAt(0).toUpperCase() || "?";
+  const handleLogout = async () => {
+    try {
+      const response = await logout();
+      console.log("Logout response:", response);
+
+      toast.success(response.message);
+
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout Error:", err);
+      console.error("Response:", err.response);
+      toast.error("Logout failed");
+    }
+  };
 
   return (
     <nav>
@@ -59,18 +96,51 @@ function Navbar() {
             </div>
           </ul>
 
-          <div className="btn-container">
-            <Link to="/login">
-              <button type="button" className="primary-btn">
-                Login
+          {user ? (
+            <div className="profile-badge" ref={wrapRef}>
+              <button
+                className="profile-trigger"
+                onClick={() => setOpen((v) => !v)}
+              >
+                <span className="profile-avatar">{initial}</span>
+                <span className="profile-name">{user.fullName}</span>
+                <span className={`profile-caret ${open ? "up" : ""}`}>▾</span>
               </button>
-            </Link>
-            <Link to="/register">
-              <button type="button" className="secondary-btn">
-                Register
-              </button>
-            </Link>
-          </div>
+
+              {open && (
+                <div className="profile-dropdown">
+                  <a href="/profile" className="dropdown-item">
+                    👤 Profile
+                  </a>
+                  <a href="/settings" className="dropdown-item">
+                    ⚙ Settings
+                  </a>
+                  <a href="/dashboard" className="dropdown-item">
+                    � Dashboard
+                  </a>
+                  <button
+                    className="dropdown-item logout"
+                    onClick={handleLogout}
+                  >
+                    🚪 Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="btn-container">
+              <Link to="/login">
+                <button type="button" className="primary-btn">
+                  Login
+                </button>
+              </Link>
+              <Link to="/register">
+                <button type="button" className="secondary-btn">
+                  Register
+                </button>
+              </Link>
+            </div>
+          )}
 
           <button
             type="button"
