@@ -1,6 +1,6 @@
 # 🧬 OncoGuardian AI Platform
 
-> **Detect. Predict. Prevent.**
+ **Detect. Predict. Prevent.**
 
 An AI-powered healthcare platform designed to assist in **early cancer detection**, **risk prediction**, and **continuous health monitoring**. The platform aims to help users identify potential health risks at an early stage and encourage timely medical consultation.
 
