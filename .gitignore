@@ -3,4 +3,4 @@
 !.env.example
 
 server/.env
-frontend/.env.env
+frontend/.env
