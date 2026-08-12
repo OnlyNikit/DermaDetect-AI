@@ -18,22 +18,23 @@ def home():
 @app.post("/predict")
 async def predict(
     image: UploadFile = File(...),
-
     location: str = Form(...),
     duration: str = Form(...),
     itching: str = Form(...),
     painBurning: str = Form(...),
     changeSpread: str = Form(...),
-
     changeDetails: str = Form("[]"),
-    optionalDetails: str = Form("{}"),
+    optionalDetails: str = Form("{}")
 ):
     try:
-
+        # -----------------------------------------
         # Image read
+        # -----------------------------------------
         image_bytes = await image.read()
 
-        # JSON strings ko Python objects me convert karo
+        # -----------------------------------------
+        # JSON strings ko Python objects me convert
+        # -----------------------------------------
         change_details = json.loads(changeDetails)
         optional_details = json.loads(optionalDetails)
 
@@ -53,11 +54,10 @@ async def predict(
 
         print("================================\n")
 
-        # ------------------------------------------------
+        # -----------------------------------------
         # TEMPORARY RESPONSE
         # Actual ML model yahan connect hoga
-        # ------------------------------------------------
-
+        # -----------------------------------------
         prediction = {
             "disease": "Ringworm",
             "confidence": 0.966,

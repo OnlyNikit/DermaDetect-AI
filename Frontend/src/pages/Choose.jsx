@@ -90,9 +90,10 @@ export default function ScanSelect() {
             className={`ds-card smartphone ${selected === "smartphone" ? "selected" : ""}`}
             tabIndex={0}
             role="button"
-            aria-pressed={selected === "smartphone"}
-            onClick={handleSmartphoneClick}
-            onKeyDown={(e) => handleKeyDown(e, handleSmartphoneClick)}
+            // aria-pressed={selected === "smartphone"}
+            aria-disabled="true"
+            onClick={handleDeviceClick}
+            onKeyDown={(e) => handleKeyDown(e, handleDeviceClick)}
           >
             <div className="ds-badge accent">New</div>
 
@@ -124,7 +125,7 @@ export default function ScanSelect() {
                 </span>
               ))}
             </div>
-            <button className="ds-card-cta">Show QR code</button>
+            <button className="ds-card-cta">Coming Soon </button>
           </div>
 
           {/* Option 2 — Scan on this device */}
