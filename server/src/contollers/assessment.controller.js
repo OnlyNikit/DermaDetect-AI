@@ -104,7 +104,7 @@ async function createAssessment(req, res) {
     const formData = new FormData();
 
     // Image
-    formData.append("image", fs.createReadStream(imagePath));
+    formData.append("file", fs.createReadStream(imagePath));
 
     // Basic assessment data
     formData.append("location", answers.location);
@@ -148,35 +148,38 @@ async function createAssessment(req, res) {
     );
 
     console.log("AI Response:", aiResponse.data);
+    const aiResult = aiResponse.data;
 
     // ==========================================
     // 9. Get prediction
     // ==========================================
 
-    const prediction = aiResponse.data?.prediction;
+    const disease = aiResult?.prediction;
+    const confidence = aiResult?.confidence;
+    const severity  = aiResult?.severity;
 
-    if (!prediction) {
+    console.log("Disease:", disease);
+    console.log("Confidence:", confidence);
+
+    // ==========================================
+    // 10. Save AI prediction
+    // ==========================================
+
+    if (!disease) {
       assessment.status = "failed";
 
       await assessment.save();
 
       return res.status(500).json({
         success: false,
-
         message: "AI did not return prediction",
       });
     }
 
-    // ==========================================
-    // 10. Save AI prediction
-    // ==========================================
-
     assessment.prediction = {
-      disease: prediction.disease || null,
-
-      confidence: prediction.confidence ?? null,
-
-      severity: prediction.severity || null,
+      disease: disease,
+      confidence: confidence ?? 0,
+      severity: severity,
     };
 
     // ==========================================
@@ -290,5 +293,7 @@ async function getHistory(req, res) {
 // module.exports = { createAssessment, getAssessmentById, getHistory };
 
 module.exports = {
-  createAssessment, getAssessmentById,getHistory
+  createAssessment,
+  getAssessmentById,
+  getHistory,
 };

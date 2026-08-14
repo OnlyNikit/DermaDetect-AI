@@ -1,22 +1,35 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../components/styles/skinassessment.css";
-import api from "../api/axios"
-import {toast} from "react-toastify"
-
+import api from "../api/axios";
+import { toast } from "react-toastify";
 
 const QUESTIONS = [
   {
     key: "location",
     heading: "Where is the affected area?",
     type: "single",
-    options: ["Face", "Scalp", "Neck", "Chest / Back", "Hand / Arm", "Leg / Foot", "Other"],
+    options: [
+      "Face",
+      "Scalp",
+      "Neck",
+      "Chest / Back",
+      "Hand / Arm",
+      "Leg / Foot",
+      "Other",
+    ],
   },
   {
     key: "duration",
     heading: "How long have you noticed this problem?",
     type: "single",
-    options: ["Less than 1 week", "1–4 weeks", "1–6 months", "More than 6 months", "Not sure"],
+    options: [
+      "Less than 1 week",
+      "1–4 weeks",
+      "1–6 months",
+      "More than 6 months",
+      "Not sure",
+    ],
   },
   {
     key: "itching",
@@ -53,7 +66,8 @@ const MENSTRUAL_QUESTIONS = [
   },
   {
     key: "repeatsAroundPeriod",
-    heading: "Have you noticed similar skin problems repeatedly around your periods?",
+    heading:
+      "Have you noticed similar skin problems repeatedly around your periods?",
     type: "single",
     options: ["Yes", "No", "Not sure"],
   },
@@ -70,12 +84,12 @@ const OPTIONAL_QUESTIONS = [
 const SkinAssessment = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const imageUrl = location.state?.imageUrl||null;
+  const imageUrl = location.state?.imageUrl || null;
   const capturedImage = imageUrl;
 
   const [gender, setGender] = useState(null);
   const [genderLoaded, setGenderLoaded] = useState(false);
-  const [isSubmitting,setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [stage, setStage] = useState("preview"); // preview | question | complete | optional
   const [stepIndex, setStepIndex] = useState(0);
@@ -102,7 +116,9 @@ const SkinAssessment = () => {
   const isFemale = gender === "Female";
 
   // Common 5 questions + agar female hai to 2 menstrual questions bhi jud jaate hain
-  const activeQuestions = isFemale ? [...QUESTIONS, ...MENSTRUAL_QUESTIONS] : QUESTIONS;
+  const activeQuestions = isFemale
+    ? [...QUESTIONS, ...MENSTRUAL_QUESTIONS]
+    : QUESTIONS;
   const TOTAL_STEPS = activeQuestions.length;
 
   useEffect(() => {
@@ -153,24 +169,48 @@ const SkinAssessment = () => {
   };
 
   const handleAnalyzer = async () => {
-    console.log("analyze clicked")
-    console.log(isSubmitting);
-    // if(isSubmitting) return;
-    // setIsSubmitting(true);
+    if (isSubmitting) return;
+
     try {
+      setIsSubmitting(true);
+
+      console.log("========== ANALYZING SKIN ==========");
+      console.log("Image:", imageUrl);
+      console.log("Answers:", answers);
+      console.log("Optional Answers:", optionalAnswers);
+
+      // Backend exactly ye format expect karta hai
       const payload = {
         image: imageUrl,
-        answers,
-        optionalAnswers,  
+        answers: answers,
+        optionalAnswers: optionalAnswers,
       };
-      console.log(payload)
+
       const response = await api.post("/assessment", payload);
-      toast.success(response.data.message);
-      navigate("/skinAssessmentResult",{state:{assessmentId:response.data.assessmentId,},});
+
+      console.log("Assessment response:", response.data);
+
+      const assessmentId = response.data?.assessmentId;
+
+      if (!assessmentId) {
+        console.error("Assessment ID missing:", response.data);
+        throw new Error("Assessment ID not received from server");
+      }
+
+      console.log("Assessment ID:", assessmentId);
+
+      navigate("/skinAssessmentResult", {
+        state: {
+          assessmentId: assessmentId,
+        },
+      });
     } catch (err) {
-      console.log(err);
-      toast.error("Assessment upload failed");
-    } finally{
+      console.error("Analysis failed:", err.response?.data || err.message);
+
+      toast.error(
+        err.response?.data?.message || "Analysis failed. Please try again.",
+      );
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -214,10 +254,7 @@ const SkinAssessment = () => {
             <h2 className="assess-title">Help us understand this concern</h2>
             <p className="assess-sub">Answer {TOTAL_STEPS} quick questions</p>
 
-            <button
-              className="continue-btn"
-              onClick={() => goToQuestion(0)}
-            >
+            <button className="continue-btn" onClick={() => goToQuestion(0)}>
               Continue →
             </button>
           </div>
@@ -246,9 +283,16 @@ const SkinAssessment = () => {
                       <button
                         key={opt}
                         className={`option-pill ${
-                          answers[activeQuestions[stepIndex].key] === opt ? "selected" : ""
+                          answers[activeQuestions[stepIndex].key] === opt
+                            ? "selected"
+                            : ""
                         }`}
-                        onClick={() => handleSingleAnswer(activeQuestions[stepIndex].key, opt)}
+                        onClick={() =>
+                          handleSingleAnswer(
+                            activeQuestions[stepIndex].key,
+                            opt,
+                          )
+                        }
                       >
                         {opt}
                       </button>
@@ -261,17 +305,28 @@ const SkinAssessment = () => {
                   <div className="yesno-row">
                     <button
                       className={`yesno-btn ${
-                        answers[activeQuestions[stepIndex].key] === "Yes" ? "selected" : ""
+                        answers[activeQuestions[stepIndex].key] === "Yes"
+                          ? "selected"
+                          : ""
                       }`}
-                      onClick={() => handleSingleAnswer(activeQuestions[stepIndex].key, "Yes")}
+                      onClick={() =>
+                        handleSingleAnswer(
+                          activeQuestions[stepIndex].key,
+                          "Yes",
+                        )
+                      }
                     >
                       Yes
                     </button>
                     <button
                       className={`yesno-btn ${
-                        answers[activeQuestions[stepIndex].key] === "No" ? "selected" : ""
+                        answers[activeQuestions[stepIndex].key] === "No"
+                          ? "selected"
+                          : ""
                       }`}
-                      onClick={() => handleSingleAnswer(activeQuestions[stepIndex].key, "No")}
+                      onClick={() =>
+                        handleSingleAnswer(activeQuestions[stepIndex].key, "No")
+                      }
                     >
                       No
                     </button>
@@ -316,9 +371,15 @@ const SkinAssessment = () => {
             </p>
 
             <ul className="checklist">
-              <li>Image <span>✓</span></li>
-              <li>Skin concern <span>✓</span></li>
-              <li>Symptoms <span>✓</span></li>
+              <li>
+                Image <span>✓</span>
+              </li>
+              <li>
+                Skin concern <span>✓</span>
+              </li>
+              <li>
+                Symptoms <span>✓</span>
+              </li>
             </ul>
 
             <button
@@ -328,10 +389,7 @@ const SkinAssessment = () => {
               Want to add more details? (Optional)
             </button>
 
-            <button
-              className="continue-btn"
-              onClick={handleAnalyzer}
-            >
+            <button className="continue-btn" onClick={handleAnalyzer}>
               Analyze My Skin
             </button>
           </div>
@@ -371,7 +429,10 @@ const SkinAssessment = () => {
               <button className="skip-btn" onClick={() => setStage("complete")}>
                 Skip
               </button>
-              <button className="continue-btn" onClick={() => setStage("complete")}>
+              <button
+                className="continue-btn"
+                onClick={() => setStage("complete")}
+              >
                 Save Details
               </button>
             </div>

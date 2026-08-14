@@ -30,7 +30,7 @@ const STATS = [
   { value: "24/7", label: "Always available" },
 ];
 
-const STACK = ["Python", "TensorFlow", "React", "OpenCV", "Node.js", "Flask"];
+const STACK = ["Python", "TensorFlow", "React", "Pytorch", "Node.js", "Scikit-learn" ,"FastAPI","Matplotlib"];
 
 /** Wraps children and adds the .in-view class once the element scrolls into frame. */
 function Reveal({ as: Tag = "div", className = "", children, delay = 0 }) {

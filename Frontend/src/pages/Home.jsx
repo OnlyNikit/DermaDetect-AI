@@ -12,14 +12,10 @@ import SkinProblems from "../components/ui/Skinproblem";
 
 const diseases = [
   "Acne",
-  "Eczema",
   "Psoriasis",
   "Ringworm",
   "Vitiligo",
   "Melanoma",
-  "Basal Cell Carcinoma",
-  "Squamous Cell Carcinoma",
-  "Melanocytic Nevus (Mole)",
   "Warts",
 ];
 

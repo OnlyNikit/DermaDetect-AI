@@ -94,7 +94,7 @@ export default function ScanSelect() {
             aria-disabled="true"
             onClick={handleDeviceClick}
             onKeyDown={(e) => handleKeyDown(e, handleDeviceClick)}
-          >
+          >ao
             <div className="ds-badge accent">New</div>
 
             <div className="ds-icon-wrap">

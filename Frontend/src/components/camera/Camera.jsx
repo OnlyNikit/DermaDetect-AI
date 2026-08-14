@@ -1,8 +1,8 @@
 import React from "react";
 import { useRef, useState } from "react";
 import "../styles/camera.css";
-import { uploadImage } from "../services/api";
 import { useNavigate } from "react-router-dom";
+import api from "../../api/axios";
 
 function Camera() {
   const navigate = useNavigate();
@@ -12,6 +12,9 @@ function Camera() {
   const [capturedImage, setCapturedImage] = useState(null);
   const [stream, setStream] = useState(null);
   const [error, setError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const openCamera = async () => {
     try {
@@ -49,55 +52,109 @@ function Camera() {
       stream.getTracks().forEach((track) => track.stop());
     }
     setCapturedImage(null);
+    setError(null);
     openCamera();
   };
 
-  const useThisImage = async () => {
-    /* ============ BACKEND HOOK: USE CAPTURED IMAGE ============
-       `capturedImage` is a base64 PNG data URL. Send it to the scan/ML
-       endpoint here (or lift it up via a prop callback), e.g.
-       onImageConfirmed(capturedImage);
-       fetch('/api/scan', { method:'POST', body: JSON.stringify({ image: capturedImage }) })
-    */
-    try {
-      const response = await fetch(capturedImage);
-      const blob = await response.blob();
+  // Shared helper: takes a Blob, uploads it to our backend, returns the uploads URL
+  const uploadToServer = async (blob, filename) => {
+    const file = new File([blob], filename, { type: "image/png" });
 
-      const file = new File([blob], "skin-image.png", {
-        type: "image/png",
-      });
+    const formData = new FormData();
+    formData.append("image", file); // field name must match upload.single("image")
 
-      //backend
-      const result = await uploadImage(file);
-      console.log("server response", result);
-      navigate("/skinAssessment", { state: { imageUrl: result.imageUrl } });
-    } catch (err) {
-      console.log("uplod failed", err);
+    const response = await api.post("/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    if (!response.data?.success || !response.data?.imageUrl) {
+      throw new Error("Upload failed");
     }
+
+    return response.data.imageUrl;
   };
+
+ const useThisImage = async () => {
+  if (uploading || !capturedImage) return;
+
+  try {
+    setUploading(true);
+    setError(null);
+
+    let blob;
+    let filename;
+
+    // Agar user ne file choose ki hai
+    if (selectedFile) {
+      blob = selectedFile;
+      filename = selectedFile.name;
+    } else {
+      // Agar camera se image capture ki hai
+      const blobResponse = await fetch(capturedImage);
+      blob = await blobResponse.blob();
+      filename = "skin-image.png";
+    }
+
+    const imageUrl = await uploadToServer(blob, filename);
+
+    console.log("Uploaded image URL:", imageUrl);
+
+    navigate("/skinAssessment", {
+      state: { imageUrl },
+    });
+  } catch (err) {
+    console.error("Upload failed:", err);
+    setError("Unable to upload image. Please try again.");
+  } finally {
+    setUploading(false);
+  }
+};
+
   const useDemoImage = async () => {
+    if (uploading) return;
+
     try {
-      const response = await fetch("/demo/skin-scan.png");
+      setUploading(true);
+      setError(null);
 
-      const blob = await response.blob();
+      const blobResponse = await fetch("/demo/skin-scan.png");
+      const blob = await blobResponse.blob();
 
-      const file = new File([blob], "demo-skin-image.png", {
-        type: "image/png",
-      });
+      const imageUrl = await uploadToServer(blob, "demo-skin-image.png");
 
-      const result = await uploadImage(file);
-
-      console.log("Demo image uploaded:", result);
+      console.log("Uploaded demo image URL:", imageUrl);
 
       navigate("/skinAssessment", {
-        state: {
-          imageUrl: result.imageUrl,
-        },
+        state: { imageUrl },
       });
     } catch (error) {
       console.error("Demo image upload failed:", error);
+      setError("Unable to upload demo image.");
+    } finally {
+      setUploading(false);
     }
   };
+  const handleFileChange = (event) => {
+  const file = event.target.files?.[0];
+
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    setError("Please select a valid image file.");
+    return;
+  }
+
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+  }
+
+  const imagePreview = URL.createObjectURL(file);
+
+  setSelectedFile(file);
+  setCapturedImage(imagePreview);
+  setCameraOn(false);
+  setError(null);
+};
 
   return (
     <div className="camera-widget">
@@ -109,7 +166,6 @@ function Camera() {
         </span>
       </div>
 
-      {/* viewfinder — live video, placeholder, AND the captured preview all live here */}
       <div
         className={`viewfinder ${cameraOn ? "viewfinder--active" : ""} ${capturedImage ? "viewfinder--preview" : ""}`}
       >
@@ -156,27 +212,47 @@ function Camera() {
       </div>
 
       <canvas ref={canvasRef} style={{ display: "none" }} />
-
       {error && (
-        <p className="camera-error">Error accessing camera: {error.message}</p>
+        <p className="camera-error">
+          {typeof error === "string"
+            ? error
+            : `Error accessing camera: ${error.message}`}
+        </p>
       )}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+      />
 
       <div className="camera-actions">
         {!cameraOn && !capturedImage && (
-          <button className="btn btn--primary" onClick={openCamera}>
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+          <>
+            <button className="btn btn--primary" onClick={openCamera}>
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M4 7h2.5l1-1.5h9l1 1.5H20a1 1 0 0 1 1 1v10a1 1 0 0 1 1-1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" />
+                <circle cx="12" cy="13" r="3.5" />
+              </svg>
+              Scan on device
+            </button>
+
+            <button
+              type="button"
+              className="btn btn--secondary"
+              onClick={() => fileInputRef.current?.click()}
             >
-              <path d="M4 7h2.5l1-1.5h9l1 1.5H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" />
-              <circle cx="12" cy="13" r="3.5" />
-            </svg>
-            Scan on device
-          </button>
+              Choose file
+            </button>
+          </>
         )}
 
         {cameraOn && !capturedImage && (
@@ -192,6 +268,7 @@ function Camera() {
               type="button"
               className="btn btn--outline"
               onClick={retakeImage}
+              disabled={uploading}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -210,6 +287,7 @@ function Camera() {
               type="button"
               className="btn btn--primary"
               onClick={useThisImage}
+              disabled={uploading}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -221,12 +299,13 @@ function Camera() {
               >
                 <path d="M20 6 9 17l-5-5" />
               </svg>
-              Continue
+              {uploading ? "Uploading…" : "Continue"}
             </button>
             <button
               type="button"
               className="btn btn--secondary"
               onClick={useDemoImage}
+              disabled={uploading}
             >
               Use demo image
             </button>

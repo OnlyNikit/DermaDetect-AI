@@ -91,7 +91,7 @@ export default function SkinAnalysisResult() {
   // HOOK 2: Confidence animation
   //
   // IMPORTANT:
-  // Ye if/loading/error ke BAAD nahi hona chahiye
+  // Ye if/loadaing/error ke BAAD nahi hona chahiye
   // ==========================================
 
   useEffect(() => {
