@@ -1,114 +1,130 @@
-// const express = require("express");
-// const app = express();
-// require("dotenv").config();
-// const cookieParser = require("cookie-parser");
-// const cors = require("cors");
-// const path  = require("path");
+  // const express = require("express");
+  // const app = express();
+  // require("dotenv").config();
+  // const cookieParser = require("cookie-parser");
+  // const cors = require("cors");
+  // const path  = require("path");
 
 
-// const authRoutes = require("./routes/auth.routes.js");
-// const userRoutes = require("./routes/user.routes.js");
-// const reportRoutes = require("./routes/report.routes.js");
-// const dashboardRoutes = require("./routes/dashboard.routes.js");
-// const pdfRoutes = require("./routes/pdf.routes.js");
-// const uploadRoutes = require("./routes/upload.routes");
-// const assessmentRoutes =  require("./routes/assessment.routes.js")
-// app.use(
-//   cors({
-//     origin: process.env.FRONTEND_URL,
-//     credentials: true,
-//   }),
-// );
+  // const authRoutes = require("./routes/auth.routes.js");
+  // const userRoutes = require("./routes/user.routes.js");
+  // const reportRoutes = require("./routes/report.routes.js");
+  // const dashboardRoutes = require("./routes/dashboard.routes.js");
+  // const pdfRoutes = require("./routes/pdf.routes.js");
+  // const uploadRoutes = require("./routes/upload.routes");
+  // const assessmentRoutes =  require("./routes/assessment.routes.js")
+  // app.use(
+  //   cors({
+  //     origin: process.env.FRONTEND_URL,
+  //     credentials: true,
+  //   }),
+  // );
 
-// app.use(express.json({limit:"20mb"}));
-// app.use(express.urlencoded({ extended: true,limit:"20mb" }));
-// app.use(cookieParser());
+  // app.use(express.json({limit:"20mb"}));
+  // app.use(express.urlencoded({ extended: true,limit:"20mb" }));
+  // app.use(cookieParser());
 
-// // ! authentication routes
+  // // ! authentication routes
 
-// app.use("/api/auth", authRoutes);
+  // app.use("/api/auth", authRoutes);
 
-// //!  user Routes
+  // //!  user Routes
 
-// app.use("/api/user", userRoutes);
+  // app.use("/api/user", userRoutes);
 
-// //! upload system 
-// app.use("/uploads", express.static(path.join(__dirname,"../uploads")));
-// app.use("/api",uploadRoutes);
+  // //! upload system 
+  // app.use("/uploads", express.static(path.join(__dirname,"../uploads")));
+  // app.use("/api",uploadRoutes);
 
-// //!Assement route
-// app.use("/api/assessment",assessmentRoutes)
+  // //!Assement route
+  // app.use("/api/assessment",assessmentRoutes)
 
-// // ! report routes
+  // // ! report routes
 
-// app.use("/api/report", reportRoutes);
+  // app.use("/api/report", reportRoutes);
 
-// // ! dashboard routes
+  // // ! dashboard routes
 
-// app.use("/api/dashboard", dashboardRoutes);
+  // app.use("/api/dashboard", dashboardRoutes);
 
-// //! pdf routes
+  // //! pdf routes
 
-// app.use("/api/pdf", pdfRoutes);
+  // app.use("/api/pdf", pdfRoutes);
 
-// module.exports = app;
-
-
+  // module.exports = app;
 
 
 
-// !-------------------------------------------------------------
 
-const express = require("express");
-const app = express();
-require("dotenv").config();
-const cookieParser = require("cookie-parser");
-const cors = require("cors");
-const path = require("path");
 
-const authRoutes = require("./routes/auth.routes.js");
-const userRoutes = require("./routes/user.routes.js");
-const reportRoutes = require("./routes/report.routes.js");
-const dashboardRoutes = require("./routes/dashboard.routes.js");
-const pdfRoutes = require("./routes/pdf.routes.js");
-const uploadRoutes = require("./routes/upload.routes");
-const assessmentRoutes = require("./routes/assessment.routes.js");
-const notificationRoutes = require("./routes/notifications.routes.js"); // NEW
+  // !-------------------------------------------------------------
 
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true,
-  }),
-);
+  const express = require("express");
+  const app = express();
+  require("dotenv").config();
+  const cookieParser = require("cookie-parser");
+  const cors = require("cors");
+  const path = require("path");
 
-app.use(express.json({ limit: "20mb" }));
-app.use(express.urlencoded({ extended: true, limit: "20mb" }));
-app.use(cookieParser());
+  const authRoutes = require("./routes/auth.routes.js");
+  const userRoutes = require("./routes/user.routes.js");
+  const reportRoutes = require("./routes/report.routes.js");
+  const dashboardRoutes = require("./routes/dashboard.routes.js");
+  const pdfRoutes = require("./routes/pdf.routes.js");
+  const uploadRoutes = require("./routes/upload.routes");
+  const assessmentRoutes = require("./routes/assessment.routes.js");
+  const notificationRoutes = require("./routes/notifications.routes.js"); // NEW
+  const phoneSessionRoute= require("./routes/phoneSession.routes.js")
 
-// ! authentication routes
-app.use("/api/auth", authRoutes);
+  const allowedOrigins = [
+    "http://localhost:5173",
+    process.env.FRONTEND_URL,
+  ].filter(Boolean);
 
-//! user Routes
-app.use("/api/user", userRoutes);
+  app.use(
+    cors({
+      origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
+      credentials: true,
+    })
+  );
 
-//! upload system
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-app.use("/api", uploadRoutes);
+  app.use(express.json({ limit: "20mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "20mb" }));
+  app.use(cookieParser());
 
-//! Assessment route
-app.use("/api/assessment", assessmentRoutes);
+  // ! authentication routes
+  app.use("/api/auth", authRoutes);
 
-// ! report routes - plural, to match frontend's api.get("/reports")
-app.use("/api/reports", reportRoutes);
+  //! user Routes
+  app.use("/api/user", userRoutes);
 
-// ! dashboard routes
-app.use("/api/dashboard", dashboardRoutes);
+  //! upload system
+  // app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+  app.use("/api", uploadRoutes);
 
-//! pdf routes
-app.use("/api/pdf", pdfRoutes);
+  //! Assessment route
+  app.use("/api/assessment", assessmentRoutes);
 
-// ! notification routes (NEW) - plural, to match frontend's api.get("/notifications")
-app.use("/api/notifications", notificationRoutes);
+  // ! report routes - plural, to match frontend's api.get("/reports")
+  app.use("/api/reports", reportRoutes);
 
-module.exports = app;
+  // ! dashboard routes
+  app.use("/api/dashboard", dashboardRoutes);
+
+  //! pdf routes
+  app.use("/api/pdf", pdfRoutes);
+
+  // ! notification routes (NEW) - plural, to match frontend's api.get("/notifications")
+  app.use("/api/notifications", notificationRoutes);
+
+  //!  phone session routes
+  app.use("/api",phoneSessionRoute);
+
+
+  module.exports = app;

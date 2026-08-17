@@ -1,9 +1,7 @@
 const axios = require("axios");
-const FormData = require("form-data");
-const fs = require("fs");
-const path = require("path");
 
 const Assessment = require("../models/skinAssessment");
+const mongoose = require("mongoose");
 
 async function createAssessment(req, res) {
   try {
@@ -26,50 +24,18 @@ async function createAssessment(req, res) {
     if (!image || !answers) {
       return res.status(400).json({
         success: false,
-        message: "image and answers are required",
+        message: "Image and answers are required",
       });
     }
 
     // ==========================================
-    // 3. Get filename from image URL
-    // ==========================================
-
-    const filename = image.split("/uploads/")[1];
-
-    if (!filename) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid image URL",
-      });
-    }
-
-    // ==========================================
-    // 4. Find image inside uploads folder
-    // ==========================================
-
-    const imagePath = path.join(__dirname, "../../uploads", filename);
-
-    console.log("Image path:", imagePath);
-
-    // ==========================================
-    // 5. Check image exists
-    // ==========================================
-
-    if (!fs.existsSync(imagePath)) {
-      return res.status(404).json({
-        success: false,
-        message: "Image file not found",
-      });
-    }
-
-    // ==========================================
-    // 6. Create assessment in MongoDB
+    // 3. Create assessment in MongoDB
     // ==========================================
 
     const assessment = await Assessment.create({
-      // Logged-in user
       user: req.user?._id,
 
+      // Cloudinary URL directly save
       image,
 
       location: answers.location,
@@ -94,75 +60,45 @@ async function createAssessment(req, res) {
     });
 
     console.log("Assessment created:", assessment._id);
-    console.log("Image path:", imagePath);
-    console.log("File exists:", fs.existsSync(imagePath));
 
     // ==========================================
-    // 7. Prepare data for FastAPI
-    // ==========================================
-
-    const formData = new FormData();
-
-    // Image
-    formData.append("file", fs.createReadStream(imagePath));
-
-    // Basic assessment data
-    formData.append("location", answers.location);
-
-    formData.append("duration", answers.duration);
-
-    formData.append("itching", answers.itching);
-
-    formData.append("painBurning", answers.painBurning);
-
-    formData.append("changeSpread", answers.changeSpread);
-
-    // Arrays / objects ko JSON string me bhejna
-    formData.append(
-      "changeDetails",
-      JSON.stringify(answers.changeDetails || []),
-    );
-
-    formData.append("optionalDetails", JSON.stringify(optionalAnswers || {}));
-
-    // ==========================================
-    // 8. Send request to FastAPI
+    // 4. Send Cloudinary image URL to AI service
     // ==========================================
 
     console.log("Sending assessment to AI...");
+    console.log("AI Service URL:", process.env.AI_SERVICE_URL);
 
     const aiResponse = await axios.post(
-      "http://127.0.0.1:8000/predict",
-
-      formData,
+      `${process.env.AI_SERVICE_URL}/predict`,
 
       {
-        headers: {
-          ...formData.getHeaders(),
-        },
+        imageUrl: image,
 
-        maxContentLength: Infinity,
+      },
 
-        maxBodyLength: Infinity,
+      {
+        timeout: 60000,
       },
     );
 
     console.log("AI Response:", aiResponse.data);
+
     const aiResult = aiResponse.data;
 
     // ==========================================
-    // 9. Get prediction
+    // 5. Get prediction
     // ==========================================
 
     const disease = aiResult?.prediction;
     const confidence = aiResult?.confidence;
-    const severity  = aiResult?.severity;
+    const severity = aiResult?.severity;
 
     console.log("Disease:", disease);
     console.log("Confidence:", confidence);
+    console.log("Severity:", severity);
 
     // ==========================================
-    // 10. Save AI prediction
+    // 6. Validate AI response
     // ==========================================
 
     if (!disease) {
@@ -176,28 +112,24 @@ async function createAssessment(req, res) {
       });
     }
 
+    // ==========================================
+    // 7. Save AI prediction
+    // ==========================================
+
     assessment.prediction = {
-      disease: disease,
+      disease,
       confidence: confidence ?? 0,
-      severity: severity,
+      severity,
     };
 
-    // ==========================================
-    // 11. Mark assessment as analyzed
-    // ==========================================
-
     assessment.status = "analyzed";
-
-    // ==========================================
-    // 12. Save updated assessment
-    // ==========================================
 
     await assessment.save();
 
     console.log("Assessment analyzed:", assessment._id);
 
     // ==========================================
-    // 13. Send result to frontend
+    // 8. Send result to frontend
     // ==========================================
 
     return res.status(201).json({
@@ -219,12 +151,10 @@ async function createAssessment(req, res) {
 
       message: "Skin analysis failed",
 
-      error: error.message,
+      error: error.response?.data || error.message,
     });
   }
 }
-
-const mongoose = require("mongoose");
 
 async function getAssessmentById(req, res) {
   try {
@@ -264,23 +194,21 @@ async function getAssessmentById(req, res) {
   }
 }
 
-// ============================================================
-// ADD THIS FUNCTION into your existing contollers/assessment.controller.js
-// (don't replace the whole file — just add this + export it)
-// ============================================================
-
 async function getHistory(req, res) {
   try {
-    const history = await Assessment.find({ user: req.user._id }).sort({
+    const history = await Assessment.find({
+      user: req.user._id,
+    }).sort({
       createdAt: -1,
     });
 
     return res.status(200).json({
       success: true,
-      history, // dashboard's mapAssessmentToResult() reads prediction/image/createdAt from each item
+      history,
     });
   } catch (error) {
     console.error("Get history failed:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to fetch scan history",
@@ -288,9 +216,6 @@ async function getHistory(req, res) {
     });
   }
 }
-
-// then update your module.exports line to:
-// module.exports = { createAssessment, getAssessmentById, getHistory };
 
 module.exports = {
   createAssessment,

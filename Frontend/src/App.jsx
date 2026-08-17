@@ -26,6 +26,7 @@ import { useAuth } from "./components/context/AuthContext";
 import ScanPage from "./pages/ScanPage";
 import SkinAssessment from "./pages/SkinAssessment"
 import SkinAnalysisResult from "./pages/SkinResult";
+import MobileScan from "./pages/MobileScan";
 
 function App() {
   const { loading } = useAuth();
@@ -72,6 +73,15 @@ function App() {
             </ProtectedRoute>
           }
           />
+            <Route
+          path="/mobile-scan/:sessionId"
+          element={
+           
+              <MobileScan/>
+           
+          }
+          />
+          
         <Route path="/features" element={<Features />} />
         <Route path="/how-its-works" element={<HowItWorks />} />
         <Route path="/login" element={<Login />} />

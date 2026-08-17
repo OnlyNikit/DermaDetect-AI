@@ -1,7 +1,8 @@
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
 pillow
-TensorFlow
+tensorflow
 matplotlib
-Scikit-learn
+scikit-learn
+requests

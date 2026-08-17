@@ -73,8 +73,7 @@ function Camera() {
 
     return response.data.imageUrl;
   };
-
- const useThisImage = async () => {
+const useThisImage = async () => {
   if (uploading || !capturedImage) return;
 
   try {
@@ -84,12 +83,10 @@ function Camera() {
     let blob;
     let filename;
 
-    // Agar user ne file choose ki hai
     if (selectedFile) {
       blob = selectedFile;
       filename = selectedFile.name;
     } else {
-      // Agar camera se image capture ki hai
       const blobResponse = await fetch(capturedImage);
       blob = await blobResponse.blob();
       filename = "skin-image.png";

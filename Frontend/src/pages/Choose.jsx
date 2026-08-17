@@ -1,7 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../components/styles/choose.css";
 import { useAuth } from "../components/context/AuthContext";
+import api from "../api/axios";
+import { QRCodeSVG } from "qrcode.react";
 
 const SKIN_TAGS = ["Warts", "Acne", "Psoriasis", "Ringworm", "Vitiligo"];
 
@@ -12,6 +14,7 @@ export default function ScanSelect() {
   const [toastVisible, setToastVisible] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  const [phoneStatus, setPhoneStatus] = useState("waiting");
   const toastTimer = useRef(null);
 
   // Called when the user picks "Scan on this device" — opens the camera
@@ -19,6 +22,7 @@ export default function ScanSelect() {
   const handleThisDeviceClick = () => {
     if (!user) {
       navigate("/login");
+      return;
     } else {
       navigate("/choose=thisdevice");
     }
@@ -30,17 +34,54 @@ export default function ScanSelect() {
   // short-lived session and opens the QR modal. The phone visits a
   // link tied to sessionId, opens its own camera, and streams/uploads
   // the result back to this session (via your backend / websocket).
-  const handleSmartphoneClick = () => {
-    setSelected("smartphone");
-    // TODO: replace with a real backend call, e.g.
-    // const { id } = await api.createScanSession();
-    const id = Math.random().toString(36).slice(2, 8).toUpperCase();
-    setSessionId(id);
-    setQrModalOpen(true);
-    // TODO: open a websocket / poll here to detect when the phone
-    // connects, then update the status text below and eventually
-    // redirect this tab to the results page once the scan completes.
+  const handleSmartphoneClick = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    try {
+      setSelected("smartphone");
+      setPhoneStatus("creating");
+
+      const response = await api.post("/phone-session");
+      console.log(response);
+      setSessionId(response.data.sessionId);
+
+      const id = response?.data?.sessionId || response?.sessionId;
+      console.log(id);
+      setPhoneStatus("waiting");
+      setQrModalOpen(true);
+      console.log(sessionId);
+    } catch (err) {
+      console.error("failed to create phone session", err);
+      setPhoneStatus("error");
+    }
   };
+
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await api.get(`/phone-session/${sessionId}`);
+        console.log("FULL RESPONSE:", response);
+        const data = response.data;
+        setPhoneStatus(data.status);
+
+        if (data.status === "uploaded" && data.imageUrl) {
+          clearInterval(interval);
+          setQrModalOpen(false);
+
+          navigate("/skinAssessment", {
+            state: { imageUrl: data.imageUrl },
+          });
+        }
+      } catch (err) {
+        console.error("polling failed", err);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [sessionId, qrModalOpen, navigate]);
 
   const closeQrModal = () => {
     setQrModalOpen(false);
@@ -62,8 +103,15 @@ export default function ScanSelect() {
 
   // Build the URL the phone should open. Swap this for your real
   // scan-session route once the backend endpoint exists.
+  // const qrTargetUrl = sessionId
+  //   ? `${typeof window !== "undefined" ? window.location.origin : ""}/mobile-scan/${sessionId}`
+  //   : "";
+
+  // const qrTargetUrl = sessionId
+  //   ? `${import.meta.env.VITE_NGROK_URL}/mobile-scan/${sessionId}`
+  //   : "";
   const qrTargetUrl = sessionId
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/mobile-scan/${sessionId}`
+    ? `${window.location.origin}/mobile-scan/${sessionId}`
     : "";
 
   return (
@@ -91,10 +139,10 @@ export default function ScanSelect() {
             tabIndex={0}
             role="button"
             // aria-pressed={selected === "smartphone"}
-            aria-disabled="true"
-            onClick={handleDeviceClick}
-            onKeyDown={(e) => handleKeyDown(e, handleDeviceClick)}
-          >ao
+            // aria-disabled="true"
+            onClick={handleSmartphoneClick}
+            onKeyDown={(e) => handleKeyDown(e, handleSmartphoneClick)}
+          >
             <div className="ds-badge accent">New</div>
 
             <div className="ds-icon-wrap">
@@ -125,7 +173,7 @@ export default function ScanSelect() {
                 </span>
               ))}
             </div>
-            <button className="ds-card-cta">Coming Soon </button>
+            <button className="ds-card-cta">Generate QR Code</button>
           </div>
 
           {/* Option 2 — Scan on this device */}
@@ -239,54 +287,18 @@ export default function ScanSelect() {
                 your phone.
               </div>
 
-              <div className="ds-qr-frame">
-                {/* Swap this placeholder for a real QR component, e.g.:
+              {/*! Swap this placeholder for a real QR component, e.g.:
                     import QRCode from "react-qr-code";
                     <QRCode value={qrTargetUrl} size={148} /> */}
-                <svg viewBox="0 0 148 148" width="148" height="148">
-                  <rect width="148" height="148" fill="#ffffff" />
-                  <g fill="#05668d">
-                    <rect x="10" y="10" width="34" height="34" />
-                    <rect x="104" y="10" width="34" height="34" />
-                    <rect x="10" y="104" width="34" height="34" />
-                    <rect x="18" y="18" width="18" height="18" fill="#ffffff" />
-                    <rect
-                      x="112"
-                      y="18"
-                      width="18"
-                      height="18"
-                      fill="#ffffff"
-                    />
-                    <rect
-                      x="18"
-                      y="112"
-                      width="18"
-                      height="18"
-                      fill="#ffffff"
-                    />
-                    <rect x="52" y="10" width="8" height="8" />
-                    <rect x="68" y="10" width="8" height="8" />
-                    <rect x="52" y="26" width="8" height="8" />
-                    <rect x="84" y="26" width="8" height="8" />
-                    <rect x="52" y="52" width="8" height="8" />
-                    <rect x="68" y="52" width="8" height="8" />
-                    <rect x="84" y="52" width="8" height="8" />
-                    <rect x="100" y="52" width="8" height="8" />
-                    <rect x="52" y="68" width="8" height="8" />
-                    <rect x="84" y="68" width="8" height="8" />
-                    <rect x="118" y="68" width="8" height="8" />
-                    <rect x="52" y="84" width="8" height="8" />
-                    <rect x="68" y="84" width="8" height="8" />
-                    <rect x="104" y="84" width="8" height="8" />
-                    <rect x="52" y="100" width="8" height="8" />
-                    <rect x="84" y="104" width="8" height="8" />
-                    <rect x="100" y="104" width="8" height="8" />
-                    <rect x="118" y="104" width="8" height="8" />
-                    <rect x="52" y="118" width="8" height="8" />
-                    <rect x="68" y="118" width="8" height="8" />
-                    <rect x="100" y="118" width="8" height="8" />
-                  </g>
-                </svg>
+              <div className="ds-qr-frame">
+                {sessionId && (
+                  <QRCodeSVG
+                    value={qrTargetUrl}
+                    size={180}
+                    level="H"
+                    includeMargin={true}
+                  />
+                )}
               </div>
 
               <ol className="ds-qr-steps">
@@ -307,7 +319,15 @@ export default function ScanSelect() {
 
               <div className="ds-qr-status">
                 <span className="ds-dot"></span>
-                Waiting for phone to connect
+
+                {phoneStatus === "waiting" &&
+                  "Waiting for phone to upload image"}
+
+                {phoneStatus === "uploaded" &&
+                  "Image received. Opening assessment..."}
+
+                {phoneStatus === "error" &&
+                  "Something went wrong. Please try again."}
               </div>
             </div>
           </div>
