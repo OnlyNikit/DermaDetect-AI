@@ -96,7 +96,14 @@
 
   app.use(express.json({ limit: "20mb" }));
   app.use(express.urlencoded({ extended: true, limit: "20mb" }));
+
   app.use(cookieParser());
+
+  app.get("/", (req, res) => {
+  res.json({
+    message: "DermaDetect backend running"
+  });
+});
 
   // ! authentication routes
   app.use("/api/auth", authRoutes);
