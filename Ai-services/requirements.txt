@@ -2,7 +2,7 @@ fastapi
 uvicorn[standard]
 python-multipart
 pillow
-tensorflow==2.21.0
+tensorflow
 matplotlib
 scikit-learn
 requests
