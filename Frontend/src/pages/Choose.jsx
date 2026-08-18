@@ -43,7 +43,7 @@ export default function ScanSelect() {
       setSelected("smartphone");
       setPhoneStatus("creating");
 
-      const response = await api.post("/phone-session");
+      const response = await api.post("/api/phone-session");
       console.log(response);
       setSessionId(response.data.sessionId);
 
@@ -63,7 +63,7 @@ export default function ScanSelect() {
 
     const interval = setInterval(async () => {
       try {
-        const response = await api.get(`/phone-session/${sessionId}`);
+        const response = await api.get(`/api/phone-session/${sessionId}`);
         console.log("FULL RESPONSE:", response);
         const data = response.data;
         setPhoneStatus(data.status);
