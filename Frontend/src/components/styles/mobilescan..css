@@ -103,7 +103,7 @@
 
 .mscan__video {
   width: 100%;
-  height: 80%;
+  height: 70%;
   object-fit: cover;
 }
 
@@ -112,7 +112,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 58%;
+  width: 48%;
   max-width: 260px;
   aspect-ratio: 3 / 4;
   pointer-events: none;
@@ -120,7 +120,7 @@
 
 @media (min-width: 420px) {
   .mscan__frame {
-    width: 55%;
+    width: 45%;
     max-width: 280px;
   }
 }
