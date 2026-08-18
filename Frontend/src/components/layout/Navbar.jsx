@@ -36,8 +36,8 @@ function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // if (!user) return null; // logged out -> render nothing (show a Login button instead in your navbar)
   const initial = user?.fullName?.charAt(0).toUpperCase() || "?";
+
   const handleLogout = async () => {
     try {
       const response = await logout();
@@ -78,26 +78,66 @@ function Navbar() {
               </li>
             ))}
 
-            <div className="mobile-btn">
-              <li>
-                <Link to="/register" onClick={closeMenu}>
-                  <button type="button" className="secondary-btn">
-                    Register
+            {/* Logged-out: Register / Login buttons inside mobile menu */}
+            {!user && (
+              <div className="mobile-btn">
+                <li>
+                  <Link to="/register" onClick={closeMenu}>
+                    <button type="button" className="secondary-btn">
+                      Register
+                    </button>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/login" onClick={closeMenu}>
+                    <button type="button" className="primary-btn">
+                      Login
+                    </button>
+                  </Link>
+                </li>
+              </div>
+            )}
+
+            {/* Logged-in: profile options inside mobile menu */}
+            {user && (
+              <div className="mobile-profile">
+                <li className="mobile-profile-header">
+                  <span className="profile-avatar">{initial}</span>
+                  <span className="profile-name">{user.fullName}</span>
+                </li>
+                <li>
+                  <a href="/profile" className="dropdown-item" onClick={closeMenu}>
+                    👤 Profile
+                  </a>
+                </li>
+                <li>
+                  <a href="/settings" className="dropdown-item" onClick={closeMenu}>
+                    ⚙ Settings
+                  </a>
+                </li>
+                <li>
+                  <a href="/dashboard" className="dropdown-item" onClick={closeMenu}>
+                    📊 Dashboard
+                  </a>
+                </li>
+                <li>
+                  <button
+                    className="dropdown-item logout"
+                    onClick={() => {
+                      closeMenu();
+                      handleLogout();
+                    }}
+                  >
+                    🚪 Logout
                   </button>
-                </Link>
-              </li>
-              <li>
-                <Link to="/login" onClick={closeMenu}>
-                  <button type="button" className="primary-btn">
-                    Login
-                  </button>
-                </Link>
-              </li>
-            </div>
+                </li>
+              </div>
+            )}
           </ul>
 
+          {/* Desktop-only profile badge — hidden on mobile via CSS */}
           {user ? (
-            <div className="profile-badge" ref={wrapRef}>
+            <div className="profile-badge desktop-only" ref={wrapRef}>
               <button
                 className="profile-trigger"
                 onClick={() => setOpen((v) => !v)}
@@ -116,7 +156,7 @@ function Navbar() {
                     ⚙ Settings
                   </a>
                   <a href="/dashboard" className="dropdown-item">
-                    � Dashboard
+                    📊 Dashboard
                   </a>
                   <button
                     className="dropdown-item logout"
