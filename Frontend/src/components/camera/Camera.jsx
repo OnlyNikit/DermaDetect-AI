@@ -63,9 +63,7 @@ function Camera() {
     const formData = new FormData();
     formData.append("image", file); // field name must match upload.single("image")
 
-    const response = await api.post("/api/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const response = await api.post("/api/upload", formData);
 
     if (!response.data?.success || !response.data?.imageUrl) {
       throw new Error("Upload failed");
