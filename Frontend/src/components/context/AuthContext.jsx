@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchProfile = async () => {
     try {
-      const response = await api.get("/user/profile");
+      const response = await api.get("/api/user/profile");
       console.log("Profile fetched successfully:", response.data);
 
       setUser(response.data.user);
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      const response = await api.post("/auth/logout");
+      const response = await api.post("/api/auth/logout");
 
       setUser(null);
 

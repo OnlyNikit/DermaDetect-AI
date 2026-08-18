@@ -77,7 +77,7 @@
   const phoneSessionRoute= require("./routes/phoneSession.routes.js")
 
   const allowedOrigins = [
-    "http://localhost:5173",
+    "https://derma-detect-ai-six.vercel.app",
     process.env.FRONTEND_URL,
   ].filter(Boolean);
 

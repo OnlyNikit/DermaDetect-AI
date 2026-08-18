@@ -196,7 +196,7 @@ const Register = () => {
 
     return;
    }
-   const response =  await api.post("/auth/register",registerFormData);
+   const response =  await api.post("/api/auth/register",registerFormData);
    toast.success(response.data.message);
    navigate("/login");
     // setRegisterFormData({

@@ -5,7 +5,8 @@ require("dotenv").config();
 
 async function register(req, res) {
   try {
-    const { fullName, email, password, gender,age, confirmPassword } = req.body;
+    const { fullName, email, password, gender, age, confirmPassword } =
+      req.body;
     if (!fullName || !email || !password || !confirmPassword) {
       return res.status(400).json({
         success: false,
@@ -32,7 +33,6 @@ async function register(req, res) {
       gender,
       age,
       password: hashPassword,
-      
     });
 
     res
@@ -53,7 +53,11 @@ async function login(req, res) {
         .json({ success: false, message: "Email and password are required" });
     }
     const existingUser = await User.findOne({ email });
-     console.log("User:", existingUser);
+    const user = await User.findOne({ email });
+
+    console.log("Login email:", email);
+    console.log("User found:", user);
+    console.log("User:", existingUser);
     if (!existingUser) {
       return res
         .status(401)
@@ -70,21 +74,24 @@ async function login(req, res) {
         .json({ success: false, message: "Invalid email or  password" });
     }
 
-      const token = generateToken(existingUser);
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-      return res
-        .status(200)
-        .json({ success: true, message: "Login successful", user:{
-          id: existingUser._id,
-          fullName: existingUser.fullName,
-          email: existingUser.email,
-        } });
-    
+    const token = generateToken(existingUser);
+    const isProduction = process.env.NODE_ENV === "production";
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      user: {
+        id: existingUser._id,
+        fullName: existingUser.fullName,
+        email: existingUser.email,
+      },
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ success: false, message: "Server error" });
@@ -93,10 +100,11 @@ async function login(req, res) {
 
 async function logout(req, res) {
   try {
-    res.clearCookie("token", {
+    res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: true,
+      sameSite: "none",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.status(200).json({
@@ -113,4 +121,4 @@ async function logout(req, res) {
   }
 }
 
-module.exports = { register, login, logout ,};
+module.exports = { register, login, logout };
