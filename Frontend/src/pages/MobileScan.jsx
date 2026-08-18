@@ -84,7 +84,7 @@ export default function MobileScan() {
         new File([blob], "phone-skin-image.jpg", { type: "image/jpeg" }),
       );
 
-      await api.post(`/phone-upload/${sessionId}`, formData, {
+      await api.post(`/api/phone-upload/${sessionId}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

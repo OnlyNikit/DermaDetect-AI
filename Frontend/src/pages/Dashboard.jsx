@@ -1045,10 +1045,10 @@ export default function DermaDetectAI() {
 
         const [userRes, historyRes, reportsRes, notificationsRes] =
           await Promise.all([
-            api.get("/user/profile"),
-            api.get("/assessment/history"),
-            api.get("/reports"),
-            api.get("/notifications"),
+            api.get("/api/user/profile"),
+            api.get("/api/assessment/history"),
+            api.get("/api/reports"),
+            api.get("/api/notifications"),
           ]);
 
         const fetchedUser = userRes.data?.user || null;

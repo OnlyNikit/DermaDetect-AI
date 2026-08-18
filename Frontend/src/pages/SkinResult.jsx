@@ -57,7 +57,7 @@ export default function SkinAnalysisResult() {
 
         console.log("Assessment ID:", assessmentId);
 
-        const response = await api.get(`/assessment/${assessmentId}`);
+        const response = await api.get(`/api/assessment/${assessmentId}`);
 
         console.log("Assessment from DB:", response.data);
 

@@ -102,7 +102,7 @@ const SkinAssessment = () => {
   useEffect(() => {
     const fetchGender = async () => {
       try {
-        const res = await api.get("/user/profile"); // 👈 apna actual endpoint use karo
+        const res = await api.get("/api/user/profile"); // 👈 apna actual endpoint use karo
         setGender(res.data?.user?.gender || null);
       } catch (err) {
         console.error("Could not fetch user gender:", err);
@@ -186,7 +186,7 @@ const SkinAssessment = () => {
         optionalAnswers: optionalAnswers,
       };
 
-      const response = await api.post("/assessment", payload);
+      const response = await api.post("/api/assessment", payload);
 
       console.log("Assessment response:", response.data);
 
