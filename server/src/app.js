@@ -99,6 +99,13 @@ app.get("/", (req, res) => {
     message: "DermaDetect backend running",
   });
 });
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    service: "DermaDetect Backend",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // ! authentication routes
 app.use("/api/auth", authRoutes);

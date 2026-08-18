@@ -86,6 +86,12 @@ def home():
         "message": "DermaDetect AI API is running"
     }
 
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "service": "DermaDetect AI Service"
+    }
 
 @app.post("/predict")
 async def predict_url(data: ImageUrlRequest):

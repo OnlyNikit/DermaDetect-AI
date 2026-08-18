@@ -67,13 +67,13 @@ async function createAssessment(req, res) {
 
     console.log("Sending assessment to AI...");
     console.log("AI Service URL:", process.env.AI_SERVICE_URL);
+    console.log("Calling:", `${process.env.AI_SERVICE_URL}/predict`);
 
     const aiResponse = await axios.post(
       `${process.env.AI_SERVICE_URL}/predict`,
 
       {
         imageUrl: image,
-
       },
 
       {
@@ -144,14 +144,17 @@ async function createAssessment(req, res) {
   } catch (error) {
     console.error("========== ASSESSMENT ERROR ==========");
 
-    console.error(error.response?.data || error.message);
+    console.error("Message:", error.message);
+    console.error("Status:", error.response?.status);
+    console.error("Response:", error.response?.data);
 
-    return res.status(500).json({
+    return res.status(error.response?.status || 500).json({
       success: false,
-
       message: "Skin analysis failed",
-
-      error: error.response?.data || error.message,
+      error:
+        typeof error.response?.data === "object"
+          ? error.response.data
+          : error.message,
     });
   }
 }
