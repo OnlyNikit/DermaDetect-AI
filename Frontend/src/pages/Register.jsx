@@ -167,7 +167,7 @@
 import { React, useState } from "react";
 import "../components/styles/register.css";
 import api from "../api/axios.js";
-import {toast} from "react-toastify"
+import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
 const Register = () => {
@@ -179,7 +179,6 @@ const Register = () => {
     confirmPassword: "",
     gender: "",
     age: "",
-    
   });
 
   const handleChange = (event) => {
@@ -187,30 +186,34 @@ const Register = () => {
       return { ...currData, [event.target.name]: event.target.value };
     });
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // console.log(registerFormData);
-   if(registerFormData.password !== registerFormData.confirmPassword){
-    toast.error("password Don't match")
 
-    return;
-   }
-   const response =  await api.post("/api/auth/register",registerFormData);
-   toast.success(response.data.message);
-   navigate("/login");
-    // setRegisterFormData({
-    //   fullName: "",
-    //   email: "",
-    //   password: "",
-    //   confirmPassword: "",
-    //   gender: "",
-    //   age: "",
-    //   height: "",
-    //   weight: "",
-    // });
-  };
+    if (registerFormData.password !== registerFormData.confirmPassword) {
+      toast.error("Passwords don't match");
+      return;
+    }
 
+    try {
+      const response = await api.post("/api/auth/register", registerFormData);
+
+      toast.success(response.data.message);
+
+      navigate("/login", {
+        state: {
+          email: registerFormData.email,
+        },
+      });
+    } catch (err) {
+      console.log(err.response?.data);
+
+      if (err.response?.status === 409) {
+        toast.error("Account already exists. Please login.");
+      } else {
+        toast.error(err.response?.data?.message || "Registration failed");
+      }
+    }
+  };  
   return (
     <div className="stage-wrapper">
       <div className="stage">
@@ -295,7 +298,9 @@ const Register = () => {
                     name="gender"
                     required
                   >
-                    <option value="" disabled>Select gender</option>
+                    <option value="" disabled>
+                      Select gender
+                    </option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
@@ -321,7 +326,6 @@ const Register = () => {
                 </div>
               </div>
             </div>
-
 
             <div className="field">
               <label htmlFor="password">Password</label>

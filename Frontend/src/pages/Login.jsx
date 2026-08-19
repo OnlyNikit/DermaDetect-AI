@@ -4,15 +4,18 @@ import { toast } from "react-toastify";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../components/context/AuthContext.jsx";
+import { useLocation } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
   const { SetUser } = useAuth();
   const { fetchProfile } = useAuth();
+  const location = useLocation();
+ 
 
   const [showPassword, setShowPassword] = useState(false);
   let [loginData, setLoginData] = useState({
-    email: "",
+    email: location.state?.email || "",
     password: "",
   });
 
