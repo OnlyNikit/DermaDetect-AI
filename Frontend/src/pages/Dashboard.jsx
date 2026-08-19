@@ -854,6 +854,7 @@
 // }
 import React, { useState, useRef, useEffect } from "react";
 import "../components/styles/dashboard.css";
+import { useAuth } from "../context/AuthContext.jsx";
 
 import api from "../api/axios";
 
@@ -993,6 +994,7 @@ function mapAssessmentToResult(assessment) {
 export default function DermaDetectAI() {
   const [activeView, setActiveView] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+   const { user, logout } = useAuth();
 
   /* -------- Dark mode (functional) -------- */
   const [darkMode, setDarkMode] = useState(() => {
