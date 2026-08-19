@@ -12,8 +12,8 @@ export default function Login() {
 
   const [showPassword, setShowPassword] = useState(false);
   let [loginData, setLoginData] = useState({
-    email: "riya01@gmail.com",
-    password: "1234",
+    email: "",
+    password: "",
   });
 
   const handleChange = (event) => {

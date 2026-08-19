@@ -173,12 +173,12 @@ import { useNavigate } from "react-router-dom";
 const Register = () => {
   const navigate = useNavigate();
   let [registerFormData, setRegisterFormData] = useState({
-    fullName: "Riya yadav",
-    email: "riya01@gmail.com",
-    password: "1234",
-    confirmPassword: "1234",
-    gender: "Female",
-    age: "20",
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    gender: "",
+    age: "",
     
   });
 
