@@ -180,6 +180,7 @@ const Register = () => {
     gender: "",
     age: "",
   });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (event) => {
     setRegisterFormData((currData) => {
@@ -193,6 +194,7 @@ const Register = () => {
       toast.error("Passwords don't match");
       return;
     }
+    setLoading(true);
 
     try {
       const response = await api.post("/api/auth/register", registerFormData);
@@ -212,8 +214,10 @@ const Register = () => {
       } else {
         toast.error(err.response?.data?.message || "Registration failed");
       }
+    } finally {
+      setLoading(false);
     }
-  };  
+  };
   return (
     <div className="stage-wrapper">
       <div className="stage">
@@ -361,8 +365,15 @@ const Register = () => {
               </div>
             </div>
 
-            <button type="submit" className="submit-btn" id="submitBtn">
-              Create account
+            <button type="submit" className="submit-btn" disabled={loading}>
+              {loading ? (
+                <>
+                  <span className="spinner"></span>
+                  Creating account...
+                </>
+              ) : (
+                "Create Account"
+              )}
             </button>
           </form>
 

@@ -27,6 +27,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const response = await api.post("/api/auth/login", loginData);
       await fetchProfile(); // Fetch the user profile after successful login
