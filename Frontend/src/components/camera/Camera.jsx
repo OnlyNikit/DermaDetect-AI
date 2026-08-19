@@ -116,7 +116,7 @@ function Camera() {
     try {
       setUploading(true);
       setError(null);
-      const demoImageUrl = "https://res.cloudinary.com/di6ryzdy2/image/upload/v1787156579/dermaScan-uploads/knaemf928f1n2vtq6jfm.jpg";
+      const imageUrl = "https://res.cloudinary.com/di6ryzdy2/image/upload/v1787156579/dermaScan-uploads/knaemf928f1n2vtq6jfm.jpg";
 
       // const blobResponse = await fetch("/demo/skin-scan.png");
       // const blob = await blobResponse.blob();
@@ -126,7 +126,7 @@ function Camera() {
       // console.log("Uploaded demo image URL:", imageUrl);
 
       navigate("/skinAssessment", {
-        state: { demoImageUrl },
+        state: { imageUrl },
       });
     } catch (error) {
       console.error("Demo image upload failed:", error);
