@@ -19,7 +19,7 @@ function Camera() {
   const openCamera = async () => {
     try {
       const cameraStream = await navigator.mediaDevices.getUserMedia({
-       video: {
+        video: {
           facingMode: {
             ideal: "environment",
           },
@@ -76,39 +76,39 @@ function Camera() {
 
     return response.data.imageUrl;
   };
-const useThisImage = async () => {
-  if (uploading || !capturedImage) return;
+  const useThisImage = async () => {
+    if (uploading || !capturedImage) return;
 
-  try {
-    setUploading(true);
-    setError(null);
+    try {
+      setUploading(true);
+      setError(null);
 
-    let blob;
-    let filename;
+      let blob;
+      let filename;
 
-    if (selectedFile) {
-      blob = selectedFile;
-      filename = selectedFile.name;
-    } else {
-      const blobResponse = await fetch(capturedImage);
-      blob = await blobResponse.blob();
-      filename = "skin-image.png";
+      if (selectedFile) {
+        blob = selectedFile;
+        filename = selectedFile.name;
+      } else {
+        const blobResponse = await fetch(capturedImage);
+        blob = await blobResponse.blob();
+        filename = "skin-image.png";
+      }
+
+      const imageUrl = await uploadToServer(blob, filename);
+
+      console.log("Uploaded image URL:", imageUrl);
+
+      navigate("/skinAssessment", {
+        state: { imageUrl },
+      });
+    } catch (err) {
+      console.error("Upload failed:", err);
+      setError("Unable to upload image. Please try again.");
+    } finally {
+      setUploading(false);
     }
-
-    const imageUrl = await uploadToServer(blob, filename);
-
-    console.log("Uploaded image URL:", imageUrl);
-
-    navigate("/skinAssessment", {
-      state: { imageUrl },
-    });
-  } catch (err) {
-    console.error("Upload failed:", err);
-    setError("Unable to upload image. Please try again.");
-  } finally {
-    setUploading(false);
-  }
-};
+  };
 
   const useDemoImage = async () => {
     if (uploading) return;
@@ -116,16 +116,17 @@ const useThisImage = async () => {
     try {
       setUploading(true);
       setError(null);
+      const demoImageUrl = "https://res.cloudinary.com/di6ryzdy2/image/upload/v1787156579/dermaScan-uploads/knaemf928f1n2vtq6jfm.jpg";
 
-      const blobResponse = await fetch("/demo/skin-scan.png");
-      const blob = await blobResponse.blob();
+      // const blobResponse = await fetch("/demo/skin-scan.png");
+      // const blob = await blobResponse.blob();
 
-      const imageUrl = await uploadToServer(blob, "demo-skin-image.png");
+      // const imageUrl = await uploadToServer(blob, "demo-skin-image.png");
 
-      console.log("Uploaded demo image URL:", imageUrl);
+      // console.log("Uploaded demo image URL:", imageUrl);
 
       navigate("/skinAssessment", {
-        state: { imageUrl },
+        state: { demoImageUrl },
       });
     } catch (error) {
       console.error("Demo image upload failed:", error);
@@ -135,26 +136,26 @@ const useThisImage = async () => {
     }
   };
   const handleFileChange = (event) => {
-  const file = event.target.files?.[0];
+    const file = event.target.files?.[0];
 
-  if (!file) return;
+    if (!file) return;
 
-  if (!file.type.startsWith("image/")) {
-    setError("Please select a valid image file.");
-    return;
-  }
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image file.");
+      return;
+    }
 
-  if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
-  }
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
 
-  const imagePreview = URL.createObjectURL(file);
+    const imagePreview = URL.createObjectURL(file);
 
-  setSelectedFile(file);
-  setCapturedImage(imagePreview);
-  setCameraOn(false);
-  setError(null);
-};
+    setSelectedFile(file);
+    setCapturedImage(imagePreview);
+    setCameraOn(false);
+    setError(null);
+  };
 
   return (
     <div className="camera-widget">
