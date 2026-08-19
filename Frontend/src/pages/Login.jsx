@@ -10,8 +10,8 @@ export default function Login() {
   const navigate = useNavigate();
   const { SetUser } = useAuth();
   const { fetchProfile } = useAuth();
+  const [loading, setLoading] = useState(false);
   const location = useLocation();
- 
 
   const [showPassword, setShowPassword] = useState(false);
   let [loginData, setLoginData] = useState({
@@ -35,6 +35,8 @@ export default function Login() {
     } catch (err) {
       console.log(err);
       toast.error("Account not exist");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -131,8 +133,20 @@ export default function Login() {
               </div>
             </div>
 
-            <button type="submit" className="submit-btn" onClick={handleRipple}>
-              Log in
+            <button
+              type="submit"
+              className="submit-btn"
+              onClick={handleRipple}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="spinner"></span>
+                  Logging in...
+                </>
+              ) : (
+                "Log in"
+              )}
             </button>
           </form>
 
