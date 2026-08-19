@@ -19,7 +19,12 @@ function Camera() {
   const openCamera = async () => {
     try {
       const cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+       video: {
+          facingMode: {
+            ideal: "environment",
+          },
+        },
+        audio: false,
       });
       videoRef.current.srcObject = cameraStream;
       setStream(cameraStream);
