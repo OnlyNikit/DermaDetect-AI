@@ -859,7 +859,7 @@ import api from "../api/axios";
 
 // Adjust this import to wherever ScanPage.jsx actually lives in your project
 import ScanPage from "./ScanPage";
-import Choose from "../pages/Choose"
+import Choose from "../pages/Choose";
 
 /* ======================================================================
    DERMA DETECT AI — Patient Dashboard (React)
@@ -880,13 +880,41 @@ const TITLE_MAP = {
 };
 
 const diseaseInfoSections = [
-  { key: "what", label: "What is this disease?", text: "Psoriasis is a chronic skin condition where skin cells build up faster than normal, forming scaly, itchy patches." },
-  { key: "symptoms", label: "Symptoms", text: "Red patches with silvery scales, dry cracked skin that may bleed, itching or burning, thickened nails." },
-  { key: "causes", label: "Causes", text: "Believed to be linked to an overactive immune system; triggers include stress, infections, and skin injury." },
-  { key: "prevention", label: "Prevention", text: "Manage stress, avoid known triggers, keep skin moisturized, avoid smoking and excess alcohol." },
-  { key: "homecare", label: "Home Care Tips", text: "Use fragrance-free moisturizers daily, take lukewarm (not hot) showers, avoid scratching." },
-  { key: "treatment", label: "Treatment Options", text: "Topical creams, light therapy, and in moderate-to-severe cases, oral or injectable medication prescribed by a dermatologist." },
-  { key: "whentosee", label: "When to see a doctor", text: "If patches spread quickly, become painful, show signs of infection, or affect daily life — book a dermatologist visit." },
+  {
+    key: "what",
+    label: "What is this disease?",
+    text: "Psoriasis is a chronic skin condition where skin cells build up faster than normal, forming scaly, itchy patches.",
+  },
+  {
+    key: "symptoms",
+    label: "Symptoms",
+    text: "Red patches with silvery scales, dry cracked skin that may bleed, itching or burning, thickened nails.",
+  },
+  {
+    key: "causes",
+    label: "Causes",
+    text: "Believed to be linked to an overactive immune system; triggers include stress, infections, and skin injury.",
+  },
+  {
+    key: "prevention",
+    label: "Prevention",
+    text: "Manage stress, avoid known triggers, keep skin moisturized, avoid smoking and excess alcohol.",
+  },
+  {
+    key: "homecare",
+    label: "Home Care Tips",
+    text: "Use fragrance-free moisturizers daily, take lukewarm (not hot) showers, avoid scratching.",
+  },
+  {
+    key: "treatment",
+    label: "Treatment Options",
+    text: "Topical creams, light therapy, and in moderate-to-severe cases, oral or injectable medication prescribed by a dermatologist.",
+  },
+  {
+    key: "whentosee",
+    label: "When to see a doctor",
+    text: "If patches spread quickly, become painful, show signs of infection, or affect daily life — book a dermatologist visit.",
+  },
 ];
 
 const emptyResult = {
@@ -957,7 +985,8 @@ function mapAssessmentToResult(assessment) {
       "Consult a dermatologist for a full evaluation.",
     date: formatDate(assessment.updatedAt || assessment.createdAt),
     image: assessment.image || null,
-    status: disease.toLowerCase() === "healthy" ? "Healthy" : "Disease Detected",
+    status:
+      disease.toLowerCase() === "healthy" ? "Healthy" : "Disease Detected",
   };
 }
 
@@ -968,7 +997,10 @@ export default function DermaDetectAI() {
   /* -------- Dark mode (functional) -------- */
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window === "undefined") return false;
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+    return (
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: light)").matches
+    );
   });
 
   useEffect(() => {
@@ -1107,13 +1139,20 @@ export default function DermaDetectAI() {
 
   const recentResult = history[0] || null;
   const displayedResult = selectedResult || recentResult || emptyResult;
+  const handleLogout = async () => {
+    try {
+      const response = await logout();
+      console.log("Logout response:", response);
 
-  function handleLogout() {
-    /* ============ BACKEND HOOK: LOGOUT ============
-       api.post('/auth/logout').then(() => { window.location = '/login'; });
-    */
-    alert("Backend not connected yet: this button should log the user out.");
-  }
+      toast.success(response.message);
+
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout Error:", err);
+      console.error("Response:", err.response);
+      toast.error("Logout failed");
+    }
+  };
 
   async function handleSaveProfile() {
     /* ============ BACKEND HOOK: SAVE PROFILE ============ */
@@ -1131,7 +1170,9 @@ export default function DermaDetectAI() {
        Open a modal / route that calls something like
        api.post('/user/change-password', { ... })
     */
-    alert("Backend not connected yet: this should open the change-password flow.");
+    alert(
+      "Backend not connected yet: this should open the change-password flow.",
+    );
   }
 
   function handleReportAction(action, item) {
@@ -1142,7 +1183,9 @@ export default function DermaDetectAI() {
       alert("Backend not connected yet: this should download the PDF report.");
     }
     if (action === "print-report") {
-      alert("Backend not connected yet: this should open the print dialog for the report.");
+      alert(
+        "Backend not connected yet: this should open the print dialog for the report.",
+      );
     }
     if (action === "share-report") {
       alert("Backend not connected yet: this should share the report link.");
@@ -1202,7 +1245,10 @@ export default function DermaDetectAI() {
       <div className="main">
         <div className="topbar">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button className="menu-btn" onClick={() => setSidebarOpen((s) => !s)}>
+            <button
+              className="menu-btn"
+              onClick={() => setSidebarOpen((s) => !s)}
+            >
               ☰
             </button>
             <div className="topbar-title">{TITLE_MAP[activeView]}</div>
@@ -1312,7 +1358,14 @@ export default function DermaDetectAI() {
    SUB-VIEWS
    ====================================================================== */
 
-function DashboardView({ userFirstName, stats, recentResult, history, goTo, onViewResult }) {
+function DashboardView({
+  userFirstName,
+  stats,
+  recentResult,
+  history,
+  goTo,
+  onViewResult,
+}) {
   return (
     <section className="view active">
       <div className="welcome">
@@ -1323,16 +1376,38 @@ function DashboardView({ userFirstName, stats, recentResult, history, goTo, onVi
       </div>
 
       <div className="stats-grid">
-        <StatCard icon="📷" iconClass="blue" value={stats.totalScans} label="Total Scans" />
-        <StatCard icon="📅" iconClass="teal" value={stats.lastScanDate} label="Last Scan Date" />
-        <StatCard icon="✅" iconClass="green" value={stats.currentStatus} label="Current Status" />
-        <StatCard icon="📄" iconClass="mint" value={stats.reportsAvailable} label="Reports Available" />
+        <StatCard
+          icon="📷"
+          iconClass="blue"
+          value={stats.totalScans}
+          label="Total Scans"
+        />
+        <StatCard
+          icon="📅"
+          iconClass="teal"
+          value={stats.lastScanDate}
+          label="Last Scan Date"
+        />
+        <StatCard
+          icon="✅"
+          iconClass="green"
+          value={stats.currentStatus}
+          label="Current Status"
+        />
+        <StatCard
+          icon="📄"
+          iconClass="mint"
+          value={stats.reportsAvailable}
+          label="Reports Available"
+        />
       </div>
 
       <div className="cta-scan">
         <div>
           <h3>📷 Ready for your next check-up?</h3>
-          <p>Scan your skin in seconds and get an instant AI-powered analysis.</p>
+          <p>
+            Scan your skin in seconds and get an instant AI-powered analysis.
+          </p>
         </div>
         <button className="btn btn-secondary" onClick={() => goTo("scan")}>
           Quick Scan
@@ -1345,7 +1420,9 @@ function DashboardView({ userFirstName, stats, recentResult, history, goTo, onVi
             <div className="section-title" style={{ marginBottom: 0 }}>
               📈 Recent Scan Result
             </div>
-            <span className={severityBadgeClass(recentResult.severity)}>{recentResult.severity}</span>
+            <span className={severityBadgeClass(recentResult.severity)}>
+              {recentResult.severity}
+            </span>
           </div>
           <div className="result-item">
             <span className="k">Disease</span>
@@ -1377,17 +1454,31 @@ function DashboardView({ userFirstName, stats, recentResult, history, goTo, onVi
           ) : (
             <ul className="history-mini">
               {history.slice(0, 4).map((item) => (
-                <li key={item.id} onClick={() => onViewResult(item)} style={{ cursor: "pointer" }}>
+                <li
+                  key={item.id}
+                  onClick={() => onViewResult(item)}
+                  style={{ cursor: "pointer" }}
+                >
                   <span>
-                    <span className={`dot ${item.status === "Healthy" ? "dot-green" : "dot-amber"}`}></span>
+                    <span
+                      className={`dot ${item.status === "Healthy" ? "dot-green" : "dot-amber"}`}
+                    ></span>
                     {item.disease}
                   </span>
-                  <span style={{ color: "var(--text-secondary)", fontSize: 12.5 }}>{item.date}</span>
+                  <span
+                    style={{ color: "var(--text-secondary)", fontSize: 12.5 }}
+                  >
+                    {item.date}
+                  </span>
                 </li>
               ))}
             </ul>
           )}
-          <button className="btn btn-outline" style={{ marginTop: 14, width: "100%" }} onClick={() => goTo("history")}>
+          <button
+            className="btn btn-outline"
+            style={{ marginTop: 14, width: "100%" }}
+            onClick={() => goTo("history")}
+          >
             View All History
           </button>
         </div>
@@ -1415,16 +1506,35 @@ function ResultView({ result, goTo }) {
       <div className="card mb">
         <div className="result-hero">
           <div className="result-photo">
-            {result.image ? <img src={result.image} alt="Scanned" /> : "No image available"}
+            {result.image ? (
+              <img src={result.image} alt="Scanned" />
+            ) : (
+              "No image available"
+            )}
           </div>
           <div className="result-main">
             <div className="result-disease">{result.disease}</div>
-            <span className={severityBadgeClass(result.severity)}>Severity: {result.severity}</span>
-            <div style={{ marginTop: 14, fontSize: 13, color: "var(--text-secondary)" }}>Confidence Score</div>
-            <div className="confidence-bar-track">
-              <div className="confidence-bar-fill" style={{ width: `${result.confidence}%` }}></div>
+            <span className={severityBadgeClass(result.severity)}>
+              Severity: {result.severity}
+            </span>
+            <div
+              style={{
+                marginTop: 14,
+                fontSize: 13,
+                color: "var(--text-secondary)",
+              }}
+            >
+              Confidence Score
             </div>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>{result.confidence.toFixed(0)}%</div>
+            <div className="confidence-bar-track">
+              <div
+                className="confidence-bar-fill"
+                style={{ width: `${result.confidence}%` }}
+              ></div>
+            </div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>
+              {result.confidence.toFixed(0)}%
+            </div>
 
             <div className="recommend-box">
               <b>Recommended Action:</b> {result.recommendation}
@@ -1435,7 +1545,9 @@ function ResultView({ result, goTo }) {
         <div className="info-grid">
           <div className="info-box">
             <div className="lbl">Short Description</div>
-            <div className="val" style={{ fontWeight: 500 }}>{result.description}</div>
+            <div className="val" style={{ fontWeight: 500 }}>
+              {result.description}
+            </div>
           </div>
           <div className="info-box">
             <div className="lbl">Is it Contagious?</div>
@@ -1447,8 +1559,14 @@ function ResultView({ result, goTo }) {
           </div>
         </div>
 
-        <div className="scan-actions" style={{ justifyContent: "flex-start", marginTop: 22 }}>
-          <button className="btn btn-primary" onClick={() => goTo("diseaseInfo")}>
+        <div
+          className="scan-actions"
+          style={{ justifyContent: "flex-start", marginTop: 22 }}
+        >
+          <button
+            className="btn btn-primary"
+            onClick={() => goTo("diseaseInfo")}
+          >
             📖 Learn About This Disease
           </button>
           <button className="btn btn-outline" onClick={() => goTo("reports")}>
@@ -1463,13 +1581,20 @@ function ResultView({ result, goTo }) {
 function DiseaseInfoView({ diseaseName, openSection, setOpenSection }) {
   return (
     <section className="view active">
-      <div className="section-title">📖 Disease Information — {diseaseName}</div>
+      <div className="section-title">
+        📖 Disease Information — {diseaseName}
+      </div>
       <div>
         {diseaseInfoSections.map((sec) => (
-          <div key={sec.key} className={`accordion ${openSection === sec.key ? "open" : ""}`}>
+          <div
+            key={sec.key}
+            className={`accordion ${openSection === sec.key ? "open" : ""}`}
+          >
             <div
               className="accordion-head"
-              onClick={() => setOpenSection(openSection === sec.key ? null : sec.key)}
+              onClick={() =>
+                setOpenSection(openSection === sec.key ? null : sec.key)
+              }
             >
               {sec.label} <span className="chev">▾</span>
             </div>
@@ -1488,14 +1613,19 @@ function HistoryView({ rows, search, setSearch, filter, setFilter, onView }) {
       <div className="card">
         <div className="table-toolbar">
           <div className="search-box">
-            🔍 <input
+            🔍{" "}
+            <input
               type="text"
               placeholder="Search by disease..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <select className="filter-select" value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <select
+            className="filter-select"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
             <option value="all">All Status</option>
             <option value="Healthy">Healthy</option>
             <option value="Disease Detected">Disease Detected</option>
@@ -1525,13 +1655,21 @@ function HistoryView({ rows, search, setSearch, filter, setFilter, onView }) {
                   <td>{statusBadge(item.status)}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="icon-btn" title="View Report" onClick={() => onView(item)}>
+                      <button
+                        className="icon-btn"
+                        title="View Report"
+                        onClick={() => onView(item)}
+                      >
                         👁
                       </button>
                       <button
                         className="icon-btn"
                         title="Download PDF"
-                        onClick={() => alert("Backend not connected yet: this should download the PDF report.")}
+                        onClick={() =>
+                          alert(
+                            "Backend not connected yet: this should download the PDF report.",
+                          )
+                        }
                       >
                         ⬇
                       </button>
@@ -1553,7 +1691,9 @@ function ReportsView({ reports, onAction }) {
       <div className="section-title">📄 Medical Reports</div>
       <div className="card">
         {reports.length === 0 ? (
-          <p style={{ color: "var(--text-secondary)" }}>No reports available yet.</p>
+          <p style={{ color: "var(--text-secondary)" }}>
+            No reports available yet.
+          </p>
         ) : (
           reports.map((r, i) => (
             <div className="report-card" key={r.id || i}>
@@ -1565,13 +1705,22 @@ function ReportsView({ reports, onAction }) {
                 </div>
               </div>
               <div className="report-actions">
-                <button className="btn btn-outline" onClick={() => onAction("download-pdf", r)}>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => onAction("download-pdf", r)}
+                >
                   ⬇ Download
                 </button>
-                <button className="btn btn-outline" onClick={() => onAction("print-report", r)}>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => onAction("print-report", r)}
+                >
                   🖨 Print
                 </button>
-                <button className="btn btn-outline" onClick={() => onAction("share-report", r)}>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => onAction("share-report", r)}
+                >
                   🔗 Share
                 </button>
               </div>
@@ -1589,11 +1738,19 @@ function NotificationsView({ items }) {
       <div className="section-title">🔔 Notifications</div>
       <div className="card">
         {items.length === 0 ? (
-          <p style={{ color: "var(--text-secondary)" }}>You're all caught up — no notifications.</p>
+          <p style={{ color: "var(--text-secondary)" }}>
+            You're all caught up — no notifications.
+          </p>
         ) : (
           items.map((n, i) => (
-            <div className={`notif-item ${n.unread ? "unread" : ""}`} key={n.id || i}>
-              <div className="notif-icon" style={{ background: "var(--bg-main)" }}>
+            <div
+              className={`notif-item ${n.unread ? "unread" : ""}`}
+              key={n.id || i}
+            >
+              <div
+                className="notif-icon"
+                style={{ background: "var(--bg-main)" }}
+              >
                 {n.icon || "🔔"}
               </div>
               <div>
@@ -1608,7 +1765,13 @@ function NotificationsView({ items }) {
   );
 }
 
-function ProfileView({ profile, setProfile, savedProfile, onSave, onChangePassword }) {
+function ProfileView({
+  profile,
+  setProfile,
+  savedProfile,
+  onSave,
+  onChangePassword,
+}) {
   function update(field, value) {
     setProfile((p) => ({ ...p, [field]: value }));
   }
@@ -1622,22 +1785,37 @@ function ProfileView({ profile, setProfile, savedProfile, onSave, onChangePasswo
             {(savedProfile.name || "U").charAt(0).toUpperCase()}
           </div>
           <div>
-            <div className="profile-name">{savedProfile.name || "Not available"}</div>
-            <div className="profile-email">{savedProfile.email || "Not available"}</div>
+            <div className="profile-name">
+              {savedProfile.name || "Not available"}
+            </div>
+            <div className="profile-email">
+              {savedProfile.email || "Not available"}
+            </div>
           </div>
         </div>
         <div className="form-grid">
           <div className="field">
             <label>Full Name</label>
-            <input type="text" value={profile.name} onChange={(e) => update("name", e.target.value)} />
+            <input
+              type="text"
+              value={profile.name}
+              onChange={(e) => update("name", e.target.value)}
+            />
           </div>
           <div className="field">
             <label>Age</label>
-            <input type="number" value={profile.age} onChange={(e) => update("age", e.target.value)} />
+            <input
+              type="number"
+              value={profile.age}
+              onChange={(e) => update("age", e.target.value)}
+            />
           </div>
           <div className="field">
             <label>Gender</label>
-            <select value={profile.gender} onChange={(e) => update("gender", e.target.value)}>
+            <select
+              value={profile.gender}
+              onChange={(e) => update("gender", e.target.value)}
+            >
               <option value="">Select</option>
               <option>Male</option>
               <option>Female</option>
@@ -1646,14 +1824,24 @@ function ProfileView({ profile, setProfile, savedProfile, onSave, onChangePasswo
           </div>
           <div className="field">
             <label>Email</label>
-            <input type="email" value={profile.email} onChange={(e) => update("email", e.target.value)} />
+            <input
+              type="email"
+              value={profile.email}
+              onChange={(e) => update("email", e.target.value)}
+            />
           </div>
           <div className="field">
             <label>Phone</label>
-            <input type="tel" value={profile.phone} onChange={(e) => update("phone", e.target.value)} />
+            <input
+              type="tel"
+              value={profile.phone}
+              onChange={(e) => update("phone", e.target.value)}
+            />
           </div>
         </div>
-        <div style={{ marginTop: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <div
+          style={{ marginTop: 20, display: "flex", gap: 12, flexWrap: "wrap" }}
+        >
           <button className="btn btn-primary" onClick={onSave}>
             Save Changes
           </button>
@@ -1683,9 +1871,14 @@ function SettingsView({
         <div className="settings-row">
           <div>
             <div className="settings-label">Dark Mode</div>
-            <div className="settings-sub">Switch between light and dark theme</div>
+            <div className="settings-sub">
+              Switch between light and dark theme
+            </div>
           </div>
-          <div className={`toggle ${darkMode ? "on" : ""}`} onClick={() => setDarkMode((d) => !d)}>
+          <div
+            className={`toggle ${darkMode ? "on" : ""}`}
+            onClick={() => setDarkMode((d) => !d)}
+          >
             <div className="knob"></div>
           </div>
         </div>
@@ -1694,7 +1887,11 @@ function SettingsView({
             <div className="settings-label">Language</div>
             <div className="settings-sub">Choose your preferred language</div>
           </div>
-          <select className="filter-select" value={language} onChange={(e) => setLanguage(e.target.value)}>
+          <select
+            className="filter-select"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+          >
             <option>English</option>
             <option>हिन्दी</option>
           </select>
@@ -1702,18 +1899,28 @@ function SettingsView({
         <div className="settings-row">
           <div>
             <div className="settings-label">Scan Completed Alerts</div>
-            <div className="settings-sub">Get notified when a scan result is ready</div>
+            <div className="settings-sub">
+              Get notified when a scan result is ready
+            </div>
           </div>
-          <div className={`toggle ${notifScan ? "on" : ""}`} onClick={() => setNotifScan((v) => !v)}>
+          <div
+            className={`toggle ${notifScan ? "on" : ""}`}
+            onClick={() => setNotifScan((v) => !v)}
+          >
             <div className="knob"></div>
           </div>
         </div>
         <div className="settings-row">
           <div>
             <div className="settings-label">Follow-up Reminders</div>
-            <div className="settings-sub">Reminders for recommended doctor visits</div>
+            <div className="settings-sub">
+              Reminders for recommended doctor visits
+            </div>
           </div>
-          <div className={`toggle ${notifFollowup ? "on" : ""}`} onClick={() => setNotifFollowup((v) => !v)}>
+          <div
+            className={`toggle ${notifFollowup ? "on" : ""}`}
+            onClick={() => setNotifFollowup((v) => !v)}
+          >
             <div className="knob"></div>
           </div>
         </div>
