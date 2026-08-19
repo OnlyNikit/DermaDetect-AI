@@ -859,6 +859,7 @@ import api from "../api/axios";
 
 // Adjust this import to wherever ScanPage.jsx actually lives in your project
 import ScanPage from "./ScanPage";
+import Choose from "../pages/Choose"
 
 /* ======================================================================
    DERMA DETECT AI — Patient Dashboard (React)
@@ -1244,7 +1245,7 @@ export default function DermaDetectAI() {
 
               {/* Sidebar/topbar stay in place; only the content area swaps to
                   your standalone ScanPage (with its own camera flow). */}
-              {activeView === "scan" && <ScanPage />}
+              {activeView === "scan" && <Choose />}
 
               {activeView === "result" && (
                 <ResultView result={displayedResult} goTo={goTo} />
