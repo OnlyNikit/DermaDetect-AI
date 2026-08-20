@@ -2,7 +2,7 @@ import React from "react";
 import Camera from "../components/camera/Camera";
 import "../components/styles/scanpage.css";
 
-const CONDITIONS = ["Warts", "Acne", "Psoriasis", "Ringworm", "Vitiligo"];
+const CONDITIONS = ["Acne", "Psoriasis", "Ringworm", "Vitiligo"];
 
 function ScanPage() {
   return (

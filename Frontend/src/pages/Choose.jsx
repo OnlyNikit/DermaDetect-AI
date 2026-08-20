@@ -5,7 +5,7 @@ import { useAuth } from "../components/context/AuthContext";
 import api from "../api/axios";
 import { QRCodeSVG } from "qrcode.react";
 
-const SKIN_TAGS = ["Warts", "Acne", "Psoriasis", "Ringworm", "Vitiligo"];
+const SKIN_TAGS = [ "Acne", "Psoriasis", "Ringworm", "Vitiligo"];
 
 export default function ScanSelect() {
   const navigate = useNavigate();

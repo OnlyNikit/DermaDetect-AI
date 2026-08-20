@@ -37,14 +37,14 @@ const PROBLEMS = [
     image: vitiligo,
   },
   {
-    id: "05",
+    id: "comming soon",
     name: "Warts",
     tag: "Viral (HPV)",
     desc: "Small, rough skin growths caused by the Human Papillomavirus (HPV). They can appear on the hands, feet, face, or other parts of the body.",
     image: warts,
   },
   {
-    id: "06",
+    id: "comming soon",
     name: "Melanoma",
     tag: "Skin Cancer",
     desc: "A fungal skin infection that causes a circular, red, itchy rash with raised edges. It spreads through direct contact with infected people, animals, or surfaces.",

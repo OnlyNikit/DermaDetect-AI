@@ -15,8 +15,6 @@ const diseases = [
   "Psoriasis",
   "Ringworm",
   "Vitiligo",
-  "Melanoma",
-  "Warts",
 ];
 
 export default function Home() {
