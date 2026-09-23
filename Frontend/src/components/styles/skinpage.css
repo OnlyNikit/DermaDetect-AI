@@ -452,3 +452,19 @@
 .pdf-export .sar-bar-fill {
   transition: none !important;
 }
+
+
+
+.sar-consult-btn {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.sar-btn-outline {
+  background: transparent;
+  border: 1px solid var(--color-primary, #05668d);
+  color: var(--color-primary, #05668d);
+}
+.sar-btn-outline:hover {
+  background: rgba(5, 102, 141, 0.06);
+}

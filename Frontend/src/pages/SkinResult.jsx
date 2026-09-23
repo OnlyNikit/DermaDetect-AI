@@ -234,6 +234,15 @@ export default function SkinAnalysisResult() {
     navigate("/choose=thisdevice");
   };
 
+  // NEW: jumps into the dashboard's "Consult a Dermatologist" view,
+  // carrying this assessment's id along so the doctor sees which
+  // report the consult is about (see DermaDetectAI's ConsultView).
+  const handleConsultDoctor = () => {
+    navigate("/dashboard", {
+      state: { view: "consult", assessmentId: assessment._id },
+    });
+  };
+
   // ==========================================
   // UI
   // ==========================================
@@ -334,6 +343,15 @@ export default function SkinAnalysisResult() {
                   ? "Analysis complete"
                   : "Analysis pending"}
               </div>
+
+              {/* NEW: consult CTA sits right next to the result, so the
+                  person doesn't have to download the report first. */}
+              <button
+                className="sar-btn sar-btn-primary sar-consult-btn"
+                onClick={handleConsultDoctor}
+              >
+                🩺 Consult a Dermatologist
+              </button>
             </div>
           </div>
         </div>
@@ -476,6 +494,12 @@ export default function SkinAnalysisResult() {
           onClick={handleNewAssessment}
         >
           New assessment
+        </button>
+
+        {/* NEW: same action available after scrolling down, so the report
+            download is never the only way forward. */}
+        <button className="sar-btn sar-btn-outline" onClick={handleConsultDoctor}>
+          🩺 Consult a Dermatologist
         </button>
       </div>
     </div>

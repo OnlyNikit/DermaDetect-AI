@@ -194,12 +194,12 @@
   transition: background .15s ease, transform .1s ease;
 }
 .dtc-app .btn:active { transform: scale(.98); }
-.dtc-app .btn-primary { background: var(--btn-primary); color: #fff; }
-.dtc-app .btn-primary:hover { background: var(--btn-primary-hover); }
+.dtc-app .btn-primary { background: var(--btn-primary); color: #fff; width: 100%; max-width: 220px; }
+.dtc-app .btn-primary:hover { background: var(--btn-primary-hover); color:black; border: 1px solid black; }
 .dtc-app .btn-secondary { background: var(--btn-secondary); color: #043b32; }
 .dtc-app .btn-secondary:hover { background: var(--btn-secondary-hover); }
-.dtc-app .btn-outline { background: transparent; border: 1.5px solid var(--border-color); color: var(--text-primary); }
-.dtc-app .btn-outline:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.dtc-app .btn-outline { background: transparent; border: 1.5px solid var(--border-color); color: var(--text-primary); width: 100%; max-width: 220px;}
+.dtc-app .btn-outline:hover { border-color: var(--color-primary); color: var(--color-primary);color:black; border: 1px solid black; }
 .dtc-app .btn:disabled { opacity: .5; cursor: not-allowed; }
 
 .dtc-app .badge {
@@ -524,4 +524,152 @@ body {
     height: auto;
     aspect-ratio: 1 / 1;
   }
+}
+
+/* ==========================================================
+   Append these rules to dashboard.css — powers the new
+   "Consult Doctor" sidebar view (ConsultView, ConsultProfileStep,
+   ConsultConfirmationStep) added to DermaDetectAI.jsx.
+   Reuses your existing --color-*, --bg-*, --radius-*, --shadow-*
+   tokens, so no new variables are introduced.
+   ========================================================== */
+
+.location-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-section);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.filter-chip {
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.filter-chip.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--text-light);
+}
+
+.doctor-card {
+  display: flex;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.doctor-card:hover { box-shadow: var(--shadow-md); }
+.doctor-card__avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-full);
+  background: var(--color-cream);
+  color: var(--color-secondary);
+  font-family: var(--font-tertiary);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.doctor-card__body { flex: 1; }
+.doctor-card__name { font-weight: 600; font-size: 1.02rem; }
+.doctor-card__role { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 6px; }
+.doctor-card__meta {
+  display: flex;
+  gap: 14px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--color-success);
+  font-weight: 500;
+}
+.status-dot::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+.mode-row { display: flex; gap: 8px; margin-top: 10px; }
+.mode-tag {
+  font-size: 0.78rem;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-section);
+  color: var(--color-secondary);
+}
+
+.mode-select {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 16px 0 22px;
+}
+.mode-option {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px 10px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: var(--transition);
+}
+.mode-option.is-selected {
+  border-color: var(--color-primary);
+  background: var(--bg-section);
+  color: var(--color-secondary);
+  font-weight: 600;
+}
+.mode-option__icon { font-size: 1.4rem; display: block; margin-bottom: 6px; }
+
+.slot-group { margin-bottom: 18px; }
+.slot-group__label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 10px; }
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.slot {
+  padding: 10px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.slot.is-selected { background: var(--color-primary); border-color: var(--color-primary); color: var(--text-light); }
+.slot.is-full { color: var(--border-color); cursor: not-allowed; text-decoration: line-through; }
+
+@media (max-width: 480px) {
+  .mode-select { grid-template-columns: 1fr; }
+  .slot-grid { grid-template-columns: repeat(2, 1fr); }
 }
