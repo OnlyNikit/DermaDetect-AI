@@ -8,12 +8,12 @@ const Register = () => {
   const navigate = useNavigate();
 
   const [registerFormData, setRegisterFormData] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    gender: "",
-    age: "",
+    fullName: "Nikit Kumar",
+    email: "nikit2@gmail.com",
+    password: "12345678",
+    confirmPassword: "12345678",
+    gender: "male",
+    age: "19",
     role: "user",
   });
 

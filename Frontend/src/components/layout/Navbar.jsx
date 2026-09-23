@@ -15,32 +15,74 @@ const NAV_ITEMS = [
 
 function Navbar() {
   const navigate = useNavigate();
+
   const [menu, setMenu] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const wrapRef = useRef(null);
 
   const closeMenu = () => setMenu(false);
+
   const { user, logout } = useAuth();
 
   console.log("User in Navbar:", user);
 
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
+  // ==========================================
+  // Dashboard based on account type
+  // ==========================================
 
-  // Close the dropdown when clicking outside it
+  const dashboardPath =
+    user?.role === "doctor"
+      ? "/doctor-dashboard"
+      : "/dashboard";
+
+  const dashboardLabel =
+    user?.role === "doctor"
+      ? "Doctor Dashboard"
+      : "Dashboard";
+
+  // ==========================================
+  // Close dropdown when clicking outside
+  // ==========================================
+
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+      if (
+        wrapRef.current &&
+        !wrapRef.current.contains(e.target)
+      ) {
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
+    };
   }, []);
 
-  const initial = user?.fullName?.charAt(0).toUpperCase() || "?";
+  // ==========================================
+  // User initial
+  // ==========================================
+
+  const initial =
+    user?.fullName?.charAt(0).toUpperCase() || "?";
+
+  // ==========================================
+  // Logout
+  // ==========================================
 
   const handleLogout = async () => {
     try {
       const response = await logout();
+
       console.log("Logout response:", response);
 
       toast.success(response.message);
@@ -49,6 +91,7 @@ function Navbar() {
     } catch (err) {
       console.error("Logout Error:", err);
       console.error("Response:", err.response);
+
       toast.error("Logout failed");
     }
   };
@@ -56,70 +99,167 @@ function Navbar() {
   return (
     <nav>
       <div className="navbar">
+
+        {/* =========================
+            LOGO
+        ========================= */}
+
         <div className="logo-img">
           <Link to="/" onClick={closeMenu}>
-            <img src={Logo} alt="Logo" className="img-fluid" />
+            <img
+              src={Logo}
+              alt="DermaDetect AI"
+              className="img-fluid"
+            />
           </Link>
         </div>
 
         <div className="links">
-          <ul className={menu ? "nav-links active" : "nav-links"}>
+
+          {/* =========================
+              NAVIGATION LINKS
+          ========================= */}
+
+          <ul
+            className={
+              menu
+                ? "nav-links active"
+                : "nav-links"
+            }
+          >
+
             {NAV_ITEMS.map((item) => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
                   end={item.to === "/"}
-                  className={({ isActive }) => (isActive ? "active" : "")}
+                  className={({ isActive }) =>
+                    isActive ? "active" : ""
+                  }
                   onClick={closeMenu}
                 >
-                  <i className={`fa-solid ${item.icon} icon`}></i>
+                  <i
+                    className={`fa-solid ${item.icon} icon`}
+                  ></i>
+
                   <span>{item.label}</span>
                 </NavLink>
               </li>
             ))}
 
-            {/* Logged-out: Register / Login buttons inside mobile menu */}
+            {/* =========================
+                LOGGED OUT MOBILE
+            ========================= */}
+
             {!user && (
               <div className="mobile-btn">
+
                 <li>
-                  <Link to="/register" onClick={closeMenu}>
-                    <button type="button" className="secondary-btn">
+                  <Link
+                    to="/register"
+                    onClick={closeMenu}
+                  >
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                    >
                       Register
                     </button>
                   </Link>
                 </li>
+
                 <li>
-                  <Link to="/login" onClick={closeMenu}>
-                    <button type="button" className="primary-btn">
+                  <Link
+                    to="/login"
+                    onClick={closeMenu}
+                  >
+                    <button
+                      type="button"
+                      className="primary-btn"
+                    >
                       Login
                     </button>
                   </Link>
                 </li>
+
               </div>
             )}
 
-            {/* Logged-in: profile options inside mobile menu */}
+            {/* =========================
+                LOGGED IN MOBILE
+            ========================= */}
+
             {user && (
               <div className="mobile-profile">
+
+                {/* Profile header */}
+
                 <li className="mobile-profile-header">
-                  <span className="profile-avatar">{initial}</span>
-                  <span className="profile-name">{user.fullName}</span>
+
+                  <span className="profile-avatar">
+                    {initial}
+                  </span>
+
+                  <span className="profile-name">
+                    {user.fullName}
+                  </span>
+
                 </li>
+
+                {/* Profile */}
+
                 <li>
-                  <a href="/profile" className="dropdown-item" onClick={closeMenu}>
+                  <Link
+                    to="/profile"
+                    className="dropdown-item"
+                    onClick={closeMenu}
+                  >
                     👤 Profile
-                  </a>
+                  </Link>
                 </li>
+
+                {/* Settings */}
+
                 <li>
-                  <a href="/settings" className="dropdown-item" onClick={closeMenu}>
+                  <Link
+                    to="/settings"
+                    className="dropdown-item"
+                    onClick={closeMenu}
+                  >
                     ⚙ Settings
-                  </a>
+                  </Link>
                 </li>
+
+                {/* =========================
+                    DYNAMIC DASHBOARD
+                ========================= */}
+
                 <li>
-                  <a href="/dashboard" className="dropdown-item" onClick={closeMenu}>
-                    📊 Dashboard
-                  </a>
+                  <Link
+                    to={dashboardPath}
+                    className="dropdown-item"
+                    onClick={closeMenu}
+                  >
+                    📊 {dashboardLabel}
+                  </Link>
                 </li>
+
+                {/* Doctor specific onboarding */}
+
+                {user.role === "doctor" && (
+                  <li>
+                    <Link
+                      to="/doctor-onboarding"
+                      className="dropdown-item"
+                      onClick={closeMenu}
+                    >
+                      🩺 Doctor Onboarding
+                    </Link>
+                  </li>
+                )}
+
+                {/* Logout */}
+
                 <li>
                   <button
                     className="dropdown-item logout"
@@ -131,66 +271,169 @@ function Navbar() {
                     🚪 Logout
                   </button>
                 </li>
+
               </div>
             )}
+
           </ul>
 
-          {/* Desktop-only profile badge — hidden on mobile via CSS */}
+          {/* =========================
+              DESKTOP PROFILE
+          ========================= */}
+
           {user ? (
-            <div className="profile-badge desktop-only" ref={wrapRef}>
+
+            <div
+              className="profile-badge desktop-only"
+              ref={wrapRef}
+            >
+
               <button
                 className="profile-trigger"
-                onClick={() => setOpen((v) => !v)}
+                onClick={() =>
+                  setOpen((v) => !v)
+                }
               >
-                <span className="profile-avatar">{initial}</span>
-                <span className="profile-name">{user.fullName}</span>
-                <span className={`profile-caret ${open ? "up" : ""}`}>▾</span>
+
+                <span className="profile-avatar">
+                  {initial}
+                </span>
+
+                <span className="profile-name">
+                  {user.fullName}
+                </span>
+
+                <span
+                  className={`profile-caret ${
+                    open ? "up" : ""
+                  }`}
+                >
+                  ▾
+                </span>
+
               </button>
+
+              {/* =========================
+                  DROPDOWN
+              ========================= */}
 
               {open && (
                 <div className="profile-dropdown">
-                  <a href="/profile" className="dropdown-item">
+
+                  <Link
+                    to="/profile"
+                    className="dropdown-item"
+                    onClick={() => setOpen(false)}
+                  >
                     👤 Profile
-                  </a>
-                  <a href="/settings" className="dropdown-item">
+                  </Link>
+
+                  <Link
+                    to="/settings"
+                    className="dropdown-item"
+                    onClick={() => setOpen(false)}
+                  >
                     ⚙ Settings
-                  </a>
-                  <a href="/dashboard" className="dropdown-item">
-                    📊 Dashboard
-                  </a>
+                  </Link>
+
+                  {/* =========================
+                      DYNAMIC DASHBOARD
+                  ========================= */}
+
+                  <Link
+                    to={dashboardPath}
+                    className="dropdown-item"
+                    onClick={() => setOpen(false)}
+                  >
+                    📊 {dashboardLabel}
+                  </Link>
+
+                  {/* =========================
+                      DOCTOR ONLY
+                  ========================= */}
+
+                  {/* {user.role === "doctor" && (
+                    <Link
+                      to="/doctor-onboarding"
+                      className="dropdown-item"
+                      onClick={() =>
+                        setOpen(false)
+                      }
+                    >
+                      🩺 Doctor Onboarding
+                    </Link>
+                  )} */}
+
+                  {/* Logout */}
+
                   <button
                     className="dropdown-item logout"
                     onClick={handleLogout}
                   >
                     🚪 Logout
                   </button>
+
                 </div>
               )}
+
             </div>
+
           ) : (
+
+            /* =========================
+               LOGGED OUT DESKTOP
+            ========================= */
+
             <div className="btn-container">
+
               <Link to="/login">
-                <button type="button" className="primary-btn">
+                <button
+                  type="button"
+                  className="primary-btn"
+                >
                   Login
                 </button>
               </Link>
+
               <Link to="/register">
-                <button type="button" className="secondary-btn">
+                <button
+                  type="button"
+                  className="secondary-btn"
+                >
                   Register
                 </button>
               </Link>
+
             </div>
+
           )}
+
+          {/* =========================
+              MOBILE MENU BUTTON
+          ========================= */}
 
           <button
             type="button"
             className="menu-icon"
-            aria-label={menu ? "Close menu" : "Open menu"}
+            aria-label={
+              menu
+                ? "Close menu"
+                : "Open menu"
+            }
             aria-expanded={menu}
-            onClick={() => setMenu((m) => !m)}
+            onClick={() =>
+              setMenu((m) => !m)
+            }
           >
-            <i className={`fa-solid ${menu ? "fa-xmark" : "fa-bars"}`}></i>
+            <i
+              className={`fa-solid ${
+                menu
+                  ? "fa-xmark"
+                  : "fa-bars"
+              }`}
+            ></i>
           </button>
+
         </div>
       </div>
     </nav>
