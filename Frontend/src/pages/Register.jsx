@@ -12,7 +12,7 @@ const Register = () => {
     email: "nikit2@gmail.com",
     password: "12345678",
     confirmPassword: "12345678",
-    gender: "male",
+    gender: "Male",
     age: "19",
     role: "user",
   });
