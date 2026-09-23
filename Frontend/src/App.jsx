@@ -24,9 +24,11 @@ import ChatBot from "./components/common/ChatBot";
 import Loader1 from "./components/common/Loader1";
 import { useAuth } from "./components/context/AuthContext";
 import ScanPage from "./pages/ScanPage";
-import SkinAssessment from "./pages/SkinAssessment"
+import SkinAssessment from "./pages/SkinAssessment";
 import SkinAnalysisResult from "./pages/SkinResult";
 import MobileScan from "./pages/MobileScan";
+import DoctorDashboard from "./pages/DoctorDashboard";
+import DoctorOnboarding from "./pages/DoctorOnboarding";
 
 function App() {
   const { loading } = useAuth();
@@ -50,6 +52,23 @@ function App() {
           }
         />
         <Route
+          path="/doctor-dashboard"
+          element={
+            <ProtectedRoute>
+              <DoctorDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/doctor-onboarding"
+          element={
+            <ProtectedRoute>
+              <DoctorOnboarding />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/choose=thisdevice"
           element={
             <ProtectedRoute>
@@ -61,7 +80,7 @@ function App() {
           path="/skinAssessment"
           element={
             <ProtectedRoute>
-              <SkinAssessment/>
+              <SkinAssessment />
             </ProtectedRoute>
           }
         />
@@ -69,19 +88,12 @@ function App() {
           path="/skinAssessmentResult"
           element={
             <ProtectedRoute>
-              <SkinAnalysisResult/>
+              <SkinAnalysisResult />
             </ProtectedRoute>
           }
-          />
-            <Route
-          path="/mobile-scan/:sessionId"
-          element={
-           
-              <MobileScan/>
-           
-          }
-          />
-          
+        />
+        <Route path="/mobile-scan/:sessionId" element={<MobileScan />} />
+
         <Route path="/features" element={<Features />} />
         <Route path="/how-its-works" element={<HowItWorks />} />
         <Route path="/login" element={<Login />} />

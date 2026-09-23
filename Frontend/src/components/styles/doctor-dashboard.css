@@ -1,0 +1,912 @@
+/* =========================================================
+   DERMADETECT AI — DOCTOR DASHBOARD + ONBOARDING
+   ========================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+/* =========================================================
+   THEME
+   ========================================================= */
+
+:root {
+  --font-secondary: "IBM Plex Sans", sans-serif;
+  --font-primary: "IBM Plex Mono", monospace;
+  --font-tertiary: "Space Grotesk", sans-serif;
+
+  --color-primary: #05668d;
+  --color-secondary: #004d57;
+  --color-accent: #00a896;
+  --color-success: #02c39a;
+  --color-cream: #f0f3bd;
+
+  --bg-main: #ffffff;
+  --bg-page: #f7f9f8;
+  --bg-section: #f0f3bd;
+  --bg-card: #ffffff;
+
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #ffffff;
+
+  --btn-primary: #05668d;
+  --btn-primary-hover: #04506f;
+
+  --btn-secondary: #02c39a;
+  --btn-secondary-hover: #00a896;
+
+  --border-color: #e5e7eb;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.09);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.12);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  --transition: all 0.25s ease;
+}
+
+/* =========================================================
+   GLOBAL
+   ========================================================= */
+
+.doctor-dashboard,
+.doctor-onboarding {
+  width: 100%;
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at 10% 0%,
+      rgba(0, 168, 150, 0.07),
+      transparent 30%
+    ),
+    var(--bg-page);
+
+  color: var(--text-primary);
+  font-family: var(--font-secondary);
+
+  box-sizing: border-box;
+}
+
+.doctor-dashboard *,
+.doctor-dashboard *::before,
+.doctor-dashboard *::after,
+.doctor-onboarding *,
+.doctor-onboarding *::before,
+.doctor-onboarding *::after {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.doctor-loading {
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--bg-page);
+
+  color: var(--color-secondary);
+
+  font-family: var(--font-secondary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+
+.doctor-dashboard {
+  padding: 50px 20px 80px;
+}
+
+.doctor-dashboard-container {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* =========================================================
+   DASHBOARD HEADER
+   ========================================================= */
+
+.doctor-header {
+  margin-bottom: 30px;
+
+  animation: doctorFadeUp 0.45s ease both;
+}
+
+.doctor-eyebrow {
+  margin: 0 0 8px;
+
+  color: var(--color-accent);
+
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 600;
+
+  letter-spacing: 0.12em;
+}
+
+.doctor-header h1 {
+  margin: 0;
+
+  color: var(--color-secondary);
+
+  font-family: var(--font-tertiary);
+  font-size: clamp(30px, 5vw, 42px);
+  font-weight: 700;
+
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.doctor-header p:not(.doctor-eyebrow) {
+  max-width: 600px;
+
+  margin: 10px 0 0;
+
+  color: var(--text-secondary);
+
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   ONBOARD CARD
+   ========================================================= */
+
+.doctor-onboard-card {
+  position: relative;
+
+  padding: 35px;
+
+  background: var(--bg-card);
+
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-sm);
+
+  overflow: hidden;
+
+  animation: doctorFadeUp 0.5s ease 0.1s both;
+}
+
+.doctor-onboard-card::before {
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 4px;
+
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-accent)
+  );
+}
+
+.doctor-onboard-card h2 {
+  margin: 0;
+
+  color: var(--color-secondary);
+
+  font-family: var(--font-tertiary);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.doctor-onboard-card p {
+  max-width: 600px;
+
+  margin: 10px 0 24px;
+
+  color: var(--text-secondary);
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.doctor-onboard-card button {
+  border: none;
+
+  padding: 13px 22px;
+
+  border-radius: var(--radius-full);
+
+  background: var(--btn-primary);
+  color: var(--text-light);
+
+  font-family: var(--font-secondary);
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow: var(--shadow-sm);
+
+  transition: var(--transition);
+}
+
+.doctor-onboard-card button:hover {
+  background: var(--btn-primary-hover);
+
+  transform: translateY(-2px);
+
+  box-shadow: var(--shadow-md);
+}
+
+.doctor-onboard-card button:active {
+  transform: translateY(0);
+}
+
+/* =========================================================
+   STATUS CARD
+   ========================================================= */
+
+.doctor-status-card {
+  display: grid;
+
+  grid-template-columns: repeat(2, 1fr);
+
+  gap: 16px;
+
+  margin-bottom: 20px;
+
+  animation: doctorFadeUp 0.5s ease 0.1s both;
+}
+
+.doctor-status-card > div {
+  min-height: 110px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 22px;
+
+  background: var(--bg-card);
+
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-sm);
+
+  transition: var(--transition);
+}
+
+.doctor-status-card > div:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.doctor-status-card span {
+  margin-bottom: 8px;
+
+  color: var(--text-secondary);
+
+  font-family: var(--font-primary);
+  font-size: 11px;
+
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.doctor-status-card strong {
+  color: var(--color-secondary);
+
+  font-family: var(--font-tertiary);
+  font-size: 20px;
+}
+
+/* =========================================================
+   STATUS COLORS
+   ========================================================= */
+
+.doctor-status-card > div:first-child strong {
+  color: var(--color-primary);
+}
+
+.doctor-status-card > div:last-child strong {
+  color: var(--color-success);
+}
+
+/* =========================================================
+   DASHBOARD GRID
+   ========================================================= */
+
+.doctor-dashboard-grid {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 18px;
+
+  animation: doctorFadeUp 0.5s ease 0.2s both;
+}
+
+.doctor-dashboard-grid button {
+  width: 100%;
+  min-height: 160px;
+
+  padding: 25px;
+
+  text-align: left;
+
+  background: var(--bg-card);
+
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-sm);
+
+  cursor: pointer;
+
+  font-family: var(--font-secondary);
+
+  transition: var(--transition);
+}
+
+.doctor-dashboard-grid button:hover {
+  transform: translateY(-5px);
+
+  border-color: rgba(0, 168, 150, 0.35);
+
+  box-shadow: var(--shadow-md);
+}
+
+.doctor-dashboard-grid button:active {
+  transform: translateY(-1px);
+}
+
+.doctor-dashboard-grid h3 {
+  margin: 0 0 10px;
+
+  color: var(--color-secondary);
+
+  font-family: var(--font-tertiary);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.doctor-dashboard-grid p {
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   ONBOARDING PAGE
+   ========================================================= */
+
+.doctor-onboarding {
+  padding: 45px 20px 80px;
+}
+
+.doctor-form-container {
+  width: 100%;
+  max-width: 760px;
+
+  margin: 0 auto;
+
+  padding: 38px;
+
+  background: var(--bg-card);
+
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-md);
+
+  animation: doctorFadeUp 0.5s ease both;
+}
+
+/* =========================================================
+   ONBOARDING HEADER
+   ========================================================= */
+
+.doctor-form-container > h1 {
+  margin: 0;
+
+  color: var(--color-secondary);
+
+  font-family: var(--font-tertiary);
+  font-size: clamp(28px, 5vw, 38px);
+  font-weight: 700;
+
+  letter-spacing: -0.03em;
+}
+
+.doctor-form-container > p {
+  max-width: 600px;
+
+  margin: 10px 0 30px;
+
+  color: var(--text-secondary);
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.doctor-form-container form {
+  display: grid;
+
+  grid-template-columns: repeat(2, 1fr);
+
+  gap: 18px;
+}
+
+/* =========================================================
+   INPUTS
+   ========================================================= */
+
+.doctor-form-container input,
+.doctor-form-container textarea,
+.doctor-form-container select {
+  width: 100%;
+
+  padding: 13px 15px;
+
+  border: 1px solid var(--border-color);
+
+  border-radius: var(--radius-md);
+
+  background: #ffffff;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-secondary);
+  font-size: 14px;
+
+  outline: none;
+
+  transition: var(--transition);
+}
+
+.doctor-form-container input::placeholder,
+.doctor-form-container textarea::placeholder {
+  color: #9ca3af;
+}
+
+.doctor-form-container input:hover,
+.doctor-form-container textarea:hover,
+.doctor-form-container select:hover {
+  border-color: #cbd5e1;
+}
+
+.doctor-form-container input:focus,
+.doctor-form-container textarea:focus,
+.doctor-form-container select:focus {
+  border-color: var(--color-accent);
+
+  box-shadow:
+    0 0 0 3px rgba(0, 168, 150, 0.12);
+}
+
+.doctor-form-container textarea {
+  resize: vertical;
+
+  min-height: 130px;
+
+  line-height: 1.6;
+}
+
+/* =========================================================
+   INPUT FULL WIDTH
+   ========================================================= */
+
+/*
+  Tumhare JSX me direct inputs hain.
+  Important fields ko full-width banane ke liye
+  ye selectors use ho rahe hain.
+*/
+
+.doctor-form-container textarea,
+.doctor-form-container button {
+  grid-column: 1 / -1;
+}
+
+/* =========================================================
+   CONSULTATION MODES
+   ========================================================= */
+
+.doctor-form-container form > div {
+  grid-column: 1 / -1;
+
+  padding: 18px;
+
+  background: #f8faf9;
+
+  border: 1px solid var(--border-color);
+
+  border-radius: var(--radius-md);
+}
+
+.doctor-form-container form > div p {
+  margin: 0 0 12px;
+
+  color: var(--color-secondary);
+
+  font-family: var(--font-tertiary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.doctor-form-container form > div label {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  margin-right: 20px;
+
+  color: var(--text-primary);
+
+  font-size: 14px;
+
+  cursor: pointer;
+}
+
+/* =========================================================
+   CHECKBOX
+   ========================================================= */
+
+.doctor-form-container input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+
+  padding: 0;
+
+  accent-color: var(--color-accent);
+
+  cursor: pointer;
+
+  box-shadow: none;
+}
+
+/* =========================================================
+   SUBMIT BUTTON
+   ========================================================= */
+
+.doctor-form-container form > button {
+  width: 100%;
+
+  min-height: 48px;
+
+  margin-top: 4px;
+
+  border: none;
+
+  border-radius: var(--radius-full);
+
+  background: var(--btn-primary);
+
+  color: var(--text-light);
+
+  font-family: var(--font-secondary);
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow: var(--shadow-sm);
+
+  transition: var(--transition);
+}
+
+.doctor-form-container form > button:hover:not(:disabled) {
+  background: var(--btn-primary-hover);
+
+  transform: translateY(-2px);
+
+  box-shadow: var(--shadow-md);
+}
+
+.doctor-form-container form > button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.doctor-form-container form > button:disabled {
+  opacity: 0.65;
+
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   FOCUS / ACCESSIBILITY
+   ========================================================= */
+
+.doctor-dashboard button:focus-visible,
+.doctor-onboarding button:focus-visible,
+.doctor-onboarding input:focus-visible,
+.doctor-onboarding textarea:focus-visible,
+.doctor-onboarding select:focus-visible {
+  outline: 3px solid rgba(0, 168, 150, 0.25);
+
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   ANIMATION
+   ========================================================= */
+
+@keyframes doctorFadeUp {
+  from {
+    opacity: 0;
+
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 850px) {
+  .doctor-dashboard {
+    padding: 35px 18px 60px;
+  }
+
+  .doctor-onboarding {
+    padding: 35px 18px 60px;
+  }
+
+  .doctor-dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .doctor-form-container {
+    padding: 30px;
+  }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 620px) {
+  .doctor-dashboard {
+    padding: 25px 14px 50px;
+  }
+
+  .doctor-onboarding {
+    padding: 20px 12px 50px;
+  }
+
+  .doctor-dashboard-container {
+    max-width: 100%;
+  }
+
+  .doctor-header {
+    margin-bottom: 22px;
+  }
+
+  .doctor-header h1 {
+    font-size: 30px;
+  }
+
+  .doctor-header p:not(.doctor-eyebrow) {
+    font-size: 13px;
+  }
+
+  /* Status */
+
+  .doctor-status-card {
+    grid-template-columns: 1fr;
+
+    gap: 12px;
+  }
+
+  .doctor-status-card > div {
+    min-height: 90px;
+
+    padding: 18px;
+  }
+
+  /* Dashboard cards */
+
+  .doctor-dashboard-grid {
+    grid-template-columns: 1fr;
+
+    gap: 12px;
+  }
+
+  .doctor-dashboard-grid button {
+    min-height: 125px;
+
+    padding: 20px;
+  }
+
+  .doctor-dashboard-grid h3 {
+    font-size: 18px;
+  }
+
+  /* Onboard card */
+
+  .doctor-onboard-card {
+    padding: 25px 20px;
+  }
+
+  .doctor-onboard-card h2 {
+    font-size: 21px;
+  }
+
+  .doctor-onboard-card button {
+    width: 100%;
+  }
+
+  /* Form */
+
+  .doctor-form-container {
+    padding: 24px 18px;
+
+    border-radius: 16px;
+  }
+
+  .doctor-form-container > h1 {
+    font-size: 28px;
+  }
+
+  .doctor-form-container > p {
+    margin-bottom: 24px;
+  }
+
+  .doctor-form-container form {
+    grid-template-columns: 1fr;
+
+    gap: 14px;
+  }
+
+  .doctor-form-container textarea,
+  .doctor-form-container button,
+  .doctor-form-container form > div {
+    grid-column: auto;
+  }
+
+  .doctor-form-container form > div {
+    padding: 15px;
+  }
+
+  .doctor-form-container form > div label {
+    margin-bottom: 8px;
+  }
+}
+
+/* =========================================================
+   VERY SMALL PHONES — 320px / 360px
+   ========================================================= */
+
+@media (max-width: 390px) {
+  .doctor-dashboard {
+    padding: 20px 10px 40px;
+  }
+
+  .doctor-onboarding {
+    padding: 14px 8px 40px;
+  }
+
+  .doctor-header h1 {
+    font-size: 27px;
+  }
+
+  .doctor-eyebrow {
+    font-size: 10px;
+  }
+
+  .doctor-header p:not(.doctor-eyebrow) {
+    font-size: 12px;
+  }
+
+  .doctor-onboard-card {
+    padding: 22px 16px;
+  }
+
+  .doctor-onboard-card h2 {
+    font-size: 19px;
+  }
+
+  .doctor-onboard-card p {
+    font-size: 13px;
+  }
+
+  .doctor-status-card > div {
+    padding: 16px;
+  }
+
+  .doctor-status-card strong {
+    font-size: 18px;
+  }
+
+  .doctor-dashboard-grid button {
+    min-height: 115px;
+
+    padding: 18px;
+  }
+
+  .doctor-dashboard-grid h3 {
+    font-size: 17px;
+  }
+
+  .doctor-dashboard-grid p {
+    font-size: 12px;
+  }
+
+  .doctor-form-container {
+    padding: 20px 14px;
+
+    border-radius: 14px;
+  }
+
+  .doctor-form-container > h1 {
+    font-size: 25px;
+  }
+
+  .doctor-form-container > p {
+    font-size: 13px;
+  }
+
+  .doctor-form-container input,
+  .doctor-form-container textarea,
+  .doctor-form-container select {
+    padding: 12px;
+
+    font-size: 13px;
+  }
+
+  .doctor-form-container form > div {
+    padding: 13px;
+  }
+
+  .doctor-form-container form > div label {
+    display: flex;
+
+    margin: 8px 0;
+
+    font-size: 13px;
+  }
+
+  .doctor-form-container form > button {
+    min-height: 46px;
+
+    font-size: 13px;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .doctor-dashboard *,
+  .doctor-onboarding * {
+    animation: none !important;
+
+    transition: none !important;
+  }
+}

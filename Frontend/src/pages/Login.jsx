@@ -32,7 +32,14 @@ export default function Login() {
       const response = await api.post("/api/auth/login", loginData);
       await fetchProfile(); // Fetch the user profile after successful login
       toast.success(response.data.message);
-      navigate("/dashboard");
+
+      const loggedInUser = response.data.user;
+
+      if (loggedInUser.role === "doctor") {
+        navigate("/doctor-dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       console.log(err);
       toast.error("Account not exist");
