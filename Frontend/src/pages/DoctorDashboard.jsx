@@ -16,7 +16,7 @@ export default function DoctorDashboard() {
   const fetchProfile = async () => {
     try {
       const response = await api.get(
-        "/doctors/profile/me"
+        "/api/doctors/profile/me"
       );
 
       setProfile(response.data.profile);

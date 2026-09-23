@@ -52,7 +52,7 @@ export default function DoctorOnboarding() {
     try {
       setLoading(true);
 
-      await api.post("/doctors/profile", {
+      await api.post("/api/doctors/profile", {
         ...form,
 
         experience: Number(form.experience),
