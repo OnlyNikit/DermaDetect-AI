@@ -1,19 +1,15 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import "../components/styles/dashboard.css";
 import { useAuth } from "../components/context/AuthContext";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import api from "../api/axios";
 
-// Adjust this import to wherever ScanPage.jsx actually lives in your project
-import ScanPage from "./ScanPage";
 import Choose from "../pages/Choose";
 
-/* ======================================================================
-   DERMA DETECT AI — Patient Dashboard (React)
-   Now wired to the backend. Wherever a specific endpoint name/shape needs
-   confirming, look for comment blocks tagged:  BACKEND HOOK
-   ====================================================================== */
+/* ============================================================
+   TITLE MAP
+============================================================ */
 
 const TITLE_MAP = {
   dashboard: "Dashboard",
@@ -21,12 +17,17 @@ const TITLE_MAP = {
   result: "Scan Result",
   diseaseInfo: "Disease Information",
   history: "Scan History",
-  reports: "Medical Reports",
-  consult: "Consult a Dermatologist", // NEW
+  reports: "Reports",
+  consult: "Consult a Dermatologist",
+  appointments: "My Appointments",
   notifications: "Notifications",
   profile: "Profile",
   settings: "Settings",
 };
+
+/* ============================================================
+   DISEASE INFORMATION
+============================================================ */
 
 const diseaseInfoSections = [
   {
@@ -52,19 +53,23 @@ const diseaseInfoSections = [
   {
     key: "homecare",
     label: "Home Care Tips",
-    text: "Use fragrance-free moisturizers daily, take lukewarm (not hot) showers, avoid scratching.",
+    text: "Use fragrance-free moisturizers daily, take lukewarm showers, and avoid scratching.",
   },
   {
     key: "treatment",
     label: "Treatment Options",
-    text: "Topical creams, light therapy, and in moderate-to-severe cases, oral or injectable medication prescribed by a dermatologist.",
+    text: "Treatment may include topical creams, light therapy, or medicines prescribed by a dermatologist.",
   },
   {
     key: "whentosee",
     label: "When to see a doctor",
-    text: "If patches spread quickly, become painful, show signs of infection, or affect daily life — book a dermatologist visit.",
+    text: "If patches spread quickly, become painful, show signs of infection, or affect daily life, consult a dermatologist.",
   },
 ];
+
+/* ============================================================
+   EMPTY RESULT
+============================================================ */
 
 const emptyResult = {
   disease: "No scans yet",
@@ -76,85 +81,27 @@ const emptyResult = {
   date: "—",
 };
 
-// ---------- NEW: mock doctor data for the Consult view ----------
-// BACKEND HOOK: replace with GET /api/doctors (filtered by city/availability)
-const mockDoctors = [
-  {
-    id: "ananya-sharma",
-    initials: "AS",
-    name: "Dr. Ananya Sharma",
-    role: "Dermatologist · MD, 8 yrs experience",
-    rating: "4.8",
-    distanceKm: 2.4,
-    status: "available",
-    nextSlot: null,
-    fee: 499,
-    modes: ["video", "chat", "in-person"],
-    slotGroups: [
-      {
-        label: "Today",
-        slots: [
-          { time: "4:30 PM", full: false },
-          { time: "5:00 PM", full: false },
-          { time: "5:30 PM", full: true },
-          { time: "6:00 PM", full: false },
-        ],
-      },
-      {
-        label: "Tomorrow",
-        slots: [
-          { time: "10:00 AM", full: false },
-          { time: "10:30 AM", full: false },
-        ],
-      },
-    ],
-  },
-  {
-    id: "rohit-khanna",
-    initials: "RK",
-    name: "Dr. Rohit Khanna",
-    role: "Dermatologist · MBBS, DVD, 5 yrs experience",
-    rating: "4.6",
-    distanceKm: 4.1,
-    status: "busy",
-    nextSlot: "Today 6:00 PM",
-    fee: 399,
-    modes: ["video", "chat"],
-    slotGroups: [
-      {
-        label: "Today",
-        slots: [
-          { time: "6:00 PM", full: false },
-          { time: "6:30 PM", full: false },
-        ],
-      },
-    ],
-  },
-  {
-    id: "priya-mehta",
-    initials: "PM",
-    name: "Dr. Priya Mehta",
-    role: "Dermatologist · MD, 12 yrs experience",
-    rating: "4.9",
-    distanceKm: 6.8,
-    status: "available",
-    nextSlot: null,
-    fee: 699,
-    modes: ["in-person"],
-    slotGroups: [
-      {
-        label: "Tomorrow",
-        slots: [
-          { time: "11:00 AM", full: false },
-          { time: "11:30 AM", full: false },
-        ],
-      },
-    ],
-  },
-];
+/* ============================================================
+   CONSULTATION CONSTANTS
+============================================================ */
 
-const MODE_LABELS = { video: "Video call", chat: "Text chat", "in-person": "In-person" };
-const MODE_ICONS = { video: "🎥", chat: "💬", "in-person": "🏥" };
+const MODE_LABELS = {
+  video: "Video call",
+  text: "Text chat",
+  chat: "Text chat",
+  "in-person": "In-person",
+};
+
+const MODE_ICONS = {
+  video: "🎥",
+  text: "💬",
+  chat: "💬",
+  "in-person": "🏥",
+};
+
+/* ============================================================
+   HELPERS
+============================================================ */
 
 function severityBadgeClass(severity) {
   if (severity === "Low") return "badge badge-success";
@@ -163,17 +110,26 @@ function severityBadgeClass(severity) {
 }
 
 function statusBadge(status) {
-  return status === "Healthy" ? (
-    <span className="badge badge-success">Healthy</span>
-  ) : (
-    <span className="badge badge-warn">Disease Detected</span>
+  if (status === "Healthy") {
+    return <span className="badge badge-success">Healthy</span>;
+  }
+
+  return (
+    <span className="badge badge-warn">
+      Disease Detected
+    </span>
   );
 }
 
 function formatDate(rawDate) {
   if (!rawDate) return "Not available";
+
   const d = new Date(rawDate);
-  if (Number.isNaN(d.getTime())) return "Not available";
+
+  if (Number.isNaN(d.getTime())) {
+    return "Not available";
+  }
+
   return d.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -185,194 +141,744 @@ function formatDate(rawDate) {
 
 function normalizeConfidence(rawConfidence) {
   const n = Number(rawConfidence ?? 0);
+
   const safe = Number.isFinite(n) ? n : 0;
+
   const pct = safe > 1 ? safe : safe * 100;
+
   return Math.min(100, Math.max(0, pct));
 }
 
-// Shared mapping from a raw assessment (as returned by /assessment/*)
-// into the shape the dashboard views render.
+/* ============================================================
+   MAP ASSESSMENT
+============================================================ */
+
 function mapAssessmentToResult(assessment) {
   if (!assessment) return null;
 
   const prediction = assessment.prediction || {};
-  const disease = prediction.disease || "Not available";
+
+  const disease =
+    prediction.disease || "Not available";
 
   return {
     id: assessment._id,
+
     disease,
-    confidence: normalizeConfidence(prediction.confidence),
-    severity: prediction.severity || "Low",
+
+    confidence: normalizeConfidence(
+      prediction.confidence
+    ),
+
+    severity:
+      prediction.severity || "Low",
+
     description:
       assessment.explanation ||
       prediction.description ||
       "No description available for this result.",
-    contagious: prediction.contagious || "Not available",
+
+    contagious:
+      prediction.contagious ||
+      "Not available",
+
     recommendation:
       assessment.recommendation ||
       prediction.recommendation ||
       "Consult a dermatologist for a full evaluation.",
-    date: formatDate(assessment.updatedAt || assessment.createdAt),
-    image: assessment.image || null,
+
+    date: formatDate(
+      assessment.updatedAt ||
+        assessment.createdAt
+    ),
+
+    image:
+      assessment.image || null,
+
     status:
-      disease.toLowerCase() === "healthy" ? "Healthy" : "Disease Detected",
+      disease.toLowerCase() === "healthy"
+        ? "Healthy"
+        : "Disease Detected",
   };
 }
 
+/* ============================================================
+   APPOINTMENT HELPERS
+============================================================ */
+
+function getAppointmentStatus(appointment) {
+  return (
+    appointment.status ||
+    appointment.appointmentStatus ||
+    "pending"
+  );
+}
+
+function getDoctorFromAppointment(appointment) {
+  return (
+    appointment.doctor ||
+    appointment.doctorProfile?.user ||
+    appointment.doctorProfile ||
+    {}
+  );
+}
+
+function getAppointmentDoctorName(appointment) {
+  const doctor =
+    getDoctorFromAppointment(appointment);
+
+  return (
+    doctor.fullName ||
+    doctor.name ||
+    appointment.doctorName ||
+    "Doctor"
+  );
+}
+
+function getAppointmentSpecialization(appointment) {
+  const doctor =
+    getDoctorFromAppointment(appointment);
+
+  return (
+    doctor.specialization ||
+    appointment.specialization ||
+    "Dermatologist"
+  );
+}
+
+function getAppointmentDate(appointment) {
+  return (
+    appointment.date ||
+    appointment.appointmentDate ||
+    appointment.startDate ||
+    null
+  );
+}
+
+function getAppointmentStartTime(appointment) {
+  return (
+    appointment.startTime ||
+    appointment.time ||
+    appointment.slot?.startTime ||
+    ""
+  );
+}
+
+function getAppointmentEndTime(appointment) {
+  return (
+    appointment.endTime ||
+    appointment.slot?.endTime ||
+    ""
+  );
+}
+
+function getAppointmentMode(appointment) {
+  return (
+    appointment.mode ||
+    appointment.type ||
+    "video"
+  );
+}
+
+function formatAppointmentDate(date) {
+  if (!date) return "Date not available";
+
+  const d = new Date(date);
+
+  if (Number.isNaN(d.getTime())) {
+    return date;
+  }
+
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function appointmentStatusClass(status) {
+  const normalized =
+    String(status).toLowerCase();
+
+  if (
+    normalized === "confirmed" ||
+    normalized === "accepted" ||
+    normalized === "approved"
+  ) {
+    return "badge badge-success";
+  }
+
+  if (
+    normalized === "cancelled" ||
+    normalized === "canceled" ||
+    normalized === "rejected"
+  ) {
+    return "badge badge-danger";
+  }
+
+  if (
+    normalized === "completed"
+  ) {
+    return "badge badge-success";
+  }
+
+  return "badge badge-warn";
+}
+
+function appointmentStatusLabel(status) {
+  const normalized =
+    String(status).toLowerCase();
+
+  const labels = {
+    pending: "Pending",
+    confirmed: "Confirmed",
+    accepted: "Accepted",
+    approved: "Approved",
+    cancelled: "Cancelled",
+    canceled: "Cancelled",
+    rejected: "Rejected",
+    completed: "Completed",
+  };
+
+  return labels[normalized] || status;
+}
+
+/* ============================================================
+   MAIN DASHBOARD
+============================================================ */
+
 export default function DermaDetectAI() {
   const routerLocation = useLocation();
-  const [activeView, setActiveView] = useState("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-   const {  logout } = useAuth();
+  const navigate = useNavigate();
 
-  // Lets other pages (e.g. SkinAnalysisResult) deep-link into a view:
-  // navigate("/dashboard", { state: { view: "consult", assessmentId } })
-  const [consultAssessmentId, setConsultAssessmentId] = useState(null);
+  const {
+    logout,
+  } = useAuth();
+
+  const [activeView, setActiveView] =
+    useState("dashboard");
+
+  const [sidebarOpen, setSidebarOpen] =
+    useState(false);
+
+  /* ----------------------------------------------------------
+     CONSULT ASSESSMENT
+  ---------------------------------------------------------- */
+
+  const [
+    consultAssessmentId,
+    setConsultAssessmentId,
+  ] = useState(null);
+
+  /* ----------------------------------------------------------
+     ROUTER STATE
+  ---------------------------------------------------------- */
+
   useEffect(() => {
-    const requestedView = routerLocation.state?.view;
+    const requestedView =
+      routerLocation.state?.view;
+
     if (requestedView) {
-      if (routerLocation.state?.assessmentId) {
-        setConsultAssessmentId(routerLocation.state.assessmentId);
+      if (
+        routerLocation.state?.assessmentId
+      ) {
+        setConsultAssessmentId(
+          routerLocation.state.assessmentId
+        );
       }
+
       goTo(requestedView);
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routerLocation.state]);
 
-  /* -------- Dark mode (functional) -------- */
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return (
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: light)").matches
-    );
-  });
+  /* ----------------------------------------------------------
+     DARK MODE
+  ---------------------------------------------------------- */
+
+  const [darkMode, setDarkMode] =
+    useState(() => {
+      if (
+        typeof window === "undefined"
+      ) {
+        return false;
+      }
+
+      return (
+        window.matchMedia &&
+        window.matchMedia(
+          "(prefers-color-scheme: dark)"
+        ).matches
+      );
+    });
 
   useEffect(() => {
-    /* ============ BACKEND HOOK: PERSIST THEME PREFERENCE ============
-       Optionally save the user's theme choice, e.g.
-       api.patch('/settings', { darkMode })
-       or localStorage.setItem('theme', darkMode ? 'dark' : 'light')
-    */
+    try {
+      localStorage.setItem(
+        "dermadetect-theme",
+        darkMode ? "dark" : "light"
+      );
+    } catch (error) {
+      console.error(error);
+    }
   }, [darkMode]);
 
-  /* -------- Settings toggles -------- */
-  const [notifScan, setNotifScan] = useState(true);
-  const [notifFollowup, setNotifFollowup] = useState(true);
-  const [language, setLanguage] = useState("English");
+  /* ----------------------------------------------------------
+     SETTINGS
+  ---------------------------------------------------------- */
 
-  /* -------- Real data from the backend -------- */
-  const [user, setUser] = useState(null);
-  const [stats, setStats] = useState({
-    totalScans: 0,
-    lastScanDate: "Not available",
-    currentStatus: "Not available",
-    reportsAvailable: 0,
-  });
-  const [history, setHistory] = useState([]); // mapped result objects, most recent first
-  const [reports, setReports] = useState([]);
-  const [notifications, setNotifications] = useState([]);
+  const [notifScan, setNotifScan] =
+    useState(true);
 
-  const [dashboardLoading, setDashboardLoading] = useState(true);
-  const [dashboardError, setDashboardError] = useState("");
+  const [notifFollowup, setNotifFollowup] =
+    useState(true);
 
-  /* -------- Profile form -------- */
-  const [profile, setProfile] = useState({
+  const [language, setLanguage] =
+    useState("English");
+
+  /* ----------------------------------------------------------
+     USER
+  ---------------------------------------------------------- */
+
+  const [user, setUser] =
+    useState(null);
+
+  /* ----------------------------------------------------------
+     DASHBOARD STATS
+  ---------------------------------------------------------- */
+
+  const [stats, setStats] =
+    useState({
+      totalScans: 0,
+      lastScanDate: "Not available",
+      currentStatus: "Not available",
+      reportsAvailable: 0,
+    });
+
+  /* ----------------------------------------------------------
+     HISTORY
+  ---------------------------------------------------------- */
+
+  const [history, setHistory] =
+    useState([]);
+
+  /* ----------------------------------------------------------
+     REPORTS
+  ---------------------------------------------------------- */
+
+  const [reports, setReports] =
+    useState([]);
+
+  /* ----------------------------------------------------------
+     NOTIFICATIONS
+  ---------------------------------------------------------- */
+
+  const [notifications, setNotifications] =
+    useState([]);
+
+  /* ----------------------------------------------------------
+     APPOINTMENTS
+  ---------------------------------------------------------- */
+
+  const [
+    appointments,
+    setAppointments,
+  ] = useState([]);
+
+  const [
+    appointmentsLoading,
+    setAppointmentsLoading,
+  ] = useState(false);
+
+  const [
+    appointmentsError,
+    setAppointmentsError,
+  ] = useState("");
+
+  /* ----------------------------------------------------------
+     DASHBOARD LOADING
+  ---------------------------------------------------------- */
+
+  const [
+    dashboardLoading,
+    setDashboardLoading,
+  ] = useState(true);
+
+  const [
+    dashboardError,
+    setDashboardError,
+  ] = useState("");
+
+  /* ----------------------------------------------------------
+     PROFILE
+  ---------------------------------------------------------- */
+
+  const [
+    profile,
+    setProfile,
+  ] = useState({
     name: "",
     age: "",
     gender: "",
     email: "",
     phone: "",
   });
-  const [savedProfile, setSavedProfile] = useState(profile);
 
-  /* -------- History search / filter -------- */
-  const [historySearch, setHistorySearch] = useState("");
-  const [historyFilter, setHistoryFilter] = useState("all");
+  const [
+    savedProfile,
+    setSavedProfile,
+  ] = useState(profile);
 
-  /* -------- Disease info accordion -------- */
-  const [openSection, setOpenSection] = useState("what");
+  /* ----------------------------------------------------------
+     HISTORY FILTER
+  ---------------------------------------------------------- */
 
-  /* -------- Which result is shown on the "result" view --------
-     Defaults to the most recent scan; clicking a specific history row
-     shows that one instead. */
-  const [selectedResult, setSelectedResult] = useState(null);
+  const [
+    historySearch,
+    setHistorySearch,
+  ] = useState("");
+
+  const [
+    historyFilter,
+    setHistoryFilter,
+  ] = useState("all");
+
+  /* ----------------------------------------------------------
+     DISEASE INFO
+  ---------------------------------------------------------- */
+
+  const [
+    openSection,
+    setOpenSection,
+  ] = useState("what");
+
+  /* ----------------------------------------------------------
+     RESULT
+  ---------------------------------------------------------- */
+
+  const [
+    selectedResult,
+    setSelectedResult,
+  ] = useState(null);
+
+  /* ============================================================
+     NAVIGATION
+  ============================================================ */
 
   function goTo(view) {
     setActiveView(view);
     setSidebarOpen(false);
+
+    /*
+      Whenever appointments is opened,
+      refresh appointment data.
+    */
+
+    if (view === "appointments") {
+      loadAppointments();
+    }
   }
 
   /* ============================================================
-     BACKEND HOOK: INITIAL DASHBOARD DATA LOAD
-     Adjust these endpoint paths / response shapes to match your API.
-     Expected shapes:
-       GET /user/profile        -> { user: { fullName, age, gender, email, phone } }
-       GET /assessment/history  -> { history: [ assessmentObj, ... ] }   (same shape as
-                                     the assessment object used on the result page:
-                                     prediction{ disease, confidence, severity },
-                                     image, createdAt/updatedAt, explanation, etc.)
-       GET /reports             -> { reports: [ { title, date }, ... ] }
-       GET /notifications       -> { notifications: [ { title, time, unread, icon }, ... ] }
-     ============================================================ */
+     LOAD APPOINTMENTS
+  ============================================================ */
+
+  async function loadAppointments() {
+    try {
+      setAppointmentsLoading(true);
+      setAppointmentsError("");
+
+      /*
+       IMPORTANT:
+
+       Your BookAppointment already uses:
+
+       POST /api/appointments
+
+       So here we use:
+
+       GET /api/appointments
+
+       Backend should return:
+
+       {
+         appointments: [...]
+       }
+
+       OR directly an array.
+      */
+
+      const response =
+        await api.get(
+          "/api/appointments"
+        );
+
+      const data =
+        response.data;
+
+      const fetchedAppointments =
+        Array.isArray(data)
+          ? data
+          : data?.appointments ||
+            data?.data ||
+            [];
+
+      setAppointments(
+        fetchedAppointments
+      );
+
+    } catch (err) {
+      console.error(
+        "APPOINTMENTS FETCH ERROR:",
+        err.response?.data ||
+          err.message
+      );
+
+      setAppointmentsError(
+        err.response?.data?.message ||
+          "Unable to load your appointments."
+      );
+    } finally {
+      setAppointmentsLoading(false);
+    }
+  }
+
+  /* ============================================================
+     CANCEL APPOINTMENT
+  ============================================================ */
+
+  async function handleCancelAppointment(
+    appointment
+  ) {
+    const appointmentId =
+      appointment._id ||
+      appointment.id;
+
+    if (!appointmentId) {
+      alert(
+        "Appointment ID not found."
+      );
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to cancel this appointment?"
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      /*
+        Expected backend:
+
+        PATCH /api/appointments/:id/cancel
+      */
+
+      await api.patch(
+        `/api/appointments/${appointmentId}/cancel`
+      );
+
+      alert(
+        "Appointment cancelled successfully."
+      );
+
+      await loadAppointments();
+
+    } catch (err) {
+      console.error(
+        "CANCEL APPOINTMENT ERROR:",
+        err.response?.data ||
+          err.message
+      );
+
+      alert(
+        err.response?.data?.message ||
+          "Unable to cancel appointment."
+      );
+    }
+  }
+
+  /* ============================================================
+     INITIAL DASHBOARD DATA
+  ============================================================ */
+
   useEffect(() => {
     async function loadDashboardData() {
       try {
         setDashboardLoading(true);
         setDashboardError("");
 
-        const [userRes, historyRes, reportsRes, notificationsRes] =
-          await Promise.all([
-            api.get("/api/user/profile"),
-            api.get("/api/assessment/history"),
-            api.get("/api/reports"),
-            api.get("/api/notifications"),
-          ]);
+        const [
+          userRes,
+          historyRes,
+          reportsRes,
+          notificationsRes,
+        ] = await Promise.all([
+          api.get(
+            "/api/user/profile"
+          ),
 
-        const fetchedUser = userRes.data?.user || null;
-        setUser(fetchedUser);
+          api.get(
+            "/api/assessment/history"
+          ),
+
+          api.get(
+            "/api/reports"
+          ),
+
+          api.get(
+            "/api/notifications"
+          ),
+        ]);
+
+        /* USER */
+
+        const fetchedUser =
+          userRes.data?.user ||
+          null;
+
+        setUser(
+          fetchedUser
+        );
 
         if (fetchedUser) {
           const initialProfile = {
-            name: fetchedUser.fullName || "",
-            age: fetchedUser.age ?? "",
-            gender: fetchedUser.gender || "",
-            email: fetchedUser.email || "",
-            phone: fetchedUser.phone || "",
+            name:
+              fetchedUser.fullName ||
+              "",
+
+            age:
+              fetchedUser.age ??
+              "",
+
+            gender:
+              fetchedUser.gender ||
+              "",
+
+            email:
+              fetchedUser.email ||
+              "",
+
+            phone:
+              fetchedUser.phone ||
+              "",
           };
-          setProfile(initialProfile);
-          setSavedProfile(initialProfile);
+
+          setProfile(
+            initialProfile
+          );
+
+          setSavedProfile(
+            initialProfile
+          );
         }
 
-        const rawHistory = historyRes.data?.history || [];
-        // newest first, in case the API doesn't already sort them
-        const sortedRaw = [...rawHistory].sort((a, b) => {
-          const aDate = new Date(a.updatedAt || a.createdAt || 0).getTime();
-          const bDate = new Date(b.updatedAt || b.createdAt || 0).getTime();
-          return bDate - aDate;
-        });
-        const mappedHistory = sortedRaw.map(mapAssessmentToResult);
-        setHistory(mappedHistory);
+        /* HISTORY */
 
-        const fetchedReports = reportsRes.data?.reports || [];
-        setReports(fetchedReports);
+        const rawHistory =
+          historyRes.data?.history ||
+          [];
 
-        const fetchedNotifications = notificationsRes.data?.notifications || [];
-        setNotifications(fetchedNotifications);
+        const sortedRaw =
+          [...rawHistory].sort(
+            (a, b) => {
+              const aDate =
+                new Date(
+                  a.updatedAt ||
+                    a.createdAt ||
+                    0
+                ).getTime();
+
+              const bDate =
+                new Date(
+                  b.updatedAt ||
+                    b.createdAt ||
+                    0
+                ).getTime();
+
+              return (
+                bDate - aDate
+              );
+            }
+          );
+
+        const mappedHistory =
+          sortedRaw.map(
+            mapAssessmentToResult
+          );
+
+        setHistory(
+          mappedHistory
+        );
+
+        /* REPORTS */
+
+        const fetchedReports =
+          reportsRes.data?.reports ||
+          [];
+
+        setReports(
+          fetchedReports
+        );
+
+        /* NOTIFICATIONS */
+
+        const fetchedNotifications =
+          notificationsRes.data
+            ?.notifications ||
+          [];
+
+        setNotifications(
+          fetchedNotifications
+        );
+
+        /* STATS */
 
         setStats({
-          totalScans: mappedHistory.length,
-          lastScanDate: mappedHistory[0]?.date || "Not available",
-          currentStatus: mappedHistory[0]?.status || "Not available",
-          reportsAvailable: fetchedReports.length,
+          totalScans:
+            mappedHistory.length,
+
+          lastScanDate:
+            mappedHistory[0]?.date ||
+            "Not available",
+
+          currentStatus:
+            mappedHistory[0]?.status ||
+            "Not available",
+
+          reportsAvailable:
+            fetchedReports.length,
         });
+
+        /*
+          Load appointments separately.
+
+          If appointment endpoint doesn't exist yet,
+          dashboard should still work.
+        */
+
+        try {
+          await loadAppointments();
+        } catch (appointmentError) {
+          console.error(
+            appointmentError
+          );
+        }
+
       } catch (err) {
         console.error(
           "Dashboard data fetch failed:",
-          err.response?.data || err.message,
+          err.response?.data ||
+            err.message
         );
+
         setDashboardError(
-          err.response?.data?.message || "Unable to load your dashboard data",
+          err.response?.data?.message ||
+            "Unable to load your dashboard data"
         );
       } finally {
         setDashboardLoading(false);
@@ -382,517 +888,1591 @@ export default function DermaDetectAI() {
     loadDashboardData();
   }, []);
 
-  const recentResult = history[0] || null;
-  const displayedResult = selectedResult || recentResult || emptyResult;
-  const handleLogout = async () => {
-    try {
-      const response = await logout();
-      console.log("Logout response:", response);
+  /* ============================================================
+     RESULT DATA
+  ============================================================ */
 
-      toast.success(response.message);
+  const recentResult =
+    history[0] ||
+    null;
 
-      navigate("/login");
-    } catch (err) {
-      console.error("Logout Error:", err);
-      console.error("Response:", err.response);
-      toast.error("Logout failed");
-    }
-  };
+  const displayedResult =
+    selectedResult ||
+    recentResult ||
+    emptyResult;
+
+  /* ============================================================
+     LOGOUT
+  ============================================================ */
+
+  const handleLogout =
+    async () => {
+      try {
+        const response =
+          await logout();
+
+        console.log(
+          "Logout response:",
+          response
+        );
+
+        navigate("/login");
+
+      } catch (err) {
+        console.error(
+          "Logout Error:",
+          err
+        );
+
+        alert(
+          "Logout failed"
+        );
+      }
+    };
+
+  /* ============================================================
+     SAVE PROFILE
+  ============================================================ */
 
   async function handleSaveProfile() {
-    /* ============ BACKEND HOOK: SAVE PROFILE ============ */
     try {
-      await api.put("/user/profile", profile);
-      setSavedProfile(profile);
+      await api.put(
+        "/api/user/profile",
+        profile
+      );
+
+      setSavedProfile(
+        profile
+      );
+
+      alert(
+        "Profile updated successfully."
+      );
+
     } catch (err) {
-      console.error("Profile save failed:", err.response?.data || err.message);
-      alert(err.response?.data?.message || "Could not save profile changes.");
+      console.error(
+        "Profile save failed:",
+        err.response?.data ||
+          err.message
+      );
+
+      alert(
+        err.response?.data?.message ||
+          "Could not save profile changes."
+      );
     }
   }
 
+  /* ============================================================
+     PASSWORD
+  ============================================================ */
+
   function handleChangePassword() {
-    /* ============ BACKEND HOOK: CHANGE PASSWORD ============
-       Open a modal / route that calls something like
-       api.post('/user/change-password', { ... })
-    */
     alert(
-      "Backend not connected yet: this should open the change-password flow.",
+      "Change password flow will be connected here."
     );
   }
 
-  function handleReportAction(action, item) {
-    if (action === "download-pdf") {
-      /* ============ BACKEND HOOK: DOWNLOAD PDF ============
-         window.location = `/api/reports/${item.date}/download`;
-      */
-      alert("Backend not connected yet: this should download the PDF report.");
-    }
-    if (action === "print-report") {
+  /* ============================================================
+     REPORT ACTION
+  ============================================================ */
+
+  function handleReportAction(
+    action,
+    item
+  ) {
+    if (
+      action ===
+      "download-pdf"
+    ) {
       alert(
-        "Backend not connected yet: this should open the print dialog for the report.",
+        "PDF download endpoint will be connected here."
       );
     }
-    if (action === "share-report") {
-      alert("Backend not connected yet: this should share the report link.");
+
+    if (
+      action ===
+      "print-report"
+    ) {
+      window.print();
+    }
+
+    if (
+      action ===
+      "share-report"
+    ) {
+      alert(
+        "Share report feature will be connected here."
+      );
     }
   }
 
-  function viewHistoryItem(item) {
-    setSelectedResult(item);
+  /* ============================================================
+     VIEW HISTORY ITEM
+  ============================================================ */
+
+  function viewHistoryItem(
+    item
+  ) {
+    setSelectedResult(
+      item
+    );
+
     goTo("result");
   }
 
-  const filteredHistory = history.filter((h) => {
-    const matchesSearch = (h.disease || "")
-      .toLowerCase()
-      .includes(historySearch.toLowerCase());
-    const matchesFilter = historyFilter === "all" || h.status === historyFilter;
-    return matchesSearch && matchesFilter;
-  });
+  /* ============================================================
+     FILTER HISTORY
+  ============================================================ */
 
-  const userFirstName = (user?.fullName || "there").split(" ")[0];
-  const avatarInitial = (user?.fullName || "U").charAt(0).toUpperCase();
+  const filteredHistory =
+    history.filter(
+      (h) => {
+        const matchesSearch =
+          (h.disease || "")
+            .toLowerCase()
+            .includes(
+              historySearch
+                .toLowerCase()
+            );
+
+        const matchesFilter =
+          historyFilter ===
+            "all" ||
+          h.status ===
+            historyFilter;
+
+        return (
+          matchesSearch &&
+          matchesFilter
+        );
+      }
+    );
+
+  /* ============================================================
+     USER INFO
+  ============================================================ */
+
+  const userFirstName =
+    (
+      user?.fullName ||
+      "there"
+    ).split(" ")[0];
+
+  const avatarInitial =
+    (
+      user?.fullName ||
+      "U"
+    )
+      .charAt(0)
+      .toUpperCase();
+
+  /* ============================================================
+     RENDER
+  ============================================================ */
 
   return (
-    <div className="dtc-app" data-theme={darkMode ? "dark" : "light"}>
-      {/* ================= SIDEBAR ================= */}
-      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+    <div
+      className="dtc-app"
+      data-theme={
+        darkMode
+          ? "dark"
+          : "light"
+      }
+    >
+
+      {/* ======================================================
+          SIDEBAR
+      ====================================================== */}
+
+      <aside
+        className={`sidebar ${
+          sidebarOpen
+            ? "open"
+            : ""
+        }`}
+      >
+
         <div className="sidebar-brand">
-          <span className="logo-dot"></span> Derma Detect AI
+          <span className="logo-dot"></span>
+          Derma Detect AI
         </div>
+
         <ul className="nav-list">
-          {[
-            ["dashboard", "🏠", "Dashboard"],
-            ["scan", "📷", "New Scan"],
-            ["history", "📊", "Scan History"],
-            ["reports", "📄", "Reports"],
-            ["consult", "🩺", "Consult Doctor"], // NEW sidebar option
-            ["notifications", "🔔", "Notifications"],
-            ["profile", "👤", "Profile"],
-            ["settings", "⚙️", "Settings"],
-          ].map(([key, icon, label]) => (
-            <li
-              key={key}
-              className={`nav-item ${activeView === key ? "active" : ""}`}
-              onClick={() => goTo(key)}
-            >
-              <span className="nav-icon">{icon}</span> {label}
-            </li>
-          ))}
+
+          <li
+            className={`nav-item ${
+              activeView ===
+              "dashboard"
+                ? "active"
+                : ""
+            }`}
+            onClick={() =>
+              goTo("dashboard")
+            }
+          >
+            <span className="nav-icon">
+              🏠
+            </span>
+            Dashboard
+          </li>
+
+          <li
+            className={`nav-item ${
+              activeView === "scan"
+                ? "active"
+                : ""
+            }`}
+            onClick={() =>
+              goTo("scan")
+            }
+          >
+            <span className="nav-icon">
+              📷
+            </span>
+            New Scan
+          </li>
+
+          <li
+            className={`nav-item ${
+              activeView ===
+              "history"
+                ? "active"
+                : ""
+            }`}
+            onClick={() =>
+              goTo("history")
+            }
+          >
+            <span className="nav-icon">
+              📊
+            </span>
+            Scan History
+          </li>
+
+          <li
+            className={`nav-item ${
+              activeView ===
+              "reports"
+                ? "active"
+                : ""
+            }`}
+            onClick={() =>
+              goTo("reports")
+            }
+          >
+            <span className="nav-icon">
+              📄
+            </span>
+            Reports
+          </li>
+
+          {/* ===============================================
+              NEW PATIENT APPOINTMENTS OPTION
+          =============================================== */}
+
+          <li
+            className={`nav-item ${
+              activeView ===
+              "appointments"
+                ? "active"
+                : ""
+            }`}
+            onClick={() =>
+              goTo(
+                "appointments"
+              )
+            }
+          >
+            <span className="nav-icon">
+              📅
+            </span>
+
+            <span>
+              My Appointments
+            </span>
+
+            {appointments.filter(
+              (a) =>
+                String(
+                  getAppointmentStatus(
+                    a
+                  )
+                ).toLowerCase() ===
+                "pending"
+            ).length >
+              0 && (
+              <span
+                style={{
+                  marginLeft:
+                    "auto",
+                  fontSize:
+                    "11px",
+                  background:
+                    "var(--color-primary)",
+                  color:
+                    "#fff",
+                  minWidth:
+                    "20px",
+                  height:
+                    "20px",
+                  borderRadius:
+                    "50%",
+                  display:
+                    "flex",
+                  alignItems:
+                    "center",
+                  justifyContent:
+                    "center",
+                }}
+              >
+                {
+                  appointments.filter(
+                    (a) =>
+                      String(
+                        getAppointmentStatus(
+                          a
+                        )
+                      ).toLowerCase() ===
+                      "pending"
+                  ).length
+                }
+              </span>
+            )}
+          </li>
+
+          <li
+            className={`nav-item ${
+              activeView ===
+              "consult"
+                ? "active"
+                : ""
+            }`}
+            onClick={() =>
+              goTo("consult")
+            }
+          >
+            <span className="nav-icon">
+              🩺
+            </span>
+            Consult Doctor
+          </li>
+
+          <li
+            className={`nav-item ${
+              activeView ===
+              "notifications"
+                ? "active"
+                : ""
+            }`}
+            onClick={() =>
+              goTo(
+                "notifications"
+              )
+            }
+          >
+            <span className="nav-icon">
+              🔔
+            </span>
+            Notifications
+          </li>
+
+          <li
+            className={`nav-item ${
+              activeView ===
+              "profile"
+                ? "active"
+                : ""
+            }`}
+            onClick={() =>
+              goTo("profile")
+            }
+          >
+            <span className="nav-icon">
+              👤
+            </span>
+            Profile
+          </li>
+
+          <li
+            className={`nav-item ${
+              activeView ===
+              "settings"
+                ? "active"
+                : ""
+            }`}
+            onClick={() =>
+              goTo("settings")
+            }
+          >
+            <span className="nav-icon">
+              ⚙️
+            </span>
+            Settings
+          </li>
+
         </ul>
+
         <div className="sidebar-footer">
-          <div className="logout-btn" onClick={handleLogout}>
+
+          <div
+            className="logout-btn"
+            onClick={
+              handleLogout
+            }
+          >
             🚪 Logout
           </div>
+
         </div>
+
       </aside>
 
-      {/* ================= MAIN ================= */}
+      {/* ======================================================
+          MAIN
+      ====================================================== */}
+
       <div className="main">
+
+        {/* TOPBAR */}
+
         <div className="topbar">
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+
+          <div
+            style={{
+              display:
+                "flex",
+              alignItems:
+                "center",
+              gap: 12,
+            }}
+          >
+
             <button
               className="menu-btn"
-              onClick={() => setSidebarOpen((s) => !s)}
+              onClick={() =>
+                setSidebarOpen(
+                  (s) => !s
+                )
+              }
             >
               ☰
             </button>
-            <div className="topbar-title">{TITLE_MAP[activeView]}</div>
+
+            <div className="topbar-title">
+              {
+                TITLE_MAP[
+                  activeView
+                ]
+              }
+            </div>
+
           </div>
+
           <div className="topbar-right">
-            <div className="bell" onClick={() => goTo("notifications")}>
-              <span className="dot"></span>🔔
+
+            <div
+              className="bell"
+              onClick={() =>
+                goTo(
+                  "notifications"
+                )
+              }
+            >
+              <span className="dot"></span>
+              🔔
             </div>
-            <div className="avatar-chip" onClick={() => goTo("profile")}>
-              <div className="avatar-circle">{avatarInitial}</div>
+
+            <div
+              className="avatar-chip"
+              onClick={() =>
+                goTo("profile")
+              }
+            >
+              <div className="avatar-circle">
+                {avatarInitial}
+              </div>
             </div>
+
           </div>
+
         </div>
 
+        {/* CONTENT */}
+
         <div className="content">
+
           {dashboardLoading && (
-            <div className="card" style={{ textAlign: "center", padding: 40 }}>
+            <div
+              className="card"
+              style={{
+                textAlign:
+                  "center",
+                padding: 40,
+              }}
+            >
               Loading your dashboard...
             </div>
           )}
 
-          {!dashboardLoading && dashboardError && (
-            <div className="card" style={{ textAlign: "center", padding: 40 }}>
-              {dashboardError}
-            </div>
-          )}
+          {!dashboardLoading &&
+            dashboardError && (
+              <div
+                className="card"
+                style={{
+                  textAlign:
+                    "center",
+                  padding: 40,
+                }}
+              >
+                {dashboardError}
+              </div>
+            )}
 
-          {!dashboardLoading && !dashboardError && (
-            <>
-              {activeView === "dashboard" && (
-                <DashboardView
-                  userFirstName={userFirstName}
-                  stats={stats}
-                  recentResult={recentResult || emptyResult}
-                  history={history}
-                  goTo={goTo}
-                  onViewResult={viewHistoryItem}
-                />
-              )}
+          {!dashboardLoading &&
+            !dashboardError && (
+              <>
 
-              {/* Sidebar/topbar stay in place; only the content area swaps to
-                  your standalone ScanPage (with its own camera flow). */}
-              {activeView === "scan" && <Choose />}
+                {/* DASHBOARD */}
 
-              {activeView === "result" && (
-                <ResultView result={displayedResult} goTo={goTo} />
-              )}
+                {activeView ===
+                  "dashboard" && (
+                  <DashboardView
+                    userFirstName={
+                      userFirstName
+                    }
+                    stats={
+                      stats
+                    }
+                    recentResult={
+                      recentResult ||
+                      emptyResult
+                    }
+                    history={
+                      history
+                    }
+                    appointments={
+                      appointments
+                    }
+                    goTo={
+                      goTo
+                    }
+                    onViewResult={
+                      viewHistoryItem
+                    }
+                  />
+                )}
 
-              {activeView === "diseaseInfo" && (
-                <DiseaseInfoView
-                  diseaseName={displayedResult.disease}
-                  openSection={openSection}
-                  setOpenSection={setOpenSection}
-                />
-              )}
+                {/* SCAN */}
 
-              {activeView === "history" && (
-                <HistoryView
-                  rows={filteredHistory}
-                  search={historySearch}
-                  setSearch={setHistorySearch}
-                  filter={historyFilter}
-                  setFilter={setHistoryFilter}
-                  onView={viewHistoryItem}
-                />
-              )}
+                {activeView ===
+                  "scan" && (
+                  <Choose />
+                )}
 
-              {activeView === "reports" && (
-                <ReportsView reports={reports} onAction={handleReportAction} />
-              )}
+                {/* RESULT */}
 
-              {/* NEW: Consult a Dermatologist */}
-              {activeView === "consult" && (
-                <ConsultView assessmentId={consultAssessmentId} />
-              )}
+                {activeView ===
+                  "result" && (
+                  <ResultView
+                    result={
+                      displayedResult
+                    }
+                    goTo={
+                      goTo
+                    }
+                  />
+                )}
 
-              {activeView === "notifications" && (
-                <NotificationsView items={notifications} />
-              )}
+                {/* DISEASE INFO */}
 
-              {activeView === "profile" && (
-                <ProfileView
-                  profile={profile}
-                  setProfile={setProfile}
-                  savedProfile={savedProfile}
-                  onSave={handleSaveProfile}
-                  onChangePassword={handleChangePassword}
-                />
-              )}
+                {activeView ===
+                  "diseaseInfo" && (
+                  <DiseaseInfoView
+                    diseaseName={
+                      displayedResult.disease
+                    }
+                    openSection={
+                      openSection
+                    }
+                    setOpenSection={
+                      setOpenSection
+                    }
+                  />
+                )}
 
-              {activeView === "settings" && (
-                <SettingsView
-                  darkMode={darkMode}
-                  setDarkMode={setDarkMode}
-                  language={language}
-                  setLanguage={setLanguage}
-                  notifScan={notifScan}
-                  setNotifScan={setNotifScan}
-                  notifFollowup={notifFollowup}
-                  setNotifFollowup={setNotifFollowup}
-                />
-              )}
-            </>
-          )}
+                {/* HISTORY */}
+
+                {activeView ===
+                  "history" && (
+                  <HistoryView
+                    rows={
+                      filteredHistory
+                    }
+                    search={
+                      historySearch
+                    }
+                    setSearch={
+                      setHistorySearch
+                    }
+                    filter={
+                      historyFilter
+                    }
+                    setFilter={
+                      setHistoryFilter
+                    }
+                    onView={
+                      viewHistoryItem
+                    }
+                  />
+                )}
+
+                {/* REPORTS */}
+
+                {activeView ===
+                  "reports" && (
+                  <ReportsView
+                    reports={
+                      reports
+                    }
+                    onAction={
+                      handleReportAction
+                    }
+                  />
+                )}
+
+                {/* CONSULT DOCTOR */}
+
+                {activeView ===
+                  "consult" && (
+                  <ConsultView
+                    assessmentId={
+                      consultAssessmentId
+                    }
+                  />
+                )}
+
+                {/* MY APPOINTMENTS */}
+
+                {activeView ===
+                  "appointments" && (
+                  <AppointmentsView
+                    appointments={
+                      appointments
+                    }
+                    loading={
+                      appointmentsLoading
+                    }
+                    error={
+                      appointmentsError
+                    }
+                    onRefresh={
+                      loadAppointments
+                    }
+                    onCancel={
+                      handleCancelAppointment
+                    }
+                    onGoDoctors={() =>
+                      goTo(
+                        "consult"
+                      )
+                    }
+                  />
+                )}
+
+                {/* NOTIFICATIONS */}
+
+                {activeView ===
+                  "notifications" && (
+                  <NotificationsView
+                    items={
+                      notifications
+                    }
+                  />
+                )}
+
+                {/* PROFILE */}
+
+                {activeView ===
+                  "profile" && (
+                  <ProfileView
+                    profile={
+                      profile
+                    }
+                    setProfile={
+                      setProfile
+                    }
+                    savedProfile={
+                      savedProfile
+                    }
+                    onSave={
+                      handleSaveProfile
+                    }
+                    onChangePassword={
+                      handleChangePassword
+                    }
+                  />
+                )}
+
+                {/* SETTINGS */}
+
+                {activeView ===
+                  "settings" && (
+                  <SettingsView
+                    darkMode={
+                      darkMode
+                    }
+                    setDarkMode={
+                      setDarkMode
+                    }
+                    language={
+                      language
+                    }
+                    setLanguage={
+                      setLanguage
+                    }
+                    notifScan={
+                      notifScan
+                    }
+                    setNotifScan={
+                      setNotifScan
+                    }
+                    notifFollowup={
+                      notifFollowup
+                    }
+                    setNotifFollowup={
+                      setNotifFollowup
+                    }
+                  />
+                )}
+
+              </>
+            )}
+
         </div>
+
       </div>
+
     </div>
   );
 }
 
-/* ======================================================================
-   SUB-VIEWS
-   ====================================================================== */
+/* ============================================================
+   DASHBOARD VIEW
+============================================================ */
 
 function DashboardView({
   userFirstName,
   stats,
   recentResult,
   history,
+  appointments,
   goTo,
   onViewResult,
 }) {
+  const upcomingAppointment =
+    appointments.find(
+      (appointment) => {
+        const status =
+          String(
+            getAppointmentStatus(
+              appointment
+            )
+          ).toLowerCase();
+
+        return (
+          status !==
+            "cancelled" &&
+          status !==
+            "canceled" &&
+          status !==
+            "rejected" &&
+          status !==
+            "completed"
+        );
+      }
+    );
+
   return (
     <section className="view active">
+
       <div className="welcome">
+
         <div>
-          <h1>Hello, {userFirstName} 👋</h1>
-          <p>Here's a quick look at your skin health overview.</p>
+          <h1>
+            Hello,{" "}
+            {userFirstName} 👋
+          </h1>
+
+          <p>
+            Here's a quick look at
+            your skin health overview.
+          </p>
         </div>
+
       </div>
 
+      {/* STATS */}
+
       <div className="stats-grid">
+
         <StatCard
           icon="📷"
           iconClass="blue"
-          value={stats.totalScans}
+          value={
+            stats.totalScans
+          }
           label="Total Scans"
         />
+
         <StatCard
           icon="📅"
           iconClass="teal"
-          value={stats.lastScanDate}
+          value={
+            stats.lastScanDate
+          }
           label="Last Scan Date"
         />
+
         <StatCard
           icon="✅"
           iconClass="green"
-          value={stats.currentStatus}
+          value={
+            stats.currentStatus
+          }
           label="Current Status"
         />
+
         <StatCard
           icon="📄"
           iconClass="mint"
-          value={stats.reportsAvailable}
+          value={
+            stats.reportsAvailable
+          }
           label="Reports Available"
         />
+
       </div>
+
+      {/* SCAN CTA */}
 
       <div className="cta-scan">
+
         <div>
-          <h3>📷 Ready for your next check-up?</h3>
+          <h3>
+            📷 Ready for your
+            next check-up?
+          </h3>
+
           <p>
-            Scan your skin in seconds and get an instant AI-powered analysis.
+            Scan your skin in seconds
+            and get an instant
+            AI-powered analysis.
           </p>
         </div>
-        <button className="btn btn-secondary" onClick={() => goTo("scan")}>
+
+        <button
+          className="btn btn-secondary"
+          onClick={() =>
+            goTo("scan")
+          }
+        >
           Quick Scan
         </button>
+
       </div>
 
-      <div className="dash-grid">
-        <div className="card">
+      {/* APPOINTMENT */}
+
+      {upcomingAppointment && (
+        <div
+          className="card"
+          style={{
+            marginBottom: 20,
+          }}
+        >
+
           <div className="result-preview-row">
-            <div className="section-title" style={{ marginBottom: 0 }}>
-              📈 Recent Scan Result
+
+            <div
+              className="section-title"
+              style={{
+                marginBottom: 0,
+              }}
+            >
+              📅 Upcoming Appointment
             </div>
-            <span className={severityBadgeClass(recentResult.severity)}>
-              {recentResult.severity}
+
+            <button
+              className="btn btn-outline"
+              onClick={() =>
+                goTo(
+                  "appointments"
+                )
+              }
+            >
+              View All
+            </button>
+
+          </div>
+
+          <div className="result-item">
+            <span className="k">
+              Doctor
+            </span>
+
+            <span className="v">
+              {
+                getAppointmentDoctorName(
+                  upcomingAppointment
+                )
+              }
             </span>
           </div>
+
           <div className="result-item">
-            <span className="k">Disease</span>
-            <span className="v">{recentResult.disease}</span>
+            <span className="k">
+              Date
+            </span>
+
+            <span className="v">
+              {formatAppointmentDate(
+                getAppointmentDate(
+                  upcomingAppointment
+                )
+              )}
+            </span>
           </div>
+
           <div className="result-item">
-            <span className="k">Confidence</span>
-            <span className="v">{recentResult.confidence.toFixed(0)}%</span>
+            <span className="k">
+              Time
+            </span>
+
+            <span className="v">
+              {
+                getAppointmentStartTime(
+                  upcomingAppointment
+                )
+              }
+              {getAppointmentEndTime(
+                upcomingAppointment
+              )
+                ? ` - ${getAppointmentEndTime(
+                    upcomingAppointment
+                  )}`
+                : ""}
+            </span>
           </div>
+
           <div className="result-item">
-            <span className="k">Scanned on</span>
-            <span className="v">{recentResult.date}</span>
+            <span className="k">
+              Mode
+            </span>
+
+            <span className="v">
+              {
+                MODE_LABELS[
+                  getAppointmentMode(
+                    upcomingAppointment
+                  )
+                ] ||
+                getAppointmentMode(
+                  upcomingAppointment
+                )
+              }
+            </span>
           </div>
+
+          <div
+            style={{
+              marginTop: 12,
+            }}
+          >
+            <span
+              className={appointmentStatusClass(
+                getAppointmentStatus(
+                  upcomingAppointment
+                )
+              )}
+            >
+              {appointmentStatusLabel(
+                getAppointmentStatus(
+                  upcomingAppointment
+                )
+              )}
+            </span>
+          </div>
+
+        </div>
+      )}
+
+      {/* GRID */}
+
+      <div className="dash-grid">
+
+        <div className="card">
+
+          <div className="result-preview-row">
+
+            <div
+              className="section-title"
+              style={{
+                marginBottom: 0,
+              }}
+            >
+              📈 Recent Scan Result
+            </div>
+
+            <span
+              className={severityBadgeClass(
+                recentResult.severity
+              )}
+            >
+              {
+                recentResult.severity
+              }
+            </span>
+
+          </div>
+
+          <div className="result-item">
+            <span className="k">
+              Disease
+            </span>
+
+            <span className="v">
+              {
+                recentResult.disease
+              }
+            </span>
+          </div>
+
+          <div className="result-item">
+            <span className="k">
+              Confidence
+            </span>
+
+            <span className="v">
+              {recentResult.confidence.toFixed(
+                0
+              )}
+              %
+            </span>
+          </div>
+
+          <div className="result-item">
+            <span className="k">
+              Scanned on
+            </span>
+
+            <span className="v">
+              {
+                recentResult.date
+              }
+            </span>
+          </div>
+
           <button
             className="btn btn-outline"
-            style={{ marginTop: 16 }}
-            onClick={() => onViewResult(recentResult)}
+            style={{
+              marginTop: 16,
+            }}
+            onClick={() =>
+              onViewResult(
+                recentResult
+              )
+            }
           >
             View Full Report
           </button>
+
         </div>
 
         <div className="card">
-          <div className="section-title">📜 Recent History</div>
-          {history.length === 0 ? (
-            <p style={{ color: "var(--text-secondary)", fontSize: 13.5 }}>
-              No scans yet — your history will show up here.
+
+          <div className="section-title">
+            📜 Recent History
+          </div>
+
+          {history.length ===
+          0 ? (
+            <p
+              style={{
+                color:
+                  "var(--text-secondary)",
+                fontSize:
+                  13.5,
+              }}
+            >
+              No scans yet — your
+              history will show up
+              here.
             </p>
           ) : (
             <ul className="history-mini">
-              {history.slice(0, 4).map((item) => (
-                <li
-                  key={item.id}
-                  onClick={() => onViewResult(item)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <span>
-                    <span
-                      className={`dot ${item.status === "Healthy" ? "dot-green" : "dot-amber"}`}
-                    ></span>
-                    {item.disease}
-                  </span>
-                  <span
-                    style={{ color: "var(--text-secondary)", fontSize: 12.5 }}
+
+              {history
+                .slice(0, 4)
+                .map((item) => (
+                  <li
+                    key={item.id}
+                    onClick={() =>
+                      onViewResult(
+                        item
+                      )
+                    }
+                    style={{
+                      cursor:
+                        "pointer",
+                    }}
                   >
-                    {item.date}
-                  </span>
-                </li>
-              ))}
+
+                    <span>
+
+                      <span
+                        className={`dot ${
+                          item.status ===
+                          "Healthy"
+                            ? "dot-green"
+                            : "dot-amber"
+                        }`}
+                      ></span>
+
+                      {
+                        item.disease
+                      }
+
+                    </span>
+
+                    <span
+                      style={{
+                        color:
+                          "var(--text-secondary)",
+                        fontSize:
+                          12.5,
+                      }}
+                    >
+                      {
+                        item.date
+                      }
+                    </span>
+
+                  </li>
+                ))}
+
             </ul>
           )}
+
           <button
             className="btn btn-outline"
-            style={{ marginTop: 14, width: "100%" }}
-            onClick={() => goTo("history")}
+            style={{
+              marginTop: 14,
+              width: "100%",
+            }}
+            onClick={() =>
+              goTo("history")
+            }
           >
             View All History
           </button>
+
         </div>
+
       </div>
+
     </section>
   );
 }
 
-function StatCard({ icon, iconClass, value, label }) {
+/* ============================================================
+   STAT CARD
+============================================================ */
+
+function StatCard({
+  icon,
+  iconClass,
+  value,
+  label,
+}) {
   return (
     <div className="stat-card">
-      <div className={`stat-icon ${iconClass}`}>{icon}</div>
-      <div>
-        <div className="stat-value">{value}</div>
-        <div className="stat-label">{label}</div>
+
+      <div
+        className={`stat-icon ${iconClass}`}
+      >
+        {icon}
       </div>
+
+      <div>
+
+        <div className="stat-value">
+          {value}
+        </div>
+
+        <div className="stat-label">
+          {label}
+        </div>
+
+      </div>
+
     </div>
   );
 }
 
-function ResultView({ result, goTo }) {
+/* ============================================================
+   RESULT VIEW
+============================================================ */
+
+function ResultView({
+  result,
+  goTo,
+}) {
   return (
     <section className="view active">
-      <div className="section-title">🤖 Scan Result</div>
+
+      <div className="section-title">
+        🤖 Scan Result
+      </div>
+
       <div className="card mb">
+
         <div className="result-hero">
+
           <div className="result-photo">
+
             {result.image ? (
-              <img src={result.image} alt="Scanned" />
+              <img
+                src={
+                  result.image
+                }
+                alt="Scanned"
+              />
             ) : (
               "No image available"
             )}
+
           </div>
+
           <div className="result-main">
-            <div className="result-disease">{result.disease}</div>
-            <span className={severityBadgeClass(result.severity)}>
-              Severity: {result.severity}
+
+            <div className="result-disease">
+              {
+                result.disease
+              }
+            </div>
+
+            <span
+              className={severityBadgeClass(
+                result.severity
+              )}
+            >
+              Severity:{" "}
+              {
+                result.severity
+              }
             </span>
+
             <div
               style={{
                 marginTop: 14,
                 fontSize: 13,
-                color: "var(--text-secondary)",
+                color:
+                  "var(--text-secondary)",
               }}
             >
               Confidence Score
             </div>
+
             <div className="confidence-bar-track">
+
               <div
                 className="confidence-bar-fill"
-                style={{ width: `${result.confidence}%` }}
+                style={{
+                  width: `${result.confidence}%`,
+                }}
               ></div>
+
             </div>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>
-              {result.confidence.toFixed(0)}%
+
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: 14,
+              }}
+            >
+              {result.confidence.toFixed(
+                0
+              )}
+              %
             </div>
 
             <div className="recommend-box">
-              <b>Recommended Action:</b> {result.recommendation}
+              <b>
+                Recommended Action:
+              </b>{" "}
+              {
+                result.recommendation
+              }
             </div>
+
           </div>
+
         </div>
 
         <div className="info-grid">
+
           <div className="info-box">
-            <div className="lbl">Short Description</div>
-            <div className="val" style={{ fontWeight: 500 }}>
-              {result.description}
+
+            <div className="lbl">
+              Short Description
             </div>
+
+            <div
+              className="val"
+              style={{
+                fontWeight: 500,
+              }}
+            >
+              {
+                result.description
+              }
+            </div>
+
           </div>
+
           <div className="info-box">
-            <div className="lbl">Is it Contagious?</div>
-            <div className="val">{result.contagious}</div>
+
+            <div className="lbl">
+              Is it Contagious?
+            </div>
+
+            <div className="val">
+              {
+                result.contagious
+              }
+            </div>
+
           </div>
+
           <div className="info-box">
-            <div className="lbl">Scanned On</div>
-            <div className="val">{result.date}</div>
+
+            <div className="lbl">
+              Scanned On
+            </div>
+
+            <div className="val">
+              {
+                result.date
+              }
+            </div>
+
           </div>
+
         </div>
 
         <div
           className="scan-actions"
-          style={{ justifyContent: "flex-start", marginTop: 22 }}
+          style={{
+            justifyContent:
+              "flex-start",
+            marginTop: 22,
+          }}
         >
+
           <button
             className="btn btn-primary"
-            onClick={() => goTo("diseaseInfo")}
+            onClick={() =>
+              goTo(
+                "diseaseInfo"
+              )
+            }
           >
             📖 Learn About This Disease
           </button>
-          <button className="btn btn-outline" onClick={() => goTo("reports")}>
+
+          <button
+            className="btn btn-outline"
+            onClick={() =>
+              goTo(
+                "reports"
+              )
+            }
+          >
             📄 View / Download Report
           </button>
-          {/* NEW: quick path from a result straight into booking */}
-          <button className="btn btn-outline" onClick={() => goTo("consult")}>
+
+          <button
+            className="btn btn-outline"
+            onClick={() =>
+              goTo(
+                "consult"
+              )
+            }
+          >
             🩺 Consult a Dermatologist
           </button>
+
         </div>
+
       </div>
+
     </section>
   );
 }
 
-function DiseaseInfoView({ diseaseName, openSection, setOpenSection }) {
+/* ============================================================
+   DISEASE INFO
+============================================================ */
+
+function DiseaseInfoView({
+  diseaseName,
+  openSection,
+  setOpenSection,
+}) {
   return (
     <section className="view active">
+
       <div className="section-title">
-        📖 Disease Information — {diseaseName}
+        📖 Disease Information —{" "}
+        {diseaseName}
       </div>
+
       <div>
-        {diseaseInfoSections.map((sec) => (
-          <div
-            key={sec.key}
-            className={`accordion ${openSection === sec.key ? "open" : ""}`}
-          >
+
+        {diseaseInfoSections.map(
+          (sec) => (
             <div
-              className="accordion-head"
-              onClick={() =>
-                setOpenSection(openSection === sec.key ? null : sec.key)
-              }
+              key={sec.key}
+              className={`accordion ${
+                openSection ===
+                sec.key
+                  ? "open"
+                  : ""
+              }`}
             >
-              {sec.label} <span className="chev">▾</span>
+
+              <div
+                className="accordion-head"
+                onClick={() =>
+                  setOpenSection(
+                    openSection ===
+                      sec.key
+                      ? null
+                      : sec.key
+                  )
+                }
+              >
+
+                {sec.label}
+
+                <span className="chev">
+                  ▾
+                </span>
+
+              </div>
+
+              <div className="accordion-body">
+                {sec.text}
+              </div>
+
             </div>
-            <div className="accordion-body">{sec.text}</div>
-          </div>
-        ))}
+          )
+        )}
+
       </div>
+
     </section>
   );
 }
 
-function HistoryView({ rows, search, setSearch, filter, setFilter, onView }) {
+/* ============================================================
+   HISTORY
+============================================================ */
+
+function HistoryView({
+  rows,
+  search,
+  setSearch,
+  filter,
+  setFilter,
+  onView,
+}) {
   return (
     <section className="view active">
-      <div className="section-title">📊 Scan History</div>
+
+      <div className="section-title">
+        📊 Scan History
+      </div>
+
       <div className="card">
+
         <div className="table-toolbar">
+
           <div className="search-box">
             🔍{" "}
+
             <input
               type="text"
               placeholder="Search by disease..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={
+                search
+              }
+              onChange={(e) =>
+                setSearch(
+                  e.target.value
+                )
+              }
             />
+
           </div>
+
           <select
             className="filter-select"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
+            value={
+              filter
+            }
+            onChange={(e) =>
+              setFilter(
+                e.target.value
+              )
+            }
           >
-            <option value="all">All Status</option>
-            <option value="Healthy">Healthy</option>
-            <option value="Disease Detected">Disease Detected</option>
+            <option value="all">
+              All Status
+            </option>
+
+            <option value="Healthy">
+              Healthy
+            </option>
+
+            <option value="Disease Detected">
+              Disease Detected
+            </option>
+
           </select>
+
         </div>
-        {rows.length === 0 ? (
-          <p style={{ color: "var(--text-secondary)", padding: "16px 4px" }}>
-            No scans match this search/filter yet.
+
+        {rows.length ===
+        0 ? (
+          <p
+            style={{
+              color:
+                "var(--text-secondary)",
+              padding:
+                "16px 4px",
+            }}
+          >
+            No scans match this
+            search/filter yet.
           </p>
         ) : (
+
           <table>
+
             <thead>
+
               <tr>
                 <th>Date</th>
                 <th>Disease</th>
@@ -900,415 +2480,1377 @@ function HistoryView({ rows, search, setSearch, filter, setFilter, onView }) {
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
+
             </thead>
+
             <tbody>
-              {rows.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.date}</td>
-                  <td>{item.disease}</td>
-                  <td>{item.confidence.toFixed(0)}%</td>
-                  <td>{statusBadge(item.status)}</td>
-                  <td>
-                    <div className="row-actions">
-                      <button
-                        className="icon-btn"
-                        title="View Report"
-                        onClick={() => onView(item)}
-                      >
-                        👁
-                      </button>
-                      <button
-                        className="icon-btn"
-                        title="Download PDF"
-                        onClick={() =>
-                          alert(
-                            "Backend not connected yet: this should download the PDF report.",
-                          )
-                        }
-                      >
-                        ⬇
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+
+              {rows.map(
+                (item) => (
+                  <tr
+                    key={
+                      item.id
+                    }
+                  >
+
+                    <td>
+                      {
+                        item.date
+                      }
+                    </td>
+
+                    <td>
+                      {
+                        item.disease
+                      }
+                    </td>
+
+                    <td>
+                      {item.confidence.toFixed(
+                        0
+                      )}
+                      %
+                    </td>
+
+                    <td>
+                      {statusBadge(
+                        item.status
+                      )}
+                    </td>
+
+                    <td>
+
+                      <div className="row-actions">
+
+                        <button
+                          className="icon-btn"
+                          title="View Report"
+                          onClick={() =>
+                            onView(
+                              item
+                            )
+                          }
+                        >
+                          👁
+                        </button>
+
+                        <button
+                          className="icon-btn"
+                          title="Download PDF"
+                          onClick={() =>
+                            alert(
+                              "PDF download will be connected here."
+                            )
+                          }
+                        >
+                          ⬇
+                        </button>
+
+                      </div>
+
+                    </td>
+
+                  </tr>
+                )
+              )}
+
             </tbody>
+
           </table>
+
         )}
+
       </div>
+
     </section>
   );
 }
 
-function ReportsView({ reports, onAction }) {
+/* ============================================================
+   REPORTS
+============================================================ */
+
+function ReportsView({
+  reports,
+  onAction,
+}) {
   return (
     <section className="view active">
-      <div className="section-title">📄 Medical Reports</div>
+
+      <div className="section-title">
+        📄 Medical Reports
+      </div>
+
       <div className="card">
-        {reports.length === 0 ? (
-          <p style={{ color: "var(--text-secondary)" }}>
-            No reports available yet.
+
+        {reports.length ===
+        0 ? (
+          <p
+            style={{
+              color:
+                "var(--text-secondary)",
+            }}
+          >
+            No reports available
+            yet.
           </p>
         ) : (
-          reports.map((r, i) => (
-            <div className="report-card" key={r.id || i}>
-              <div className="report-left">
-                <div className="report-icon">📄</div>
-                <div>
-                  <div className="report-title">{r.title}</div>
-                  <div className="report-sub">{r.date}</div>
+
+          reports.map(
+            (r, i) => (
+              <div
+                className="report-card"
+                key={
+                  r.id ||
+                  r._id ||
+                  i
+                }
+              >
+
+                <div className="report-left">
+
+                  <div className="report-icon">
+                    📄
+                  </div>
+
+                  <div>
+
+                    <div className="report-title">
+                      {
+                        r.title
+                      }
+                    </div>
+
+                    <div className="report-sub">
+                      {
+                        r.date
+                      }
+                    </div>
+
+                  </div>
+
                 </div>
+
+                <div className="report-actions">
+
+                  <button
+                    className="btn btn-outline"
+                    onClick={() =>
+                      onAction(
+                        "download-pdf",
+                        r
+                      )
+                    }
+                  >
+                    ⬇ Download
+                  </button>
+
+                  <button
+                    className="btn btn-outline"
+                    onClick={() =>
+                      onAction(
+                        "print-report",
+                        r
+                      )
+                    }
+                  >
+                    🖨 Print
+                  </button>
+
+                  <button
+                    className="btn btn-outline"
+                    onClick={() =>
+                      onAction(
+                        "share-report",
+                        r
+                      )
+                    }
+                  >
+                    🔗 Share
+                  </button>
+
+                </div>
+
               </div>
-              <div className="report-actions">
-                <button
-                  className="btn btn-outline"
-                  onClick={() => onAction("download-pdf", r)}
-                >
-                  ⬇ Download
-                </button>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => onAction("print-report", r)}
-                >
-                  🖨 Print
-                </button>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => onAction("share-report", r)}
-                >
-                  🔗 Share
-                </button>
-              </div>
-            </div>
-          ))
+            )
+          )
+
         )}
+
       </div>
+
     </section>
   );
 }
 
-/* ======================================================================
-   NEW: CONSULT A DERMATOLOGIST — sidebar-driven, 3-step flow
-   Step 1: doctor list + filters
-   Step 2: doctor profile — pick mode + slot
-   Step 3: confirmation
-   BACKEND HOOK: swap mockDoctors for GET /api/doctors, and the "confirm"
-   step for POST /api/appointments (see comments below).
-   ====================================================================== */
-function ConsultView({ assessmentId }) {
-  const [step, setStep] = useState("list"); // "list" | "profile" | "confirmation"
-  const [activeFilter, setActiveFilter] = useState("Nearby");
-  const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [selectedMode, setSelectedMode] = useState(null);
-  const [selectedSlot, setSelectedSlot] = useState(null);
-  const [booking, setBooking] = useState(false);
+/* ============================================================
+   MY APPOINTMENTS
+============================================================ */
 
-  function openDoctor(doctor) {
-    setSelectedDoctor(doctor);
-    setSelectedMode(doctor.modes[0]);
-    setSelectedSlot(null);
-    setStep("profile");
-  }
+function AppointmentsView({
+  appointments,
+  loading,
+  error,
+  onRefresh,
+  onCancel,
+  onGoDoctors,
+}) {
+  const navigate =
+    useNavigate();
 
-  async function bookAppointment() {
-    if (!selectedSlot) return;
-    setBooking(true);
+  return (
+    <section className="view active">
+
+      {/* HEADER */}
+
+      <div
+        style={{
+          display:
+            "flex",
+          justifyContent:
+            "space-between",
+          alignItems:
+            "center",
+          gap: 12,
+          marginBottom: 18,
+          flexWrap:
+            "wrap",
+        }}
+      >
+
+        <div>
+
+          <div
+            className="section-title"
+            style={{
+              marginBottom: 4,
+            }}
+          >
+            📅 My Appointments
+          </div>
+
+          <p
+            style={{
+              color:
+                "var(--text-secondary)",
+              margin: 0,
+            }}
+          >
+            Manage your dermatologist
+            consultations.
+          </p>
+
+        </div>
+
+        <div
+          style={{
+            display:
+              "flex",
+            gap: 10,
+          }}
+        >
+
+          <button
+            className="btn btn-outline"
+            onClick={
+              onRefresh
+            }
+          >
+            ↻ Refresh
+          </button>
+
+          <button
+            className="btn btn-primary"
+            onClick={
+              onGoDoctors
+            }
+          >
+            + Book Consultation
+          </button>
+
+        </div>
+
+      </div>
+
+      {/* LOADING */}
+
+      {loading && (
+        <div
+          className="card"
+          style={{
+            textAlign:
+              "center",
+            padding: 40,
+          }}
+        >
+          Loading your
+          appointments...
+        </div>
+      )}
+
+      {/* ERROR */}
+
+      {!loading &&
+        error && (
+          <div
+            className="card"
+            style={{
+              textAlign:
+                "center",
+              padding: 30,
+            }}
+          >
+
+            <div
+              style={{
+                fontSize:
+                  "2rem",
+                marginBottom:
+                  10,
+              }}
+            >
+              ⚠️
+            </div>
+
+            <p>
+              {error}
+            </p>
+
+            <button
+              className="btn btn-primary"
+              onClick={
+                onRefresh
+              }
+            >
+              Try Again
+            </button>
+
+          </div>
+        )}
+
+      {/* EMPTY */}
+
+      {!loading &&
+        !error &&
+        appointments.length ===
+          0 && (
+          <div
+            className="card"
+            style={{
+              textAlign:
+                "center",
+              padding: 50,
+            }}
+          >
+
+            <div
+              style={{
+                fontSize:
+                  "3rem",
+                marginBottom:
+                  12,
+              }}
+            >
+              📅
+            </div>
+
+            <h3>
+              No appointments yet
+            </h3>
+
+            <p
+              style={{
+                color:
+                  "var(--text-secondary)",
+                marginBottom:
+                  20,
+              }}
+            >
+              You haven't booked
+              a dermatologist
+              consultation yet.
+            </p>
+
+            <button
+              className="btn btn-primary"
+              onClick={
+                onGoDoctors
+              }
+            >
+              Find a Dermatologist
+            </button>
+
+          </div>
+        )}
+
+      {/* APPOINTMENT LIST */}
+
+      {!loading &&
+        !error &&
+        appointments.length >
+          0 && (
+
+          <div
+            style={{
+              display:
+                "flex",
+              flexDirection:
+                "column",
+              gap: 16,
+            }}
+          >
+
+            {appointments.map(
+              (
+                appointment,
+                index
+              ) => {
+
+                const appointmentId =
+                  appointment._id ||
+                  appointment.id ||
+                  index;
+
+                const status =
+                  getAppointmentStatus(
+                    appointment
+                  );
+
+                const doctorName =
+                  getAppointmentDoctorName(
+                    appointment
+                  );
+
+                const specialization =
+                  getAppointmentSpecialization(
+                    appointment
+                  );
+
+                const appointmentDate =
+                  getAppointmentDate(
+                    appointment
+                  );
+
+                const startTime =
+                  getAppointmentStartTime(
+                    appointment
+                  );
+
+                const endTime =
+                  getAppointmentEndTime(
+                    appointment
+                  );
+
+                const mode =
+                  getAppointmentMode(
+                    appointment
+                  );
+
+                const doctor =
+                  getDoctorFromAppointment(
+                    appointment
+                  );
+
+                const doctorId =
+                  appointment
+                    .doctorProfileId ||
+                  appointment
+                    .doctorProfile?._id ||
+                  doctor._id ||
+                  appointment.doctorId;
+
+                const normalizedStatus =
+                  String(
+                    status
+                  ).toLowerCase();
+
+                const canCancel =
+                  ![
+                    "cancelled",
+                    "canceled",
+                    "completed",
+                    "rejected",
+                  ].includes(
+                    normalizedStatus
+                  );
+
+                return (
+                  <div
+                    className="card"
+                    key={
+                      appointmentId
+                    }
+                  >
+
+                    {/* TOP */}
+
+                    <div
+                      style={{
+                        display:
+                          "flex",
+                        justifyContent:
+                          "space-between",
+                        gap: 16,
+                        alignItems:
+                          "flex-start",
+                        flexWrap:
+                          "wrap",
+                      }}
+                    >
+
+                      <div
+                        style={{
+                          display:
+                            "flex",
+                          gap: 14,
+                          alignItems:
+                            "center",
+                        }}
+                      >
+
+                        {/* DOCTOR AVATAR */}
+
+                        <div
+                          style={{
+                            width:
+                              56,
+                            height:
+                              56,
+                            borderRadius:
+                              "50%",
+                            background:
+                              "var(--bg-section)",
+                            display:
+                              "flex",
+                            alignItems:
+                              "center",
+                            justifyContent:
+                              "center",
+                            fontSize:
+                              "1.2rem",
+                            fontWeight:
+                              700,
+                            overflow:
+                              "hidden",
+                            flexShrink:
+                              0,
+                          }}
+                        >
+
+                          {doctor.profileImage ? (
+                            <img
+                              src={
+                                doctor.profileImage
+                              }
+                              alt={
+                                doctorName
+                              }
+                              style={{
+                                width:
+                                  "100%",
+                                height:
+                                  "100%",
+                                objectFit:
+                                  "cover",
+                              }}
+                            />
+                          ) : (
+                            doctorName
+                              .replace(
+                                "Dr. ",
+                                ""
+                              )
+                              .charAt(
+                                0
+                              )
+                              .toUpperCase()
+                          )}
+
+                        </div>
+
+                        <div>
+
+                          <h3
+                            style={{
+                              margin:
+                                0,
+                              marginBottom:
+                                4,
+                            }}
+                          >
+                            {doctorName}
+                          </h3>
+
+                          <p
+                            style={{
+                              margin:
+                                0,
+                              color:
+                                "var(--text-secondary)",
+                              fontSize:
+                                13,
+                            }}
+                          >
+                            {
+                              specialization
+                            }
+                          </p>
+
+                        </div>
+
+                      </div>
+
+                      <span
+                        className={appointmentStatusClass(
+                          status
+                        )}
+                      >
+                        {appointmentStatusLabel(
+                          status
+                        )}
+                      </span>
+
+                    </div>
+
+                    {/* DETAILS */}
+
+                    <div
+                      style={{
+                        display:
+                          "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(180px, 1fr))",
+                        gap: 14,
+                        marginTop:
+                          22,
+                        paddingTop:
+                          18,
+                        borderTop:
+                          "1px solid var(--border-color)",
+                      }}
+                    >
+
+                      <AppointmentDetail
+                        icon="📅"
+                        label="Date"
+                        value={formatAppointmentDate(
+                          appointmentDate
+                        )}
+                      />
+
+                      <AppointmentDetail
+                        icon="⏰"
+                        label="Time"
+                        value={
+                          startTime
+                            ? `${startTime}${
+                                endTime
+                                  ? ` - ${endTime}`
+                                  : ""
+                              }`
+                            : "Not specified"
+                        }
+                      />
+
+                      <AppointmentDetail
+                        icon={
+                          MODE_ICONS[
+                            mode
+                          ] ||
+                          "💬"
+                        }
+                        label="Consultation"
+                        value={
+                          MODE_LABELS[
+                            mode
+                          ] ||
+                          mode
+                        }
+                      />
+
+                      <AppointmentDetail
+                        icon="💰"
+                        label="Fee"
+                        value={
+                          appointment.fee ||
+                          appointment.consultationFee
+                            ? `₹${
+                                appointment.fee ||
+                                appointment.consultationFee
+                              }`
+                            : "Not specified"
+                        }
+                      />
+
+                    </div>
+
+                    {/* REASON */}
+
+                    {(appointment.reason ||
+                      appointment.patientMessage) && (
+                      <div
+                        style={{
+                          marginTop:
+                            18,
+                          padding:
+                            14,
+                          borderRadius:
+                            10,
+                          background:
+                            "var(--bg-section)",
+                        }}
+                      >
+
+                        {appointment.reason && (
+                          <div
+                            style={{
+                              marginBottom:
+                                appointment.patientMessage
+                                  ? 8
+                                  : 0,
+                            }}
+                          >
+                            <strong>
+                              Reason:
+                            </strong>{" "}
+                            {
+                              appointment.reason
+                            }
+                          </div>
+                        )}
+
+                        {appointment.patientMessage && (
+                          <div>
+                            <strong>
+                              Message:
+                            </strong>{" "}
+                            {
+                              appointment.patientMessage
+                            }
+                          </div>
+                        )}
+
+                      </div>
+                    )}
+
+                    {/* REPORT */}
+
+                    {appointment.assessmentId && (
+                      <div
+                        style={{
+                          marginTop:
+                            14,
+                          fontSize:
+                            13,
+                          color:
+                            "var(--text-secondary)",
+                        }}
+                      >
+                        📄 AI skin assessment
+                        attached to this
+                        consultation.
+                      </div>
+                    )}
+
+                    {/* ACTIONS */}
+
+                    <div
+                      style={{
+                        display:
+                          "flex",
+                        gap: 10,
+                        marginTop:
+                          20,
+                        flexWrap:
+                          "wrap",
+                      }}
+                    >
+
+                      {doctorId && (
+                        <button
+                          className="btn btn-outline"
+                          onClick={() =>
+                            navigate(
+                              `/doctors/${doctorId}`
+                            )
+                          }
+                        >
+                          👨‍⚕️ View Doctor
+                        </button>
+                      )}
+
+                      {mode ===
+                        "video" &&
+                        normalizedStatus ===
+                          "confirmed" && (
+                          <button
+                            className="btn btn-primary"
+                            onClick={() =>
+                              alert(
+                                "Video consultation will open here."
+                              )
+                            }
+                          >
+                            🎥 Join Video Call
+                          </button>
+                        )}
+
+                      {(mode ===
+                        "text" ||
+                        mode ===
+                          "chat") &&
+                        normalizedStatus ===
+                          "confirmed" && (
+                          <button
+                            className="btn btn-primary"
+                            onClick={() =>
+                              alert(
+                                "Doctor chat will open here."
+                              )
+                            }
+                          >
+                            💬 Open Chat
+                          </button>
+                        )}
+
+                      {canCancel && (
+                        <button
+                          className="btn btn-outline"
+                          onClick={() =>
+                            onCancel(
+                              appointment
+                            )
+                          }
+                          style={{
+                            color:
+                              "#dc2626",
+                            borderColor:
+                              "#dc2626",
+                          }}
+                        >
+                          Cancel Appointment
+                        </button>
+                      )}
+
+                    </div>
+
+                  </div>
+                );
+              }
+            )}
+
+          </div>
+        )}
+
+    </section>
+  );
+}
+
+/* ============================================================
+   APPOINTMENT DETAIL
+============================================================ */
+
+function AppointmentDetail({
+  icon,
+  label,
+  value,
+}) {
+  return (
+    <div>
+
+      <div
+        style={{
+          color:
+            "var(--text-secondary)",
+          fontSize:
+            12,
+          marginBottom:
+            5,
+        }}
+      >
+        {icon}{" "}
+        {label}
+      </div>
+
+      <strong
+        style={{
+          fontSize:
+            14,
+        }}
+      >
+        {value}
+      </strong>
+
+    </div>
+  );
+}
+
+/* ============================================================
+   CONSULT DOCTOR
+============================================================ */
+
+function ConsultView({
+  assessmentId,
+}) {
+  const navigate =
+    useNavigate();
+
+  const [doctors, setDoctors] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  const [activeFilter, setActiveFilter] =
+    useState("All doctors");
+
+  useEffect(() => {
+    loadDoctors();
+  }, []);
+
+  async function loadDoctors() {
     try {
-      /* ============ BACKEND HOOK: BOOK APPOINTMENT ============
-         await api.post("/api/appointments", {
-           doctorId: selectedDoctor.id,
-           type: selectedMode,
-           slot: selectedSlot,
-           assessmentId, // links the consult to the assessment that started it
-         });
-      */
-      await new Promise((r) => setTimeout(r, 600)); // mock latency
-      setStep("confirmation");
+      setLoading(true);
+      setError("");
+
+      const response =
+        await api.get(
+          "/api/doctors"
+        );
+
+      const fetchedDoctors =
+        response.data?.doctors ||
+        response.data?.data ||
+        [];
+
+      setDoctors(
+        fetchedDoctors
+      );
+
     } catch (err) {
-      alert(
-        err.response?.data?.message || "Could not book the appointment.",
+      console.error(
+        "DOCTORS FETCH ERROR:",
+        err.response?.data ||
+          err.message
+      );
+
+      setError(
+        err.response?.data?.message ||
+          "Unable to load doctors."
       );
     } finally {
-      setBooking(false);
+      setLoading(false);
     }
   }
 
   const visibleDoctors =
-    activeFilter === "Available now"
-      ? mockDoctors.filter((d) => d.status === "available")
-      : activeFilter === "Nearby"
-      ? [...mockDoctors].sort((a, b) => a.distanceKm - b.distanceKm)
-      : mockDoctors;
+    activeFilter ===
+    "Available now"
+      ? doctors.filter(
+          (doctor) =>
+            doctor.isAvailable ||
+            doctor.status ===
+              "available"
+        )
+      : doctors;
 
-  if (step === "profile" && selectedDoctor) {
+  if (loading) {
     return (
-      <ConsultProfileStep
-        doctor={selectedDoctor}
-        selectedMode={selectedMode}
-        setSelectedMode={setSelectedMode}
-        selectedSlot={selectedSlot}
-        setSelectedSlot={setSelectedSlot}
-        onBack={() => setStep("list")}
-        onBook={bookAppointment}
-        booking={booking}
-        assessmentId={assessmentId}
-      />
-    );
-  }
+      <section className="view active">
 
-  if (step === "confirmation" && selectedDoctor) {
-    return (
-      <ConsultConfirmationStep
-        doctor={selectedDoctor}
-        mode={selectedMode}
-        slot={selectedSlot}
-        onDone={() => {
-          setStep("list");
-          setSelectedDoctor(null);
-        }}
-      />
+        <div className="section-title">
+          🩺 Find a Dermatologist
+        </div>
+
+        <div
+          className="card"
+          style={{
+            textAlign:
+              "center",
+            padding: 40,
+          }}
+        >
+          Loading doctors...
+        </div>
+
+      </section>
     );
   }
 
   return (
     <section className="view active">
-      <div className="section-title">🩺 Find a Dermatologist</div>
-      <p style={{ color: "var(--text-secondary)", marginTop: -6, marginBottom: 16 }}>
-        Based on your latest skin assessment, here are specialists you can consult.
+
+      <div className="section-title">
+        🩺 Find a Dermatologist
+      </div>
+
+      <p
+        style={{
+          color:
+            "var(--text-secondary)",
+          marginTop: -6,
+          marginBottom: 16,
+        }}
+      >
+        Choose a dermatologist
+        for your consultation.
       </p>
 
-      <div className="location-row">
-        📍 Lucknow, Uttar Pradesh
-        <a href="#" style={{ marginLeft: "auto", color: "var(--color-primary)", fontWeight: 500 }}>
-          Change
-        </a>
-      </div>
-
       <div className="filters">
-        {["Nearby", "Available now", "All doctors"].map((f) => (
+
+        {[
+          "All doctors",
+          "Available now",
+        ].map((filter) => (
           <div
-            key={f}
-            className={`filter-chip${activeFilter === f ? " is-active" : ""}`}
-            onClick={() => setActiveFilter(f)}
+            key={filter}
+            className={`filter-chip ${
+              activeFilter ===
+              filter
+                ? "is-active"
+                : ""
+            }`}
+            onClick={() =>
+              setActiveFilter(
+                filter
+              )
+            }
           >
-            {f}
+            {filter}
           </div>
         ))}
+
       </div>
 
-      {visibleDoctors.map((d) => (
-        <div className="doctor-card" key={d.id} onClick={() => openDoctor(d)}>
-          <div className="doctor-card__avatar">{d.initials}</div>
-          <div className="doctor-card__body">
-            <div className="doctor-card__name">{d.name}</div>
-            <div className="doctor-card__role">{d.role}</div>
-            <div className="doctor-card__meta">
-              <span>⭐ {d.rating}</span>
-              <span>📍 {d.distanceKm} km away</span>
-            </div>
-            {d.status === "available" ? (
-              <span className="status-dot">Available now</span>
-            ) : (
-              <span className="status-dot" style={{ color: "var(--text-secondary)" }}>
-                Next slot: {d.nextSlot}
-              </span>
-            )}
-            <div className="mode-row">
-              {d.modes.map((m) => (
-                <span className="mode-tag" key={m}>{MODE_LABELS[m]}</span>
-              ))}
-            </div>
-          </div>
+      {error && (
+        <div
+          className="card"
+          style={{
+            marginBottom:
+              16,
+          }}
+        >
+          <p>
+            {error}
+          </p>
+
+          <button
+            className="btn btn-primary"
+            onClick={
+              loadDoctors
+            }
+          >
+            Retry
+          </button>
         </div>
-      ))}
+      )}
+
+      {!error &&
+        visibleDoctors.length ===
+          0 && (
+          <div
+            className="card"
+            style={{
+              textAlign:
+                "center",
+              padding: 40,
+            }}
+          >
+            No doctors available
+            right now.
+          </div>
+        )}
+
+      {visibleDoctors.map(
+        (doctor) => {
+
+          const user =
+            doctor.user ||
+            {};
+
+          const name =
+            user.fullName ||
+            doctor.fullName ||
+            doctor.name ||
+            "Doctor";
+
+          const specialization =
+            doctor.specialization ||
+            "Dermatologist";
+
+          const qualification =
+            doctor.qualification ||
+            "";
+
+          const experience =
+            doctor.experience;
+
+          const modes =
+            doctor.consultationModes ||
+            [];
+
+          const profileImage =
+            doctor.profileImage;
+
+          return (
+            <div
+              className="doctor-card"
+              key={
+                doctor._id ||
+                doctor.id
+              }
+              onClick={() =>
+                navigate(
+                  `/doctors/${
+                    doctor._id ||
+                    doctor.id
+                  }`
+                )
+              }
+            >
+
+              <div className="doctor-card__avatar">
+
+                {profileImage ? (
+                  <img
+                    src={
+                      profileImage
+                    }
+                    alt={name}
+                    style={{
+                      width:
+                        "100%",
+                      height:
+                        "100%",
+                      objectFit:
+                        "cover",
+                      borderRadius:
+                        "50%",
+                    }}
+                  />
+                ) : (
+                  name
+                    .charAt(0)
+                    .toUpperCase()
+                )}
+
+              </div>
+
+              <div className="doctor-card__body">
+
+                <div className="doctor-card__name">
+                  Dr.{" "}
+                  {name.replace(
+                    /^Dr\.\s*/i,
+                    ""
+                  )}
+                </div>
+
+                <div className="doctor-card__role">
+                  {specialization}
+
+                  {qualification
+                    ? ` · ${qualification}`
+                    : ""}
+
+                  {experience !=
+                    null
+                    ? ` · ${experience} yrs experience`
+                    : ""}
+                </div>
+
+                <div className="doctor-card__meta">
+
+                  {doctor.rating && (
+                    <span>
+                      ⭐{" "}
+                      {
+                        doctor.rating
+                      }
+                    </span>
+                  )}
+
+                  {doctor.city && (
+                    <span>
+                      📍{" "}
+                      {
+                        doctor.city
+                      }
+                    </span>
+                  )}
+
+                </div>
+
+                {doctor.isAvailable ? (
+                  <span className="status-dot">
+                    Available
+                  </span>
+                ) : (
+                  <span
+                    className="status-dot"
+                    style={{
+                      color:
+                        "var(--text-secondary)",
+                    }}
+                  >
+                    Currently unavailable
+                  </span>
+                )}
+
+                <div className="mode-row">
+
+                  {modes.map(
+                    (mode) => (
+                      <span
+                        className="mode-tag"
+                        key={
+                          mode
+                        }
+                      >
+                        {
+                          MODE_LABELS[
+                            mode
+                          ] ||
+                          mode
+                        }
+                      </span>
+                    )
+                  )}
+
+                </div>
+
+                <div
+                  style={{
+                    marginTop:
+                      12,
+                  }}
+                >
+                  <button
+                    className="btn btn-primary"
+                    onClick={(
+                      e
+                    ) => {
+                      e.stopPropagation();
+
+                      navigate(
+                        `/doctors/${
+                          doctor._id ||
+                          doctor.id
+                        }/book`,
+                        {
+                          state: {
+                            assessmentId,
+                          },
+                        }
+                      );
+                    }}
+                  >
+                    Book Consultation
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          );
+        }
+      )}
+
     </section>
   );
 }
 
-function ConsultProfileStep({
-  doctor,
-  selectedMode,
-  setSelectedMode,
-  selectedSlot,
-  setSelectedSlot,
-  onBack,
-  onBook,
-  booking,
-  assessmentId,
+/* ============================================================
+   NOTIFICATIONS
+============================================================ */
+
+function NotificationsView({
+  items,
 }) {
   return (
     <section className="view active">
-      <button className="btn btn-outline" style={{ marginBottom: 16 }} onClick={onBack}>
-        ← All doctors
-      </button>
 
-      <div className="card" style={{ display: "flex", gap: 16, marginBottom: 20 }}>
-        <div
-          className="doctor-card__avatar"
-          style={{ width: 64, height: 64, fontSize: "1.2rem" }}
-        >
-          {doctor.initials}
-        </div>
-        <div>
-          <div className="doctor-card__name" style={{ fontSize: "1.1rem" }}>
-            {doctor.name}
-          </div>
-          <div className="doctor-card__role">{doctor.role}</div>
-          <div className="doctor-card__meta">
-            <span>⭐ {doctor.rating}</span>
-            <span>📍 {doctor.distanceKm} km away</span>
-          </div>
-        </div>
+      <div className="section-title">
+        🔔 Notifications
       </div>
 
-      <div className="section-title" style={{ fontSize: "1rem" }}>
-        Choose consultation type
-      </div>
-      <div className="mode-select">
-        {doctor.modes.map((m) => (
-          <div
-            key={m}
-            className={`mode-option${selectedMode === m ? " is-selected" : ""}`}
-            onClick={() => setSelectedMode(m)}
-          >
-            <span className="mode-option__icon">{MODE_ICONS[m]}</span>
-            {MODE_LABELS[m]}
-          </div>
-        ))}
-      </div>
-
-      {doctor.slotGroups.map((group) => (
-        <div className="slot-group" key={group.label}>
-          <div className="slot-group__label">{group.label}</div>
-          <div className="slot-grid">
-            {group.slots.map((s) => (
-              <div
-                key={s.time}
-                className={`slot${s.full ? " is-full" : ""}${
-                  !s.full && selectedSlot === s.time ? " is-selected" : ""
-                }`}
-                onClick={() => !s.full && setSelectedSlot(s.time)}
-              >
-                {s.time}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      <div className="card" style={{ background: "var(--bg-section)", margin: "16px 0 20px" }}>
-        <div className="result-item">
-          <span className="k">Consultation fee</span>
-          <span className="v">₹{doctor.fee}</span>
-        </div>
-        <div className="result-item">
-          <span className="k">Report shared with doctor</span>
-          <span className="v">
-            {assessmentId ? `Assessment #${assessmentId}` : "Latest skin assessment"}
-          </span>
-        </div>
-      </div>
-
-      <button
-        className="btn btn-primary"
-        style={{ width: "100%" }}
-        disabled={!selectedSlot || booking}
-        onClick={onBook}
-      >
-        {booking
-          ? "Booking..."
-          : selectedSlot
-          ? `Book appointment — ${selectedSlot}`
-          : "Select a slot to continue"}
-      </button>
-    </section>
-  );
-}
-
-function ConsultConfirmationStep({ doctor, mode, slot, onDone }) {
-  return (
-    <section className="view active">
-      <div className="card" style={{ textAlign: "center", maxWidth: 480, margin: "0 auto" }}>
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: "50%",
-            background: "var(--color-success)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "1.6rem",
-            margin: "0 auto 16px",
-          }}
-        >
-          ✓
-        </div>
-        <h3 style={{ marginBottom: 4 }}>Appointment booked</h3>
-        <p style={{ color: "var(--text-secondary)", marginTop: 0 }}>
-          A confirmation has been sent to your email.
-        </p>
-
-        <div style={{ textAlign: "left", margin: "16px 0" }}>
-          <div className="result-item">
-            <span className="k">Doctor</span>
-            <span className="v">{doctor.name}</span>
-          </div>
-          <div className="result-item">
-            <span className="k">Type</span>
-            <span className="v">{MODE_LABELS[mode]}</span>
-          </div>
-          <div className="result-item">
-            <span className="k">Date &amp; time</span>
-            <span className="v">{slot}</span>
-          </div>
-          <div className="result-item">
-            <span className="k">Fee</span>
-            <span className="v">₹{doctor.fee}</span>
-          </div>
-        </div>
-
-        <button className="btn btn-primary" style={{ width: "100%" }} onClick={onDone}>
-          Back to doctors
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function NotificationsView({ items }) {
-  return (
-    <section className="view active">
-      <div className="section-title">🔔 Notifications</div>
       <div className="card">
-        {items.length === 0 ? (
-          <p style={{ color: "var(--text-secondary)" }}>
-            You're all caught up — no notifications.
+
+        {items.length ===
+        0 ? (
+          <p
+            style={{
+              color:
+                "var(--text-secondary)",
+            }}
+          >
+            You're all caught up —
+            no notifications.
           </p>
         ) : (
-          items.map((n, i) => (
-            <div
-              className={`notif-item ${n.unread ? "unread" : ""}`}
-              key={n.id || i}
-            >
+
+          items.map(
+            (n, i) => (
               <div
-                className="notif-icon"
-                style={{ background: "var(--bg-main)" }}
+                className={`notif-item ${
+                  n.unread
+                    ? "unread"
+                    : ""
+                }`}
+                key={
+                  n.id ||
+                  n._id ||
+                  i
+                }
               >
-                {n.icon || "🔔"}
+
+                <div
+                  className="notif-icon"
+                  style={{
+                    background:
+                      "var(--bg-main)",
+                  }}
+                >
+                  {
+                    n.icon ||
+                    "🔔"
+                  }
+                </div>
+
+                <div>
+
+                  <div className="notif-title">
+                    {
+                      n.title
+                    }
+                  </div>
+
+                  <div className="notif-time">
+                    {
+                      n.time
+                    }
+                  </div>
+
+                </div>
+
               </div>
-              <div>
-                <div className="notif-title">{n.title}</div>
-                <div className="notif-time">{n.time}</div>
-              </div>
-            </div>
-          ))
+            )
+          )
+
         )}
+
       </div>
+
     </section>
   );
 }
+
+/* ============================================================
+   PROFILE
+============================================================ */
 
 function ProfileView({
   profile,
@@ -1317,87 +3859,226 @@ function ProfileView({
   onSave,
   onChangePassword,
 }) {
-  function update(field, value) {
-    setProfile((p) => ({ ...p, [field]: value }));
+  function update(
+    field,
+    value
+  ) {
+    setProfile(
+      (p) => ({
+        ...p,
+        [field]:
+          value,
+      })
+    );
   }
 
   return (
     <section className="view active">
-      <div className="section-title">👤 Profile</div>
+
+      <div className="section-title">
+        👤 Profile
+      </div>
+
       <div className="card">
+
         <div className="profile-head">
+
           <div className="profile-avatar">
-            {(savedProfile.name || "U").charAt(0).toUpperCase()}
+            {(
+              savedProfile.name ||
+              "U"
+            )
+              .charAt(0)
+              .toUpperCase()}
           </div>
+
           <div>
+
             <div className="profile-name">
-              {savedProfile.name || "Not available"}
+              {
+                savedProfile.name ||
+                "Not available"
+              }
             </div>
+
             <div className="profile-email">
-              {savedProfile.email || "Not available"}
+              {
+                savedProfile.email ||
+                "Not available"
+              }
             </div>
+
           </div>
+
         </div>
+
         <div className="form-grid">
+
           <div className="field">
-            <label>Full Name</label>
+
+            <label>
+              Full Name
+            </label>
+
             <input
               type="text"
-              value={profile.name}
-              onChange={(e) => update("name", e.target.value)}
+              value={
+                profile.name
+              }
+              onChange={(e) =>
+                update(
+                  "name",
+                  e.target.value
+                )
+              }
             />
+
           </div>
+
           <div className="field">
-            <label>Age</label>
+
+            <label>
+              Age
+            </label>
+
             <input
               type="number"
-              value={profile.age}
-              onChange={(e) => update("age", e.target.value)}
+              value={
+                profile.age
+              }
+              onChange={(e) =>
+                update(
+                  "age",
+                  e.target.value
+                )
+              }
             />
+
           </div>
+
           <div className="field">
-            <label>Gender</label>
+
+            <label>
+              Gender
+            </label>
+
             <select
-              value={profile.gender}
-              onChange={(e) => update("gender", e.target.value)}
+              value={
+                profile.gender
+              }
+              onChange={(e) =>
+                update(
+                  "gender",
+                  e.target.value
+                )
+              }
             >
-              <option value="">Select</option>
-              <option>Male</option>
-              <option>Female</option>
-              <option>Other</option>
+
+              <option value="">
+                Select
+              </option>
+
+              <option>
+                Male
+              </option>
+
+              <option>
+                Female
+              </option>
+
+              <option>
+                Other
+              </option>
+
             </select>
+
           </div>
+
           <div className="field">
-            <label>Email</label>
+
+            <label>
+              Email
+            </label>
+
             <input
               type="email"
-              value={profile.email}
-              onChange={(e) => update("email", e.target.value)}
+              value={
+                profile.email
+              }
+              onChange={(e) =>
+                update(
+                  "email",
+                  e.target.value
+                )
+              }
             />
+
           </div>
+
           <div className="field">
-            <label>Phone</label>
+
+            <label>
+              Phone
+            </label>
+
             <input
               type="tel"
-              value={profile.phone}
-              onChange={(e) => update("phone", e.target.value)}
+              value={
+                profile.phone
+              }
+              onChange={(e) =>
+                update(
+                  "phone",
+                  e.target.value
+                )
+              }
             />
+
           </div>
+
         </div>
+
         <div
-          style={{ marginTop: 20, display: "flex", gap: 12, flexWrap: "wrap" }}
+          style={{
+            marginTop:
+              20,
+            display:
+              "flex",
+            gap: 12,
+            flexWrap:
+              "wrap",
+          }}
         >
-          <button className="btn btn-primary" onClick={onSave}>
+
+          <button
+            className="btn btn-primary"
+            onClick={
+              onSave
+            }
+          >
             Save Changes
           </button>
-          <button className="btn btn-outline" onClick={onChangePassword}>
+
+          <button
+            className="btn btn-outline"
+            onClick={
+              onChangePassword
+            }
+          >
             Change Password
           </button>
+
         </div>
+
       </div>
+
     </section>
   );
 }
+
+/* ============================================================
+   SETTINGS
+============================================================ */
 
 function SettingsView({
   darkMode,
@@ -1411,65 +4092,151 @@ function SettingsView({
 }) {
   return (
     <section className="view active">
-      <div className="section-title">⚙ Settings</div>
+
+      <div className="section-title">
+        ⚙ Settings
+      </div>
+
       <div className="card">
+
         <div className="settings-row">
+
           <div>
-            <div className="settings-label">Dark Mode</div>
-            <div className="settings-sub">
-              Switch between light and dark theme
+
+            <div className="settings-label">
+              Dark Mode
             </div>
+
+            <div className="settings-sub">
+              Switch between light
+              and dark theme
+            </div>
+
           </div>
+
           <div
-            className={`toggle ${darkMode ? "on" : ""}`}
-            onClick={() => setDarkMode((d) => !d)}
+            className={`toggle ${
+              darkMode
+                ? "on"
+                : ""
+            }`}
+            onClick={() =>
+              setDarkMode(
+                (d) => !d
+              )
+            }
           >
             <div className="knob"></div>
           </div>
+
         </div>
+
         <div className="settings-row">
+
           <div>
-            <div className="settings-label">Language</div>
-            <div className="settings-sub">Choose your preferred language</div>
+
+            <div className="settings-label">
+              Language
+            </div>
+
+            <div className="settings-sub">
+              Choose your preferred
+              language
+            </div>
+
           </div>
+
           <select
             className="filter-select"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
+            value={
+              language
+            }
+            onChange={(e) =>
+              setLanguage(
+                e.target.value
+              )
+            }
           >
-            <option>English</option>
-            <option>हिन्दी</option>
+
+            <option>
+              English
+            </option>
+
+            <option>
+              हिन्दी
+            </option>
+
           </select>
+
         </div>
+
         <div className="settings-row">
+
           <div>
-            <div className="settings-label">Scan Completed Alerts</div>
-            <div className="settings-sub">
-              Get notified when a scan result is ready
+
+            <div className="settings-label">
+              Scan Completed Alerts
             </div>
+
+            <div className="settings-sub">
+              Get notified when a
+              scan result is ready
+            </div>
+
           </div>
+
           <div
-            className={`toggle ${notifScan ? "on" : ""}`}
-            onClick={() => setNotifScan((v) => !v)}
+            className={`toggle ${
+              notifScan
+                ? "on"
+                : ""
+            }`}
+            onClick={() =>
+              setNotifScan(
+                (v) => !v
+              )
+            }
           >
             <div className="knob"></div>
           </div>
+
         </div>
+
         <div className="settings-row">
+
           <div>
-            <div className="settings-label">Follow-up Reminders</div>
-            <div className="settings-sub">
-              Reminders for recommended doctor visits
+
+            <div className="settings-label">
+              Follow-up Reminders
             </div>
+
+            <div className="settings-sub">
+              Reminders for
+              recommended doctor
+              visits
+            </div>
+
           </div>
+
           <div
-            className={`toggle ${notifFollowup ? "on" : ""}`}
-            onClick={() => setNotifFollowup((v) => !v)}
+            className={`toggle ${
+              notifFollowup
+                ? "on"
+                : ""
+            }`}
+            onClick={() =>
+              setNotifFollowup(
+                (v) => !v
+              )
+            }
           >
             <div className="knob"></div>
           </div>
+
         </div>
+
       </div>
+
     </section>
   );
 }

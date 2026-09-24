@@ -4,7 +4,6 @@ const Appointment = require("../models/appointment");
 const DoctorProfile = require("../models/doctorProfile");
 const Assessment = require("../models/skinAssessment");
 
-
 // =====================================================
 // CREATE APPOINTMENT
 // POST /api/appointments
@@ -85,7 +84,10 @@ async function createAppointment(req, res) {
     // Consultation mode
     // -------------------------------------------------
 
-    if (!doctorProfile.consultationModes.includes(mode)) {
+    if (
+      !Array.isArray(doctorProfile.consultationModes) ||
+      !doctorProfile.consultationModes.includes(mode)
+    ) {
       return res.status(400).json({
         success: false,
         message: `Doctor does not provide ${mode} consultation`,
@@ -117,6 +119,19 @@ async function createAppointment(req, res) {
     }
 
     // -------------------------------------------------
+    // Prevent invalid date format
+    // -------------------------------------------------
+
+    const normalizedDate = selectedDate.toISOString().split("T")[0];
+
+    if (normalizedDate !== date) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid appointment date format",
+      });
+    }
+
+    // -------------------------------------------------
     // Check doctor weekly availability
     // -------------------------------------------------
 
@@ -124,11 +139,13 @@ async function createAppointment(req, res) {
       weekday: "long",
     });
 
-    const availableDay = doctorProfile.availability.find(
-      (slot) =>
-        slot.day === dayName &&
-        slot.enabled === true
-    );
+    const availableDay = Array.isArray(doctorProfile.availability)
+      ? doctorProfile.availability.find(
+          (slot) =>
+            slot.day === dayName &&
+            slot.enabled === true
+        )
+      : null;
 
     if (!availableDay) {
       return res.status(400).json({
@@ -160,7 +177,10 @@ async function createAppointment(req, res) {
       `${date}T${startTime}:00`
     );
 
-    if (appointmentDateTime <= new Date()) {
+    if (
+      Number.isNaN(appointmentDateTime.getTime()) ||
+      appointmentDateTime <= new Date()
+    ) {
       return res.status(400).json({
         success: false,
         message: "You cannot book an appointment in the past",
@@ -252,25 +272,15 @@ async function createAppointment(req, res) {
 
     const appointment = await Appointment.create({
       patient: patientId,
-
       doctor: doctorProfile.user,
-
       doctorProfile: doctorProfile._id,
-
       assessment: assessmentId || null,
-
       mode,
-
       date,
-
       startTime,
-
       endTime,
-
       reason: reason || "",
-
       patientMessage: patientMessage || "",
-
       status: "pending",
     });
 
@@ -293,12 +303,9 @@ async function createAppointment(req, res) {
 
     return res.status(201).json({
       success: true,
-      message:
-        "Appointment request sent successfully",
-
+      message: "Appointment request sent successfully",
       appointment: populatedAppointment,
     });
-
   } catch (error) {
     console.error(
       "CREATE APPOINTMENT ERROR:",
@@ -321,37 +328,35 @@ async function createAppointment(req, res) {
 
 async function getMyAppointments(req, res) {
   try {
-    const appointments =
-      await Appointment.find({
-        patient: req.user._id,
-      })
-        .populate(
-          "doctor",
-          "fullName email"
-        )
-        .populate("doctorProfile")
-        .populate("assessment")
-        .sort({
-          date: -1,
-          startTime: -1,
-        });
+    const appointments = await Appointment.find({
+      patient: req.user._id,
+    })
+      .populate(
+        "doctor",
+        "fullName email"
+      )
+      .populate("doctorProfile")
+      .populate("assessment")
+      .sort({
+        date: -1,
+        startTime: -1,
+      });
 
     return res.status(200).json({
       success: true,
       count: appointments.length,
       appointments,
     });
-
   } catch (error) {
     console.error(
-      "GET PATIENT APPOINTMENTS:",
+      "GET PATIENT APPOINTMENTS ERROR:",
       error
     );
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch your appointments",
+      message: "Failed to fetch your appointments",
+      error: error.message,
     });
   }
 }
@@ -361,120 +366,43 @@ async function getMyAppointments(req, res) {
 // GET DOCTOR APPOINTMENTS
 // GET /api/appointments/doctor
 // =====================================================
+
 async function getDoctorAppointments(req, res) {
   try {
     const doctorId = req.user._id;
 
-    const appointments =
-      await Appointment.find({
-        doctor: doctorId,
-      })
-        .populate(
-          "patient",
-          "fullName email gender age weight height"
-        )
-        .populate(
-          "doctorProfile"
-        )
-        .populate(
-          "assessment"
-        )
-        .sort({
-          date: 1,
-          startTime: 1,
-        });
-
-
-    const appointmentsWithReports =
-      await Promise.all(
-        appointments.map(
-          async (appointment) => {
-
-            let latestAssessment =
-              appointment.assessment ||
-              null;
-
-
-            // If booking does not contain
-            // assessment, find latest
-            // analyzed assessment of patient.
-
-            if (
-              !latestAssessment &&
-              appointment.patient?._id
-            ) {
-              latestAssessment =
-                await Assessment.findOne({
-                  user:
-                    appointment.patient._id,
-
-                  status: "analyzed",
-                }).sort({
-                  createdAt: -1,
-                });
-            }
-
-
-            return {
-              ...appointment.toObject(),
-
-              // Explicitly expose report
-              assessment:
-                appointment.assessment ||
-                null,
-
-              latestAssessment:
-                latestAssessment,
-            };
-          }
-        )
-      );
-
-
-    return res.status(200).json({
-      success: true,
-
-      count:
-        appointmentsWithReports.length,
-
-      appointments:
-        appointmentsWithReports,
-    });
-
-  } catch (error) {
-
-    console.error(
-      "GET DOCTOR APPOINTMENTS ERROR:",
-      error
-    );
-
-    return res.status(500).json({
-      success: false,
-
-      message:
-        "Failed to fetch doctor appointments",
-
-      error:
-        error.message,
-    });
-  }
-}
+    const appointments = await Appointment.find({
+      doctor: doctorId,
+    })
+      .populate(
+        "patient",
+        "fullName email gender age weight height"
+      )
+      .populate("doctorProfile")
+      .populate("assessment")
+      .sort({
+        date: 1,
+        startTime: 1,
+      });
 
     // -------------------------------------------------
-    // Attach latest assessment
+    // Attach latest assessment/report
     // -------------------------------------------------
 
     const appointmentsWithReports =
       await Promise.all(
         appointments.map(async (appointment) => {
-
           let latestAssessment =
             appointment.assessment || null;
 
-          // If appointment doesn't have assessment,
-          // find patient's latest assessment.
-          if (!latestAssessment && appointment.patient?._id) {
+          // If appointment does not have
+          // a linked assessment, get patient's
+          // latest analyzed assessment.
 
+          if (
+            !latestAssessment &&
+            appointment.patient?._id
+          ) {
             latestAssessment =
               await Assessment.findOne({
                 user: appointment.patient._id,
@@ -487,6 +415,12 @@ async function getDoctorAppointments(req, res) {
           return {
             ...appointment.toObject(),
 
+            // Assessment specifically linked
+            // to this appointment
+            assessment:
+              appointment.assessment || null,
+
+            // Latest assessment of patient
             latestAssessment,
           };
         })
@@ -494,14 +428,10 @@ async function getDoctorAppointments(req, res) {
 
     return res.status(200).json({
       success: true,
-
       count: appointmentsWithReports.length,
-
       appointments: appointmentsWithReports,
     });
-
   } catch (error) {
-
     console.error(
       "GET DOCTOR APPOINTMENTS ERROR:",
       error
@@ -509,13 +439,11 @@ async function getDoctorAppointments(req, res) {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch doctor appointments",
-
+      message: "Failed to fetch doctor appointments",
       error: error.message,
     });
   }
-
+}
 
 
 // =====================================================
@@ -525,8 +453,11 @@ async function getDoctorAppointments(req, res) {
 
 async function getAppointmentById(req, res) {
   try {
-
     const { id } = req.params;
+
+    // -------------------------------------------------
+    // Validate ID
+    // -------------------------------------------------
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -534,6 +465,10 @@ async function getAppointmentById(req, res) {
         message: "Invalid appointment ID",
       });
     }
+
+    // -------------------------------------------------
+    // Find appointment
+    // -------------------------------------------------
 
     const appointment =
       await Appointment.findById(id)
@@ -555,14 +490,18 @@ async function getAppointmentById(req, res) {
       });
     }
 
+    // -------------------------------------------------
+    // Authorization
+    // -------------------------------------------------
+
     const currentUserId =
       req.user._id.toString();
 
     const patientId =
-      appointment.patient._id.toString();
+      appointment.patient?._id?.toString();
 
     const doctorId =
-      appointment.doctor._id.toString();
+      appointment.doctor?._id?.toString();
 
     if (
       currentUserId !== patientId &&
@@ -575,25 +514,26 @@ async function getAppointmentById(req, res) {
       });
     }
 
+    // -------------------------------------------------
     // Latest assessment of patient
+    // -------------------------------------------------
+
     const latestAssessment =
-      await Assessment.findOne({
-        user: appointment.patient._id,
-        status: "analyzed",
-      }).sort({
-        createdAt: -1,
-      });
+      patientId
+        ? await Assessment.findOne({
+            user: appointment.patient._id,
+            status: "analyzed",
+          }).sort({
+            createdAt: -1,
+          })
+        : null;
 
     return res.status(200).json({
       success: true,
-
       appointment,
-
       latestAssessment,
     });
-
   } catch (error) {
-
     console.error(
       "GET APPOINTMENT ERROR:",
       error
@@ -601,8 +541,8 @@ async function getAppointmentById(req, res) {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch appointment",
+      message: "Failed to fetch appointment",
+      error: error.message,
     });
   }
 }
@@ -615,7 +555,6 @@ async function getAppointmentById(req, res) {
 
 async function acceptAppointment(req, res) {
   try {
-
     const appointment =
       await Appointment.findOne({
         _id: req.params.id,
@@ -641,14 +580,25 @@ async function acceptAppointment(req, res) {
 
     await appointment.save();
 
+    const populatedAppointment =
+      await Appointment.findById(appointment._id)
+        .populate(
+          "patient",
+          "fullName email gender age weight height"
+        )
+        .populate(
+          "doctor",
+          "fullName email"
+        )
+        .populate("doctorProfile")
+        .populate("assessment");
+
     return res.status(200).json({
       success: true,
       message: "Appointment accepted",
-      appointment,
+      appointment: populatedAppointment,
     });
-
   } catch (error) {
-
     console.error(
       "ACCEPT APPOINTMENT ERROR:",
       error
@@ -656,8 +606,8 @@ async function acceptAppointment(req, res) {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to accept appointment",
+      message: "Failed to accept appointment",
+      error: error.message,
     });
   }
 }
@@ -670,7 +620,6 @@ async function acceptAppointment(req, res) {
 
 async function rejectAppointment(req, res) {
   try {
-
     const appointment =
       await Appointment.findOne({
         _id: req.params.id,
@@ -701,9 +650,7 @@ async function rejectAppointment(req, res) {
       message: "Appointment rejected",
       appointment,
     });
-
   } catch (error) {
-
     console.error(
       "REJECT APPOINTMENT ERROR:",
       error
@@ -711,8 +658,8 @@ async function rejectAppointment(req, res) {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to reject appointment",
+      message: "Failed to reject appointment",
+      error: error.message,
     });
   }
 }
@@ -725,7 +672,6 @@ async function rejectAppointment(req, res) {
 
 async function cancelAppointment(req, res) {
   try {
-
     const appointment =
       await Appointment.findById(req.params.id);
 
@@ -739,13 +685,17 @@ async function cancelAppointment(req, res) {
     const currentUserId =
       req.user._id.toString();
 
+    const patientId =
+      appointment.patient?.toString();
+
+    const doctorId =
+      appointment.doctor?.toString();
+
     const isPatient =
-      appointment.patient.toString() ===
-      currentUserId;
+      patientId === currentUserId;
 
     const isDoctor =
-      appointment.doctor.toString() ===
-      currentUserId;
+      doctorId === currentUserId;
 
     if (!isPatient && !isDoctor) {
       return res.status(403).json({
@@ -776,9 +726,7 @@ async function cancelAppointment(req, res) {
       message: "Appointment cancelled",
       appointment,
     });
-
   } catch (error) {
-
     console.error(
       "CANCEL APPOINTMENT ERROR:",
       error
@@ -786,8 +734,8 @@ async function cancelAppointment(req, res) {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to cancel appointment",
+      message: "Failed to cancel appointment",
+      error: error.message,
     });
   }
 }
@@ -800,7 +748,6 @@ async function cancelAppointment(req, res) {
 
 async function completeAppointment(req, res) {
   try {
-
     const appointment =
       await Appointment.findOne({
         _id: req.params.id,
@@ -831,9 +778,7 @@ async function completeAppointment(req, res) {
       message: "Appointment completed",
       appointment,
     });
-
   } catch (error) {
-
     console.error(
       "COMPLETE APPOINTMENT ERROR:",
       error
@@ -841,21 +786,20 @@ async function completeAppointment(req, res) {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to complete appointment",
+      message: "Failed to complete appointment",
+      error: error.message,
     });
   }
 }
 
 
 // =====================================================
-// DOCTOR NOTES
+// UPDATE DOCTOR NOTES
 // PATCH /api/appointments/:id/notes
 // =====================================================
 
 async function updateDoctorNotes(req, res) {
   try {
-
     const { doctorNotes } = req.body;
 
     if (doctorNotes === undefined) {
@@ -887,9 +831,7 @@ async function updateDoctorNotes(req, res) {
       message: "Doctor notes updated",
       doctorNotes: appointment.doctorNotes,
     });
-
   } catch (error) {
-
     console.error(
       "UPDATE DOCTOR NOTES ERROR:",
       error
@@ -897,12 +839,16 @@ async function updateDoctorNotes(req, res) {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to update doctor notes",
+      message: "Failed to update doctor notes",
+      error: error.message,
     });
   }
 }
 
+
+// =====================================================
+// EXPORTS
+// =====================================================
 
 module.exports = {
   createAppointment,
