@@ -2,8 +2,11 @@ const express = require("express");
 
 const router = express.Router();
 
-const authMiddleware = require("../middlewares/auth");
-const allowRoles = require("../middlewares/role");
+const authMiddleware =
+  require("../middlewares/auth");
+
+const allowRoles =
+  require("../middlewares/role");
 
 const {
   createAppointment,
@@ -18,9 +21,9 @@ const {
 } = require("../contollers/appointment.controller");
 
 
-// ===============================
+// =====================================================
 // PATIENT
-// ===============================
+// =====================================================
 
 router.post(
   "/",
@@ -29,12 +32,14 @@ router.post(
   createAppointment
 );
 
+
 router.get(
   "/my",
   authMiddleware,
   allowRoles("patient"),
   getMyAppointments
 );
+
 
 router.patch(
   "/:id/cancel",
@@ -44,9 +49,9 @@ router.patch(
 );
 
 
-// ===============================
+// =====================================================
 // DOCTOR
-// ===============================
+// =====================================================
 
 router.get(
   "/doctor",
@@ -55,12 +60,17 @@ router.get(
   getDoctorAppointments
 );
 
+
 router.get(
   "/:id",
   authMiddleware,
-  allowRoles("patient", "doctor"),
+  allowRoles(
+    "patient",
+    "doctor"
+  ),
   getAppointmentById
 );
+
 
 router.patch(
   "/:id/accept",
@@ -69,6 +79,7 @@ router.patch(
   acceptAppointment
 );
 
+
 router.patch(
   "/:id/reject",
   authMiddleware,
@@ -76,12 +87,14 @@ router.patch(
   rejectAppointment
 );
 
+
 router.patch(
   "/:id/complete",
   authMiddleware,
   allowRoles("doctor"),
   completeAppointment
 );
+
 
 router.patch(
   "/:id/notes",

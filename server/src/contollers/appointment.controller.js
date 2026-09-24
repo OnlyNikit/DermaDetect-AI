@@ -361,7 +361,6 @@ async function getMyAppointments(req, res) {
 // GET DOCTOR APPOINTMENTS
 // GET /api/appointments/doctor
 // =====================================================
-
 async function getDoctorAppointments(req, res) {
   try {
     const doctorId = req.user._id;
@@ -374,12 +373,92 @@ async function getDoctorAppointments(req, res) {
           "patient",
           "fullName email gender age weight height"
         )
-        .populate("doctorProfile")
-        .populate("assessment")
+        .populate(
+          "doctorProfile"
+        )
+        .populate(
+          "assessment"
+        )
         .sort({
           date: 1,
           startTime: 1,
         });
+
+
+    const appointmentsWithReports =
+      await Promise.all(
+        appointments.map(
+          async (appointment) => {
+
+            let latestAssessment =
+              appointment.assessment ||
+              null;
+
+
+            // If booking does not contain
+            // assessment, find latest
+            // analyzed assessment of patient.
+
+            if (
+              !latestAssessment &&
+              appointment.patient?._id
+            ) {
+              latestAssessment =
+                await Assessment.findOne({
+                  user:
+                    appointment.patient._id,
+
+                  status: "analyzed",
+                }).sort({
+                  createdAt: -1,
+                });
+            }
+
+
+            return {
+              ...appointment.toObject(),
+
+              // Explicitly expose report
+              assessment:
+                appointment.assessment ||
+                null,
+
+              latestAssessment:
+                latestAssessment,
+            };
+          }
+        )
+      );
+
+
+    return res.status(200).json({
+      success: true,
+
+      count:
+        appointmentsWithReports.length,
+
+      appointments:
+        appointmentsWithReports,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "GET DOCTOR APPOINTMENTS ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+
+      message:
+        "Failed to fetch doctor appointments",
+
+      error:
+        error.message,
+    });
+  }
+}
 
     // -------------------------------------------------
     // Attach latest assessment
@@ -436,7 +515,7 @@ async function getDoctorAppointments(req, res) {
       error: error.message,
     });
   }
-}
+
 
 
 // =====================================================

@@ -16,24 +16,32 @@ const {
   getDoctorById,
 } = require("../contollers/doctor.controller");
 
+
 // =====================================================
-// PUBLIC / PATIENT / AUTHENTICATED DOCTOR DISCOVERY
+// PATIENT / AUTHENTICATED USER
 // =====================================================
 
-// GET /api/doctors
+// Get all available onboarded doctors
 router.get(
   "/",
   authMiddleware,
   getDoctors
 );
 
+
+// Get single doctor
+router.get(
+  "/:id",
+  authMiddleware,
+  getDoctorById
+);
+
+
 // =====================================================
-// DOCTOR PROFILE
+// DOCTOR
 // =====================================================
 
-// CREATE DOCTOR PROFILE
-// POST /api/doctors/profile
-
+// Create doctor profile
 router.post(
   "/profile",
   authMiddleware,
@@ -41,9 +49,8 @@ router.post(
   createDoctorProfile
 );
 
-// GET LOGGED-IN DOCTOR PROFILE
-// GET /api/doctors/profile/me
 
+// Get own doctor profile
 router.get(
   "/profile/me",
   authMiddleware,
@@ -51,12 +58,8 @@ router.get(
   getMyDoctorProfile
 );
 
-// =====================================================
-// DOCTOR AVAILABILITY
-// =====================================================
 
-// PUT /api/doctors/availability
-
+// Update availability
 router.put(
   "/availability",
   authMiddleware,
@@ -64,17 +67,5 @@ router.put(
   updateAvailability
 );
 
-// =====================================================
-// SINGLE VERIFIED DOCTOR
-// IMPORTANT: Keep this AFTER /profile/me
-// =====================================================
-
-// GET /api/doctors/:id
-
-router.get(
-  "/:id",
-  authMiddleware,
-  getDoctorById
-);
 
 module.exports = router;

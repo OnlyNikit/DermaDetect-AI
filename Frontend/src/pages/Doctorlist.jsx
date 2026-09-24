@@ -40,11 +40,14 @@ export default function DoctorList() {
       setDoctors(response.data?.doctors || []);
     } catch (err) {
       console.error(
-        "Failed to fetch doctors:",
-        err.response?.data || err.message,
+        "FETCH DOCTORS ERROR:",
+        err.response?.data || err.message
       );
 
-      setError(err.response?.data?.message || "Unable to load doctors");
+      setError(
+        err.response?.data?.message ||
+          "Unable to load doctors"
+      );
     } finally {
       setLoading(false);
     }
@@ -64,7 +67,6 @@ export default function DoctorList() {
     setSpecialization("");
     setMode("");
 
-    // Directly fetch all verified + available doctors
     setTimeout(() => {
       fetchDoctors();
     }, 0);
@@ -76,21 +78,34 @@ export default function DoctorList() {
 
   return (
     <div className="doctor-list-page">
-      {/* Header */}
+
+      {/* HEADER */}
       <div className="doctor-list-header">
-        <button className="doctor-back-btn" onClick={() => navigate(-1)}>
+
+        <button
+          className="doctor-back-btn"
+          onClick={() => navigate(-1)}
+        >
           ← Back
         </button>
 
         <div>
           <h1>Consult a Dermatologist</h1>
 
-          <p>Find a verified dermatologist and book an online consultation.</p>
+          <p>
+            Choose from our verified doctors and book
+            an online consultation.
+          </p>
         </div>
+
       </div>
 
-      {/* Filters */}
-      <form className="doctor-filter-card" onSubmit={handleSearch}>
+      {/* FILTERS */}
+      <form
+        className="doctor-filter-card"
+        onSubmit={handleSearch}
+      >
+
         <div className="filter-group">
           <label>City</label>
 
@@ -98,7 +113,9 @@ export default function DoctorList() {
             type="text"
             placeholder="Enter city"
             value={city}
-            onChange={(e) => setCity(e.target.value)}
+            onChange={(e) =>
+              setCity(e.target.value)
+            }
           />
         </div>
 
@@ -109,22 +126,41 @@ export default function DoctorList() {
             type="text"
             placeholder="e.g. Dermatologist"
             value={specialization}
-            onChange={(e) => setSpecialization(e.target.value)}
+            onChange={(e) =>
+              setSpecialization(e.target.value)
+            }
           />
         </div>
 
         <div className="filter-group">
-          <label>Consultation mode</label>
+          <label>Consultation Mode</label>
 
-          <select value={mode} onChange={(e) => setMode(e.target.value)}>
-            <option value="">All modes</option>
-            <option value="video">Video consultation</option>
-            <option value="text">Text consultation</option>
+          <select
+            value={mode}
+            onChange={(e) =>
+              setMode(e.target.value)
+            }
+          >
+            <option value="">
+              All modes
+            </option>
+
+            <option value="video">
+              Video Consultation
+            </option>
+
+            <option value="text">
+              Text Consultation
+            </option>
           </select>
         </div>
 
         <div className="filter-actions">
-          <button type="submit" className="doctor-search-btn">
+
+          <button
+            type="submit"
+            className="doctor-search-btn"
+          >
             Search
           </button>
 
@@ -135,135 +171,291 @@ export default function DoctorList() {
           >
             Clear
           </button>
+
         </div>
+
       </form>
 
-      {/* Loading */}
+      {/* LOADING */}
       {loading && (
         <div className="doctor-state">
-          <p>Loading doctors...</p>
+          <div className="doctor-loader"></div>
+          <p>Loading available doctors...</p>
         </div>
       )}
 
-      {/* Error */}
+      {/* ERROR */}
       {!loading && error && (
         <div className="doctor-state doctor-error">
+
           <h3>Unable to load doctors</h3>
 
           <p>{error}</p>
 
-          <button onClick={fetchDoctors} className="doctor-search-btn">
+          <button
+            onClick={fetchDoctors}
+            className="doctor-search-btn"
+          >
             Try Again
           </button>
+
         </div>
       )}
 
-      {/* Empty */}
-      {!loading && !error && doctors.length === 0 && (
-        <div className="doctor-state">
-          <h3>No doctors available</h3>
+      {/* EMPTY */}
+      {!loading &&
+        !error &&
+        doctors.length === 0 && (
+          <div className="doctor-state">
 
-          <p>No verified and available doctors match your current filters.</p>
-        </div>
-      )}
+            <div className="empty-icon">
+              🩺
+            </div>
 
-      {/* Doctor cards */}
-      {!loading && !error && doctors.length > 0 && (
-        <div className="doctor-results">
-          <div className="doctor-results-top">
-            <h2>Available Doctors</h2>
+            <h3>No doctors available</h3>
 
-            <span>
-              {doctors.length} doctor
-              {doctors.length !== 1 ? "s" : ""}
-            </span>
+            <p>
+              There are currently no verified and
+              available doctors matching your search.
+            </p>
+
           </div>
+        )}
 
-          <div className="doctor-grid">
-            {doctors.map((doctor) => {
-              const user = doctor.user || {};
+      {/* DOCTORS */}
+      {!loading &&
+        !error &&
+        doctors.length > 0 && (
 
-              return (
-                <div className="doctor-card" key={doctor._id}>
-                  {/* Profile image */}
-                  <div className="doctor-card-top">
-                    <div className="doctor-avatar">
-                      {doctor.profileImage ? (
-                        <img
-                          src={doctor.profileImage}
-                          alt={user.fullName || "Doctor"}
-                        />
-                      ) : (
-                        <span>
-                          {(user.fullName || "D").charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+          <div className="doctor-results">
 
-                    <div className="doctor-basic-info">
-                      <h3>{user.fullName || "Doctor"}</h3>
+            <div className="doctor-results-top">
 
-                      <p>{doctor.specialization || "Dermatologist"}</p>
+              <div>
+                <h2>Available Doctors</h2>
 
-                      <span className="verified-badge">✓ Verified</span>
-                    </div>
-                  </div>
-                  {/* Details */}
-                  <div className="doctor-details">
-                    <div className="doctor-detail-row">
-                      <span>Qualification</span>
+                <p>
+                  Verified doctors available for
+                  consultation
+                </p>
+              </div>
 
-                      <strong>{doctor.qualification || "Not specified"}</strong>
-                    </div>
+              <span className="doctor-count">
+                {doctors.length}{" "}
+                {doctors.length === 1
+                  ? "Doctor"
+                  : "Doctors"}
+              </span>
 
-                    <div className="doctor-detail-row">
-                      <span>Experience</span>
+            </div>
 
-                      <strong>{doctor.experience} years</strong>
-                    </div>
+            <div className="doctor-grid">
 
-                    <div className="doctor-detail-row">
-                      <span>Location</span>
+              {doctors.map((doctor) => {
 
-                      <strong>{doctor.city || "Not specified"}</strong>
-                    </div>
+                const user = doctor.user || {};
 
-                    <div className="doctor-detail-row">
-                      <span>Consultation fee</span>
+                const initials =
+                  user.fullName
+                    ?.split(" ")
+                    .map((name) =>
+                      name.charAt(0)
+                    )
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase() || "DR";
 
-                      <strong>₹{doctor.consultationFee || 0}</strong>
-                    </div>
-                  </div>
-                  {/* Consultation modes */}
-                  <div className="doctor-modes">
-                    {doctor.consultationModes?.includes("video") && (
-                      <span className="mode-badge">🎥 Video</span>
-                    )}
-
-                    {doctor.consultationModes?.includes("text") && (
-                      <span className="mode-badge">💬 Text</span>
-                    )}
-                  </div>
-                  33333333333333333333333333
-                  {/* Languages */}
-                  {doctor.languages?.length > 0 && (
-                    <div className="doctor-languages">
-                      <span>Languages:</span> {doctor.languages.join(", ")}
-                    </div>
-                  )}
-                  {/* CTA */}
-                  <button
-                    className="view-doctor-btn"
-                    onClick={() => openDoctor(doctor._id)}
+                return (
+                  <div
+                    className="doctor-card"
+                    key={doctor._id}
                   >
-                    View Profile →
-                  </button>
-                </div>
-              );
-            })}
+
+                    {/* PROFILE */}
+                    <div className="doctor-card-top">
+
+                      <div className="doctor-avatar">
+
+                        {doctor.profileImage ? (
+
+                          <img
+                            src={doctor.profileImage}
+                            alt={
+                              user.fullName ||
+                              "Doctor"
+                            }
+                          />
+
+                        ) : (
+
+                          <span>
+                            {initials}
+                          </span>
+
+                        )}
+
+                      </div>
+
+                      <div className="doctor-basic-info">
+
+                        <div className="doctor-name-row">
+
+                          <h3>
+                            Dr.{" "}
+                            {user.fullName ||
+                              "Doctor"}
+                          </h3>
+
+                          <span className="verified-check">
+                            ✓
+                          </span>
+
+                        </div>
+
+                        <p>
+                          {doctor.specialization ||
+                            "Dermatologist"}
+                        </p>
+
+                        <span className="verified-badge">
+                          ✓ Verified Doctor
+                        </span>
+
+                      </div>
+
+                    </div>
+
+                    {/* DETAILS */}
+                    <div className="doctor-details">
+
+                      <div className="doctor-detail-row">
+
+                        <span>
+                          Qualification
+                        </span>
+
+                        <strong>
+                          {doctor.qualification ||
+                            "Not specified"}
+                        </strong>
+
+                      </div>
+
+                      <div className="doctor-detail-row">
+
+                        <span>
+                          Experience
+                        </span>
+
+                        <strong>
+                          {doctor.experience || 0}{" "}
+                          years
+                        </strong>
+
+                      </div>
+
+                      <div className="doctor-detail-row">
+
+                        <span>
+                          Location
+                        </span>
+
+                        <strong>
+                          {doctor.city ||
+                            "Not specified"}
+                        </strong>
+
+                      </div>
+
+                      <div className="doctor-detail-row">
+
+                        <span>
+                          Consultation Fee
+                        </span>
+
+                        <strong className="doctor-fee">
+                          ₹
+                          {doctor.consultationFee ||
+                            0}
+                        </strong>
+
+                      </div>
+
+                    </div>
+
+                    {/* MODES */}
+                    <div className="doctor-modes">
+
+                      {doctor.consultationModes?.includes(
+                        "video"
+                      ) && (
+
+                        <span className="mode-badge">
+                          🎥 Video
+                        </span>
+
+                      )}
+
+                      {doctor.consultationModes?.includes(
+                        "text"
+                      ) && (
+
+                        <span className="mode-badge">
+                          💬 Text
+                        </span>
+
+                      )}
+
+                    </div>
+
+                    {/* LANGUAGES */}
+                    {doctor.languages?.length >
+                      0 && (
+
+                      <div className="doctor-languages">
+
+                        <span>
+                          Languages:
+                        </span>{" "}
+
+                        {doctor.languages.join(
+                          ", "
+                        )}
+
+                      </div>
+
+                    )}
+
+                    {/* AVAILABILITY */}
+                    <div className="doctor-available">
+
+                      <span className="available-dot"></span>
+
+                      Available for consultation
+
+                    </div>
+
+                    {/* CTA */}
+                    <button
+                      className="view-doctor-btn"
+                      onClick={() =>
+                        openDoctor(
+                          doctor._id
+                        )
+                      }
+                    >
+                      View Profile →
+                    </button>
+
+                  </div>
+                );
+              })}
+
+            </div>
+
           </div>
-        </div>
-      )}
+        )}
+
     </div>
   );
 }

@@ -1,15 +1,12 @@
 const DoctorProfile = require("../models/doctorProfile");
-const User = require("../models/user");
 
 // =====================================================
-// CREATE DOCTOR PROFILE
+// CREATE DOCTOR PROFILE / ONBOARDING
 // POST /api/doctors/profile
 // =====================================================
 
 async function createDoctorProfile(req, res) {
   try {
-    const userId = req.user._id;
-
     const {
       specialization,
       qualification,
@@ -26,140 +23,100 @@ async function createDoctorProfile(req, res) {
       profileImage,
     } = req.body;
 
-    // ---------------------------------------------
-    // Validate required fields
-    // ---------------------------------------------
-
+    // Required fields
     if (
       !specialization ||
       !qualification ||
       !registrationNumber ||
       experience === undefined ||
-      experience === null ||
       !city
     ) {
       return res.status(400).json({
         success: false,
-        message:
-          "Required professional information is missing",
+        message: "Required professional information is missing",
       });
     }
 
-    // ---------------------------------------------
-    // Check existing doctor profile
-    // ---------------------------------------------
-
-    const existingProfile =
-      await DoctorProfile.findOne({
-        user: userId,
-      });
+    // Check if doctor already has profile
+    const existingProfile = await DoctorProfile.findOne({
+      user: req.user._id,
+    });
 
     if (existingProfile) {
-      return res.status(200).json({
-        success: true,
+      return res.status(409).json({
+        success: false,
         message: "Doctor profile already exists",
         profile: existingProfile,
       });
     }
 
-    // ---------------------------------------------
     // Check registration number
-    // ---------------------------------------------
-
-    const registrationExists =
-      await DoctorProfile.findOne({
-        registrationNumber:
-          registrationNumber.trim(),
-      });
+    const registrationExists = await DoctorProfile.findOne({
+      registrationNumber: registrationNumber.trim(),
+    });
 
     if (registrationExists) {
       return res.status(409).json({
         success: false,
-        message:
-          "Registration number already exists",
+        message: "Registration number already exists",
       });
     }
 
-    // ---------------------------------------------
     // Create profile
-    // ---------------------------------------------
+    const profile = await DoctorProfile.create({
+      user: req.user._id,
 
-    const profile =
-      await DoctorProfile.create({
-        user: userId,
+      specialization: specialization.trim(),
 
-        specialization:
-          specialization.trim(),
+      qualification: qualification.trim(),
 
-        qualification:
-          qualification.trim(),
+      registrationNumber: registrationNumber.trim(),
 
-        registrationNumber:
-          registrationNumber.trim(),
+      experience: Number(experience),
 
-        experience:
-          Number(experience),
+      hospital: hospital?.trim() || "",
 
-        hospital:
-          hospital?.trim() || "",
+      clinic: clinic?.trim() || "",
 
-        clinic:
-          clinic?.trim() || "",
+      city: city.trim(),
 
-        city:
-          city.trim(),
+      address: address?.trim() || "",
 
-        address:
-          address?.trim() || "",
+      consultationFee: Number(consultationFee) || 0,
 
-        consultationFee:
-          Number(consultationFee) || 0,
+      languages: Array.isArray(languages)
+        ? languages
+        : [],
 
-        languages:
-          Array.isArray(languages)
-            ? languages
-            : [],
+      consultationModes:
+        Array.isArray(consultationModes) &&
+        consultationModes.length > 0
+          ? consultationModes
+          : ["text"],
 
-        consultationModes:
-          Array.isArray(consultationModes) &&
-          consultationModes.length > 0
-            ? consultationModes
-            : ["text"],
+      bio: bio?.trim() || "",
 
-        bio:
-          bio?.trim() || "",
+      profileImage: profileImage || "",
 
-        profileImage:
-          profileImage || "",
+      // =================================================
+      // DEMO / HACKATHON MODE
+      // Doctor becomes visible immediately after onboarding
+      // =================================================
 
-        verificationStatus:
-          "pending",
+      verificationStatus: "verified",
 
-        isAvailable:
-          false,
+      isAvailable: true,
 
-        availability: [],
-      });
-
-    // ---------------------------------------------
-    // Return populated profile
-    // ---------------------------------------------
-
-    const populatedProfile =
-      await DoctorProfile.findById(
-        profile._id
-      ).populate(
-        "user",
-        "fullName email gender age role"
-      );
+      availability: [],
+    });
 
     return res.status(201).json({
       success: true,
 
       message:
-        "Doctor profile submitted for verification",
+        "Doctor profile created successfully",
 
-      profile: populatedProfile,
+      profile,
     });
   } catch (error) {
     console.error(
@@ -167,23 +124,14 @@ async function createDoctorProfile(req, res) {
       error
     );
 
-    // Duplicate MongoDB key
-    if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        message:
-          "Doctor profile or registration number already exists",
-      });
-    }
-
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to create doctor profile",
+      message: "Failed to create doctor profile",
       error: error.message,
     });
   }
 }
+
 
 // =====================================================
 // GET MY DOCTOR PROFILE
@@ -192,38 +140,19 @@ async function createDoctorProfile(req, res) {
 
 async function getMyDoctorProfile(req, res) {
   try {
-    const userId = req.user._id;
-
-    console.log(
-      "GET DOCTOR PROFILE USER:",
-      userId
+    const profile = await DoctorProfile.findOne({
+      user: req.user._id,
+    }).populate(
+      "user",
+      "fullName email gender age role"
     );
-
-    const profile =
-      await DoctorProfile.findOne({
-        user: userId,
-      }).populate(
-        "user",
-        "fullName email gender age role"
-      );
 
     if (!profile) {
-      console.log(
-        "DOCTOR PROFILE NOT FOUND FOR:",
-        userId
-      );
-
       return res.status(404).json({
         success: false,
-        message:
-          "Doctor profile not found",
+        message: "Doctor profile not found",
       });
     }
-
-    console.log(
-      "DOCTOR PROFILE FOUND:",
-      profile._id
-    );
 
     return res.status(200).json({
       success: true,
@@ -237,15 +166,14 @@ async function getMyDoctorProfile(req, res) {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch doctor profile",
-      error: error.message,
+      message: "Failed to fetch doctor profile",
     });
   }
 }
 
+
 // =====================================================
-// UPDATE DOCTOR AVAILABILITY
+// UPDATE AVAILABILITY
 // PUT /api/doctors/availability
 // =====================================================
 
@@ -256,16 +184,14 @@ async function updateAvailability(req, res) {
       isAvailable,
     } = req.body;
 
-    const profile =
-      await DoctorProfile.findOne({
-        user: req.user._id,
-      });
+    const profile = await DoctorProfile.findOne({
+      user: req.user._id,
+    });
 
     if (!profile) {
       return res.status(404).json({
         success: false,
-        message:
-          "Doctor profile not found",
+        message: "Doctor profile not found",
       });
     }
 
@@ -274,22 +200,22 @@ async function updateAvailability(req, res) {
         ? availability
         : [];
 
-    profile.isAvailable =
-      Boolean(isAvailable);
+    if (isAvailable !== undefined) {
+      profile.isAvailable = Boolean(
+        isAvailable
+      );
+    }
 
     await profile.save();
 
     return res.status(200).json({
       success: true,
 
-      message:
-        "Availability updated",
+      message: "Availability updated",
 
-      availability:
-        profile.availability,
+      availability: profile.availability,
 
-      isAvailable:
-        profile.isAvailable,
+      isAvailable: profile.isAvailable,
     });
   } catch (error) {
     console.error(
@@ -299,15 +225,14 @@ async function updateAvailability(req, res) {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to update availability",
-      error: error.message,
+      message: "Failed to update availability",
     });
   }
 }
 
+
 // =====================================================
-// GET VERIFIED DOCTORS
+// GET DOCTORS
 // GET /api/doctors
 // =====================================================
 
@@ -319,27 +244,31 @@ async function getDoctors(req, res) {
       mode,
     } = req.query;
 
+    // =================================================
+    // ONLY ONBOARDED + VERIFIED + AVAILABLE DOCTORS
+    // =================================================
+
     const query = {
       verificationStatus: "verified",
       isAvailable: true,
     };
 
-    if (city) {
-      query.city =
-        new RegExp(city, "i");
+    if (city?.trim()) {
+      query.city = new RegExp(
+        city.trim(),
+        "i"
+      );
     }
 
-    if (specialization) {
-      query.specialization =
-        new RegExp(
-          specialization,
-          "i"
-        );
+    if (specialization?.trim()) {
+      query.specialization = new RegExp(
+        specialization.trim(),
+        "i"
+      );
     }
 
     if (mode) {
-      query.consultationModes =
-        mode;
+      query.consultationModes = mode;
     }
 
     const doctors =
@@ -355,8 +284,7 @@ async function getDoctors(req, res) {
     return res.status(200).json({
       success: true,
 
-      count:
-        doctors.length,
+      count: doctors.length,
 
       doctors,
     });
@@ -368,29 +296,28 @@ async function getDoctors(req, res) {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch doctors",
-      error: error.message,
+      message: "Failed to fetch doctors",
     });
   }
 }
 
+
 // =====================================================
-// GET DOCTOR BY PROFILE ID
+// GET DOCTOR BY ID
 // GET /api/doctors/:id
 // =====================================================
 
 async function getDoctorById(req, res) {
   try {
-    const { id } =
-      req.params;
+    const { id } = req.params;
 
     const doctor =
       await DoctorProfile.findOne({
         _id: id,
 
-        verificationStatus:
-          "verified",
+        verificationStatus: "verified",
+
+        isAvailable: true,
       }).populate(
         "user",
         "fullName email"
@@ -399,13 +326,13 @@ async function getDoctorById(req, res) {
     if (!doctor) {
       return res.status(404).json({
         success: false,
-        message:
-          "Doctor not found",
+        message: "Doctor not found",
       });
     }
 
     return res.status(200).json({
       success: true,
+
       doctor,
     });
   } catch (error) {
@@ -416,12 +343,11 @@ async function getDoctorById(req, res) {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch doctor",
-      error: error.message,
+      message: "Failed to fetch doctor",
     });
   }
 }
+
 
 module.exports = {
   createDoctorProfile,

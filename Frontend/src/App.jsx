@@ -31,6 +31,8 @@ import DoctorDashboard from "./pages/DoctorDashboard";
 import DoctorOnboarding from "./pages/DoctorOnboarding";
 import DoctorAppointments from "./pages/DoctorAppointments";
 import DoctorAppointmentDetails from "./pages/DoctorAppointmentDetails";
+import DoctorDetails from "./pages/DoctorDetails";
+import MyAppointments from "./pages/MyAppointments";
 
 function App() {
   const { loading } = useAuth();
@@ -55,6 +57,8 @@ function App() {
         />
         <Route path="/doctor-appointments" element={<ProtectedRoute><DoctorAppointments /></ProtectedRoute>} />
         <Route path="/doctor-appointments/:appointmentId" element={<ProtectedRoute><DoctorAppointmentDetails /></ProtectedRoute>} />
+        <Route path="/my-appointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
+        <Route path="/doctors/:id" element={<ProtectedRoute><DoctorDetails /></ProtectedRoute>} />
         <Route
           path="/doctor-dashboard"
           element={
