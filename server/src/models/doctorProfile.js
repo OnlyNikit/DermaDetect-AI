@@ -94,7 +94,7 @@ const DoctorProfileSchema =
           "verified",
           "rejected",
         ],
-        default: "pending",
+        default: "verified",
       },
 
       isAvailable: {
