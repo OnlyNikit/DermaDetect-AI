@@ -2,12 +2,15 @@ const express = require("express");
 const router = express.Router();
 
 const {
+  getLatestAssessment,
   createAssessment,
   getAssessmentById,
   getHistory,
 } = require("../contollers/assessment.controller");
 
 const authMiddleware = require("../middlewares/auth");
+// Latest analyzed report
+router.get("/latest", authMiddleware, getLatestAssessment);
 
 router.post("/", authMiddleware, createAssessment);
 

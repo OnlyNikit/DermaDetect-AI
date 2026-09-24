@@ -71,6 +71,7 @@ const assessmentRoutes = require("./routes/assessment.routes.js");
 const notificationRoutes = require("./routes/notifications.routes.js"); // NEW
 const phoneSessionRoute = require("./routes/phoneSession.routes.js");
 const doctorRoutes = require("./routes/doctor.routes.js");
+const appointmentRoutes = require("./routes/appointment.routes");
 
 const allowedOrigins = [
   "https://derma-detect-ai-six.vercel.app",
@@ -134,6 +135,8 @@ app.use("/api/pdf", pdfRoutes);
 app.use("/api/notifications", notificationRoutes);
 // ! doctor routes
 app.use("/api/doctors", doctorRoutes);
+// ! appointment routes
+app.use("/api/appointments", appointmentRoutes);
 
 //!  phone session routes
 app.use("/api", phoneSessionRoute);

@@ -20,9 +20,10 @@ const AppointmentSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Patient's latest skin assessment/report
     assessment: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "SkinAssessment",
+      ref: "Assessment",
       default: null,
     },
 
@@ -50,6 +51,19 @@ const AppointmentSchema = new mongoose.Schema(
     reason: {
       type: String,
       default: "",
+      trim: true,
+    },
+
+    patientMessage: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    doctorNotes: {
+      type: String,
+      default: "",
+      trim: true,
     },
 
     status: {
@@ -63,20 +77,13 @@ const AppointmentSchema = new mongoose.Schema(
       ],
       default: "pending",
     },
-
-    patientMessage: {
-      type: String,
-      default: "",
-    },
-
-    doctorNotes: {
-      type: String,
-      default: "",
-    },
   },
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("Appointment", AppointmentSchema);
+module.exports = mongoose.model(
+  "Appointment",
+  AppointmentSchema
+);

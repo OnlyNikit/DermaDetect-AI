@@ -1,0 +1,278 @@
+.doctor-detail-page {
+  min-height: 100vh;
+  background: #f6f8f7;
+  padding: 32px;
+  color: #17201c;
+}
+
+.doctor-detail-container {
+  max-width: 1000px;
+  margin: auto;
+}
+
+.doctor-detail-header {
+  margin-bottom: 25px;
+}
+
+.doctor-detail-header button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #52615a;
+  margin-bottom: 18px;
+}
+
+.doctor-detail-header p {
+  margin: 0;
+  color: #2f7d55;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.doctor-detail-header h1 {
+  margin: 6px 0;
+  font-size: 32px;
+}
+
+.detail-card {
+  background: white;
+  border: 1px solid #e2e8e4;
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.04);
+}
+
+.section-heading {
+  margin-bottom: 20px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.section-heading p {
+  color: #77837c;
+  font-size: 13px;
+}
+
+.patient-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.patient-detail-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.patient-detail-grid span {
+  font-size: 12px;
+  color: #7a847e;
+}
+
+.patient-detail-grid strong {
+  font-size: 14px;
+}
+
+.message-box {
+  margin-top: 18px;
+  padding: 15px;
+  border-radius: 12px;
+  background: #f5f8f6;
+}
+
+.message-box span {
+  font-size: 12px;
+  color: #7a847e;
+}
+
+.message-box p {
+  margin: 6px 0 0;
+}
+
+.report-card {
+  overflow: hidden;
+}
+
+.report-content {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.report-image-wrapper {
+  max-width: 500px;
+  margin: auto;
+}
+
+.report-image {
+  width: 100%;
+  max-height: 450px;
+  object-fit: contain;
+  border-radius: 14px;
+  border: 1px solid #e2e8e4;
+}
+
+.prediction-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.prediction-box {
+  background: #f5f8f6;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.prediction-box span {
+  display: block;
+  color: #7a847e;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.prediction-box strong {
+  font-size: 15px;
+}
+
+.report-section {
+  border-top: 1px solid #edf0ee;
+  padding-top: 18px;
+}
+
+.report-section h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.report-section p {
+  margin: 0;
+  color: #58645d;
+  line-height: 1.6;
+}
+
+.assessment-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.assessment-details div {
+  background: #f5f8f6;
+  padding: 13px;
+  border-radius: 10px;
+}
+
+.assessment-details span {
+  display: block;
+  font-size: 12px;
+  color: #7a847e;
+  margin-bottom: 4px;
+}
+
+.assessment-details strong {
+  font-size: 13px;
+}
+
+.no-report {
+  background: #fff8e7;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.no-report h3 {
+  margin-top: 0;
+}
+
+.no-report p {
+  color: #76684c;
+}
+
+.doctor-notes {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d8dfdb;
+  border-radius: 12px;
+  padding: 14px;
+  resize: vertical;
+  font-family: inherit;
+  outline: none;
+}
+
+.doctor-notes:focus {
+  border-color: #2f7d55;
+}
+
+.save-notes-btn {
+  margin-top: 12px;
+  border: none;
+  background: #2f7d55;
+  color: white;
+  padding: 11px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.save-notes-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.appointment-action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.appointment-action-row button {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 18px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.complete-btn {
+  background: #05668d;
+  color: white;
+}
+
+.doctor-detail-state {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+@media (max-width: 800px) {
+  .doctor-detail-page {
+    padding: 18px;
+  }
+
+  .patient-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prediction-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .assessment-details {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 500px) {
+  .prediction-grid,
+  .assessment-details {
+    grid-template-columns: 1fr;
+  }
+}

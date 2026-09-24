@@ -1,117 +1,370 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "../api/axios";
 import "./styles.css";
 
 const MODES = [
-  { id: "video", icon: "🎥", label: "Video call" },
-  { id: "chat", icon: "💬", label: "Text chat" },
-  { id: "in-person", icon: "🏥", label: "In-person" },
+  {
+    id: "video",
+    icon: "🎥",
+    label: "Video call",
+  },
+  {
+    id: "text",
+    icon: "💬",
+    label: "Text chat",
+  },
 ];
 
 const SLOT_GROUPS = [
   {
-    label: "Today, 23 Sep",
+    label: "Today",
+    date: new Date().toISOString().split("T")[0],
+
     slots: [
-      { time: "4:30 PM", full: false },
-      { time: "5:00 PM", full: false },
-      { time: "5:30 PM", full: true },
-      { time: "6:00 PM", full: false },
-      { time: "6:30 PM", full: false },
-      { time: "7:00 PM", full: true },
-    ],
-  },
-  {
-    label: "Tomorrow, 24 Sep",
-    slots: [
-      { time: "10:00 AM", full: false },
-      { time: "10:30 AM", full: false },
-      { time: "11:00 AM", full: false },
+      {
+        startTime: "16:30",
+        endTime: "17:00",
+        label: "4:30 PM",
+      },
+      {
+        startTime: "17:00",
+        endTime: "17:30",
+        label: "5:00 PM",
+      },
+      {
+        startTime: "18:00",
+        endTime: "18:30",
+        label: "6:00 PM",
+      },
+      {
+        startTime: "18:30",
+        endTime: "19:00",
+        label: "6:30 PM",
+      },
     ],
   },
 ];
 
 export default function DoctorProfile() {
   const navigate = useNavigate();
-  const [selectedMode, setSelectedMode] = useState("video");
-  const [selectedSlot, setSelectedSlot] = useState("4:30 PM");
+  const { doctorId } = useParams();
 
-  function handleBook() {
-    navigate("/consult/confirmation", { state: { mode: selectedMode, slot: selectedSlot } });
-  }
+  const [selectedMode, setSelectedMode] =
+    useState("video");
+
+  const [selectedSlot, setSelectedSlot] =
+    useState(null);
+
+  const [reason, setReason] =
+    useState("");
+
+  const [patientMessage, setPatientMessage] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const handleBook = async () => {
+    try {
+      setError("");
+
+      if (!doctorId) {
+        setError(
+          "Doctor information is missing"
+        );
+        return;
+      }
+
+      if (!selectedSlot) {
+        setError(
+          "Please select an appointment slot"
+        );
+        return;
+      }
+
+      setLoading(true);
+
+      // ------------------------------------------------
+      // Backend automatically attaches latest report.
+      // assessmentId is NOT required here.
+      // ------------------------------------------------
+
+      const response =
+        await api.post(
+          "/api/appointments",
+          {
+            doctorProfileId: doctorId,
+
+            mode: selectedMode,
+
+            date:
+              SLOT_GROUPS[0].date,
+
+            startTime:
+              selectedSlot.startTime,
+
+            endTime:
+              selectedSlot.endTime,
+
+            reason,
+
+            patientMessage,
+          }
+        );
+
+      if (!response.data?.success) {
+        throw new Error(
+          response.data?.message ||
+            "Failed to book appointment"
+        );
+      }
+
+      navigate(
+        "/consult/confirmation",
+        {
+          state: {
+            appointment:
+              response.data.appointment,
+          },
+        }
+      );
+    } catch (err) {
+      console.error(
+        "BOOK APPOINTMENT ERROR:",
+        err
+      );
+
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Unable to book appointment"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
       <div className="topbar">
-        <div className="topbar__brand">DermaDetect</div>
-        <a className="topbar__back" href="/consult">← All doctors</a>
+        <div className="topbar__brand">
+          DermaDetect
+        </div>
+
+        <button
+          className="topbar__back"
+          onClick={() =>
+            navigate("/consult")
+          }
+        >
+          ← All doctors
+        </button>
       </div>
 
       <div className="page">
-        <div className="panel" style={{ display: "flex", gap: 16, marginBottom: 24 }}>
-          <div className="doctor-card__avatar" style={{ width: 72, height: 72, fontSize: "1.3rem" }}>
-            AS
-          </div>
-          <div>
-            <div className="doctor-card__name" style={{ fontSize: "1.15rem" }}>
-              Dr. Ananya Sharma
-            </div>
-            <div className="doctor-card__role">Dermatologist · MD, 8 yrs experience</div>
-            <div className="doctor-card__meta">
-              <span>⭐ 4.8 (210 reviews)</span>
-              <span>📍 2.4 km · Hazratganj Clinic</span>
-            </div>
-            <span className="status-dot">Available now</span>
-          </div>
+        <div className="panel">
+          <h2>
+            Book Dermatologist Consultation
+          </h2>
+
+          <p className="page__subtitle">
+            Select your consultation mode and
+            preferred time.
+          </p>
         </div>
 
-        <h2 className="page__title" style={{ fontSize: "1.1rem" }}>
+        {/* Consultation mode */}
+
+        <h2
+          className="page__title"
+          style={{
+            fontSize: "1.1rem",
+            marginTop: 24,
+          }}
+        >
           Choose consultation type
         </h2>
+
         <div className="mode-select">
-          {MODES.map((m) => (
-            <div
-              key={m.id}
-              className={`mode-option${selectedMode === m.id ? " is-selected" : ""}`}
-              onClick={() => setSelectedMode(m.id)}
+          {MODES.map((mode) => (
+            <button
+              type="button"
+              key={mode.id}
+              className={`mode-option ${
+                selectedMode === mode.id
+                  ? "is-selected"
+                  : ""
+              }`}
+              onClick={() =>
+                setSelectedMode(mode.id)
+              }
             >
-              <span className="mode-option__icon">{m.icon}</span>
-              {m.label}
-            </div>
+              <span className="mode-option__icon">
+                {mode.icon}
+              </span>
+
+              {mode.label}
+            </button>
           ))}
         </div>
 
+        {/* Slots */}
+
+        <h2
+          className="page__title"
+          style={{
+            fontSize: "1.1rem",
+          }}
+        >
+          Select appointment time
+        </h2>
+
         {SLOT_GROUPS.map((group) => (
-          <div className="slot-group" key={group.label}>
-            <div className="slot-group__label">{group.label}</div>
+          <div
+            className="slot-group"
+            key={group.date}
+          >
+            <div className="slot-group__label">
+              {group.label}
+            </div>
+
             <div className="slot-grid">
-              {group.slots.map((s) => (
-                <div
-                  key={s.time}
-                  className={`slot${s.full ? " is-full" : ""}${
-                    !s.full && selectedSlot === s.time ? " is-selected" : ""
-                  }`}
-                  onClick={() => !s.full && setSelectedSlot(s.time)}
-                >
-                  {s.time}
-                </div>
-              ))}
+              {group.slots.map((slot) => {
+                const selected =
+                  selectedSlot?.startTime ===
+                  slot.startTime;
+
+                return (
+                  <button
+                    type="button"
+                    key={slot.startTime}
+                    className={`slot ${
+                      selected
+                        ? "is-selected"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      setSelectedSlot(slot)
+                    }
+                  >
+                    {slot.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ))}
 
-        <div className="panel" style={{ margin: "20px 0", background: "var(--bg-section)", boxShadow: "none" }}>
-          <div className="summary-row">
-            <span>Consultation fee</span>
-            <span>₹499</span>
-          </div>
-          <div className="summary-row">
-            <span>Report shared with doctor</span>
-            <span>Skin analysis, 23 Sep</span>
-          </div>
+        {/* Reason */}
+
+        <div className="panel">
+          <h3>Consultation details</h3>
+
+          <label>
+            Reason for consultation
+          </label>
+
+          <input
+            type="text"
+            value={reason}
+            onChange={(e) =>
+              setReason(e.target.value)
+            }
+            placeholder="e.g. Skin irritation"
+            style={{
+              width: "100%",
+              padding: 12,
+              marginTop: 8,
+              marginBottom: 16,
+            }}
+          />
+
+          <label>
+            Message for doctor
+          </label>
+
+          <textarea
+            value={patientMessage}
+            onChange={(e) =>
+              setPatientMessage(
+                e.target.value
+              )
+            }
+            placeholder="Tell the doctor anything important..."
+            rows={4}
+            style={{
+              width: "100%",
+              padding: 12,
+              marginTop: 8,
+              resize: "vertical",
+            }}
+          />
         </div>
 
-        <button className="btn btn-primary btn-block" onClick={handleBook}>
-          Book appointment — {selectedSlot} {SLOT_GROUPS[0].label.split(",")[0].toLowerCase()}
+        {/* Report information */}
+
+        <div
+          className="panel"
+          style={{
+            marginTop: 20,
+            background:
+              "var(--bg-section)",
+          }}
+        >
+          <strong>
+            🩺 Latest skin report
+          </strong>
+
+          <p
+            style={{
+              marginBottom: 0,
+              color:
+                "var(--text-secondary)",
+            }}
+          >
+            Your latest analyzed skin report
+            will automatically be shared with
+            the doctor for this consultation.
+          </p>
+        </div>
+
+        {/* Error */}
+
+        {error && (
+          <div
+            style={{
+              color: "#b42318",
+              background: "#fef3f2",
+              padding: 12,
+              borderRadius: 8,
+              marginTop: 16,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Book */}
+
+        <button
+          className="btn btn-primary btn-block"
+          style={{
+            marginTop: 20,
+          }}
+          disabled={
+            loading || !selectedSlot
+          }
+          onClick={handleBook}
+        >
+          {loading
+            ? "Booking..."
+            : selectedSlot
+            ? `Book appointment — ${selectedSlot.label}`
+            : "Select a time slot"}
         </button>
       </div>
     </>

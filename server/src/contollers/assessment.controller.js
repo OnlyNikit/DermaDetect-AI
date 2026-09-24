@@ -3,6 +3,42 @@ const axios = require("axios");
 const Assessment = require("../models/skinAssessment");
 const mongoose = require("mongoose");
 
+// =====================================================
+// GET LATEST ASSESSMENT
+// GET /api/assessments/latest
+// Patient only
+// =====================================================
+
+async function getLatestAssessment(req, res) {
+  try {
+    const assessment = await Assessment.findOne({
+      user: req.user._id,
+      status: "analyzed",
+    }).sort({
+      createdAt: -1,
+    });
+
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "No analyzed assessment found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      assessment,
+    });
+  } catch (error) {
+    console.error("GET LATEST ASSESSMENT ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch latest assessment",
+    });
+  }
+}
+
 async function createAssessment(req, res) {
   try {
     // ==========================================
@@ -221,6 +257,7 @@ async function getHistory(req, res) {
 }
 
 module.exports = {
+  getLatestAssessment,
   createAssessment,
   getAssessmentById,
   getHistory,

@@ -29,6 +29,8 @@ import SkinAnalysisResult from "./pages/SkinResult";
 import MobileScan from "./pages/MobileScan";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import DoctorOnboarding from "./pages/DoctorOnboarding";
+import DoctorAppointments from "./pages/DoctorAppointments";
+import DoctorAppointmentDetails from "./pages/DoctorAppointmentDetails";
 
 function App() {
   const { loading } = useAuth();
@@ -51,6 +53,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/doctor-appointments" element={<ProtectedRoute><DoctorAppointments /></ProtectedRoute>} />
+        <Route path="/doctor-appointments/:appointmentId" element={<ProtectedRoute><DoctorAppointmentDetails /></ProtectedRoute>} />
         <Route
           path="/doctor-dashboard"
           element={
