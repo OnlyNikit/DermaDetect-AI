@@ -1,8 +1,15 @@
 const DoctorProfile = require("../models/doctorProfile");
 const User = require("../models/user");
 
+// =====================================================
+// CREATE DOCTOR PROFILE
+// POST /api/doctors/profile
+// =====================================================
+
 async function createDoctorProfile(req, res) {
   try {
+    const userId = req.user._id;
+
     const {
       specialization,
       qualification,
@@ -19,140 +26,290 @@ async function createDoctorProfile(req, res) {
       profileImage,
     } = req.body;
 
+    // ---------------------------------------------
+    // Validate required fields
+    // ---------------------------------------------
+
     if (
       !specialization ||
       !qualification ||
       !registrationNumber ||
       experience === undefined ||
+      experience === null ||
       !city
     ) {
       return res.status(400).json({
         success: false,
-        message: "Required professional information is missing",
+        message:
+          "Required professional information is missing",
       });
     }
 
-    const existingProfile = await DoctorProfile.findOne({
-      user: req.user._id,
-    });
+    // ---------------------------------------------
+    // Check existing doctor profile
+    // ---------------------------------------------
+
+    const existingProfile =
+      await DoctorProfile.findOne({
+        user: userId,
+      });
 
     if (existingProfile) {
-      return res.status(409).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         message: "Doctor profile already exists",
+        profile: existingProfile,
       });
     }
+
+    // ---------------------------------------------
+    // Check registration number
+    // ---------------------------------------------
 
     const registrationExists =
       await DoctorProfile.findOne({
-        registrationNumber,
+        registrationNumber:
+          registrationNumber.trim(),
       });
 
     if (registrationExists) {
       return res.status(409).json({
         success: false,
-        message: "Registration number already exists",
+        message:
+          "Registration number already exists",
       });
     }
 
-    const profile = await DoctorProfile.create({
-      user: req.user._id,
-      specialization,
-      qualification,
-      registrationNumber,
-      experience,
-      hospital,
-      clinic,
-      city,
-      address,
-      consultationFee: consultationFee || 0,
-      languages: languages || [],
-      consultationModes:
-        consultationModes || ["text"],
-      bio: bio || "",
-      profileImage: profileImage || "",
-      verificationStatus: "pending",
-    });
+    // ---------------------------------------------
+    // Create profile
+    // ---------------------------------------------
+
+    const profile =
+      await DoctorProfile.create({
+        user: userId,
+
+        specialization:
+          specialization.trim(),
+
+        qualification:
+          qualification.trim(),
+
+        registrationNumber:
+          registrationNumber.trim(),
+
+        experience:
+          Number(experience),
+
+        hospital:
+          hospital?.trim() || "",
+
+        clinic:
+          clinic?.trim() || "",
+
+        city:
+          city.trim(),
+
+        address:
+          address?.trim() || "",
+
+        consultationFee:
+          Number(consultationFee) || 0,
+
+        languages:
+          Array.isArray(languages)
+            ? languages
+            : [],
+
+        consultationModes:
+          Array.isArray(consultationModes) &&
+          consultationModes.length > 0
+            ? consultationModes
+            : ["text"],
+
+        bio:
+          bio?.trim() || "",
+
+        profileImage:
+          profileImage || "",
+
+        verificationStatus:
+          "pending",
+
+        isAvailable:
+          false,
+
+        availability: [],
+      });
+
+    // ---------------------------------------------
+    // Return populated profile
+    // ---------------------------------------------
+
+    const populatedProfile =
+      await DoctorProfile.findById(
+        profile._id
+      ).populate(
+        "user",
+        "fullName email gender age role"
+      );
 
     return res.status(201).json({
       success: true,
+
       message:
         "Doctor profile submitted for verification",
-      profile,
+
+      profile: populatedProfile,
     });
   } catch (error) {
-    console.error("CREATE DOCTOR PROFILE:", error);
+    console.error(
+      "CREATE DOCTOR PROFILE ERROR:",
+      error
+    );
+
+    // Duplicate MongoDB key
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Doctor profile or registration number already exists",
+      });
+    }
 
     return res.status(500).json({
       success: false,
-      message: "Failed to create doctor profile",
+      message:
+        "Failed to create doctor profile",
       error: error.message,
     });
   }
 }
 
+// =====================================================
+// GET MY DOCTOR PROFILE
+// GET /api/doctors/profile/me
+// =====================================================
+
 async function getMyDoctorProfile(req, res) {
   try {
-    const profile = await DoctorProfile.findOne({
-      user: req.user._id,
-    }).populate("user", "fullName email gender age role");
+    const userId = req.user._id;
+
+    console.log(
+      "GET DOCTOR PROFILE USER:",
+      userId
+    );
+
+    const profile =
+      await DoctorProfile.findOne({
+        user: userId,
+      }).populate(
+        "user",
+        "fullName email gender age role"
+      );
 
     if (!profile) {
+      console.log(
+        "DOCTOR PROFILE NOT FOUND FOR:",
+        userId
+      );
+
       return res.status(404).json({
         success: false,
-        message: "Doctor profile not found",
+        message:
+          "Doctor profile not found",
       });
     }
+
+    console.log(
+      "DOCTOR PROFILE FOUND:",
+      profile._id
+    );
 
     return res.status(200).json({
       success: true,
       profile,
     });
   } catch (error) {
-    console.error(error);
+    console.error(
+      "GET MY DOCTOR PROFILE ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch doctor profile",
+      message:
+        "Failed to fetch doctor profile",
+      error: error.message,
     });
   }
 }
 
+// =====================================================
+// UPDATE DOCTOR AVAILABILITY
+// PUT /api/doctors/availability
+// =====================================================
+
 async function updateAvailability(req, res) {
   try {
-    const { availability, isAvailable } = req.body;
+    const {
+      availability,
+      isAvailable,
+    } = req.body;
 
-    const profile = await DoctorProfile.findOne({
-      user: req.user._id,
-    });
+    const profile =
+      await DoctorProfile.findOne({
+        user: req.user._id,
+      });
 
     if (!profile) {
       return res.status(404).json({
         success: false,
-        message: "Doctor profile not found",
+        message:
+          "Doctor profile not found",
       });
     }
 
-    profile.availability = availability || [];
-    profile.isAvailable = Boolean(isAvailable);
+    profile.availability =
+      Array.isArray(availability)
+        ? availability
+        : [];
+
+    profile.isAvailable =
+      Boolean(isAvailable);
 
     await profile.save();
 
     return res.status(200).json({
       success: true,
-      message: "Availability updated",
-      availability: profile.availability,
-      isAvailable: profile.isAvailable,
+
+      message:
+        "Availability updated",
+
+      availability:
+        profile.availability,
+
+      isAvailable:
+        profile.isAvailable,
     });
   } catch (error) {
-    console.error(error);
+    console.error(
+      "UPDATE AVAILABILITY ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Failed to update availability",
+      message:
+        "Failed to update availability",
+      error: error.message,
     });
   }
 }
+
+// =====================================================
+// GET VERIFIED DOCTORS
+// GET /api/doctors
+// =====================================================
 
 async function getDoctors(req, res) {
   try {
@@ -168,60 +325,82 @@ async function getDoctors(req, res) {
     };
 
     if (city) {
-      query.city = new RegExp(city, "i");
+      query.city =
+        new RegExp(city, "i");
     }
 
     if (specialization) {
-      query.specialization = new RegExp(
-        specialization,
-        "i"
-      );
+      query.specialization =
+        new RegExp(
+          specialization,
+          "i"
+        );
     }
 
     if (mode) {
-      query.consultationModes = mode;
+      query.consultationModes =
+        mode;
     }
 
-    const doctors = await DoctorProfile.find(query)
-      .populate(
-        "user",
-        "fullName email gender age"
-      )
-      .sort({
-        experience: -1,
-      });
+    const doctors =
+      await DoctorProfile.find(query)
+        .populate(
+          "user",
+          "fullName email gender age"
+        )
+        .sort({
+          experience: -1,
+        });
 
     return res.status(200).json({
       success: true,
-      count: doctors.length,
+
+      count:
+        doctors.length,
+
       doctors,
     });
   } catch (error) {
-    console.error("GET DOCTORS:", error);
+    console.error(
+      "GET DOCTORS ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch doctors",
+      message:
+        "Failed to fetch doctors",
+      error: error.message,
     });
   }
 }
 
+// =====================================================
+// GET DOCTOR BY PROFILE ID
+// GET /api/doctors/:id
+// =====================================================
+
 async function getDoctorById(req, res) {
   try {
-    const { id } = req.params;
+    const { id } =
+      req.params;
 
-    const doctor = await DoctorProfile.findOne({
-      _id: id,
-      verificationStatus: "verified",
-    }).populate(
-      "user",
-      "fullName email"
-    );
+    const doctor =
+      await DoctorProfile.findOne({
+        _id: id,
+
+        verificationStatus:
+          "verified",
+      }).populate(
+        "user",
+        "fullName email"
+      );
 
     if (!doctor) {
       return res.status(404).json({
         success: false,
-        message: "Doctor not found",
+        message:
+          "Doctor not found",
       });
     }
 
@@ -230,11 +409,16 @@ async function getDoctorById(req, res) {
       doctor,
     });
   } catch (error) {
-    console.error(error);
+    console.error(
+      "GET DOCTOR BY ID ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch doctor",
+      message:
+        "Failed to fetch doctor",
+      error: error.message,
     });
   }
 }
