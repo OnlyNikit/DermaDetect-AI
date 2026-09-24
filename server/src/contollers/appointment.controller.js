@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const Appointment = require("../models/appointment");
 const DoctorProfile = require("../models/doctorProfile");
-const Assessment = require("../models/assessment");
+const Assessment = require("../models/skinAssessment");
 
 
 // =====================================================
