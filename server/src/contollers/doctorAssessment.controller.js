@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 
 const Assessment = require("../models/skinAssessment");
 const Appointment = require("../models/appointment");
-const Doctor = require("../models/doctorProfile");
 
 // =====================================================
 // GET ASSESSMENT BY ID (FOR DOCTOR)
@@ -16,6 +15,10 @@ const Doctor = require("../models/doctorProfile");
 // Instead, we verify the doctor is authorized to view
 // this specific assessment by checking there is an
 // Appointment linking this doctor to this assessment.
+//
+// Appointment.doctor stores the User._id directly
+// (not the DoctorProfile._id), so req.user._id is
+// compared straight against it.
 // =====================================================
 
 async function getAssessmentForDoctor(req, res) {
@@ -30,31 +33,12 @@ async function getAssessmentForDoctor(req, res) {
     }
 
     // --------------------------------------------------
-    // Resolve the Doctor profile for the logged-in user.
-    // req.user is the User account (set by authMiddleware),
-    // but Appointment.doctor likely references the Doctor
-    // profile, not the User directly — adjust if your
-    // Appointment.doctor actually stores the User id.
-    // --------------------------------------------------
-
-    const doctorProfile = await Doctor.findOne({
-      user: req.user._id,
-    });
-
-    if (!doctorProfile) {
-      return res.status(403).json({
-        success: false,
-        message: "Doctor profile not found for this account",
-      });
-    }
-
-    // --------------------------------------------------
     // Authorization check: does an appointment exist
-    // linking THIS doctor to THIS assessment?
+    // linking THIS doctor (User._id) to THIS assessment?
     // --------------------------------------------------
 
     const appointment = await Appointment.findOne({
-      doctor: doctorProfile._id,
+      doctor: req.user._id,
       assessment: assessmentId,
     });
 
