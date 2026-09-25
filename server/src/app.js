@@ -72,6 +72,9 @@ const notificationRoutes = require("./routes/notifications.routes.js"); // NEW
 const phoneSessionRoute = require("./routes/phoneSession.routes.js");
 const doctorRoutes = require("./routes/doctor.routes.js");
 const appointmentRoutes = require("./routes/appointment.routes");
+// ऊपर, बाकी route imports के साथ
+const doctorAssessmentRoutes = require("./routes/doctorAssessment.routes");
+
 
 const allowedOrigins = [
   "https://derma-detect-ai-six.vercel.app",
@@ -138,6 +141,8 @@ app.use("/api/doctors", doctorRoutes);
 // ! appointment routes
 app.use("/api/appointments", appointmentRoutes);
 
+// नीचे, बाकी app.use() calls के साथ
+app.use("/api/doctor/assessment", doctorAssessmentRoutes);
 //!  phone session routes
 app.use("/api", phoneSessionRoute);
 app.use((err, req, res, next) => {
@@ -145,7 +150,7 @@ app.use((err, req, res, next) => {
   console.error(err);
   console.error("MESSAGE:", err.message);
   console.error("STACK:", err.stack);
-
+  
   res.status(500).json({
     success: false,
     message: err.message || "Internal Server Error",

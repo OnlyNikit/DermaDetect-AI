@@ -568,9 +568,7 @@ export default function DoctorDashboard() {
                         <button
                           className="consultation-open-btn"
                           onClick={() =>
-                            navigate(
-                              `/doctor/appointments/${appointment._id}`
-                            )
+                            navigate(`/doctor-appointments/${appointment._id}`)   // ✅ matches route
                           }
                         >
                           Open Consultation
