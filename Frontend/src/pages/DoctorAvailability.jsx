@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import "../components/styles/doctorpages.css";
-import "../components/styles/doctor-extra.css";
+// import "../components/styles/doctor-extra.css";
 
 const pad = (n) => String(n).padStart(2, "0");
 

@@ -9,7 +9,8 @@ export default function DoctorDashboard() {
   const [profile, setProfile] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [appointmentsLoading, setAppointmentsLoading] = useState(true);
+  const [appointmentsLoading, setAppointmentsLoading] =
+    useState(true);
 
   useEffect(() => {
     fetchDashboard();
@@ -22,25 +23,27 @@ export default function DoctorDashboard() {
   const fetchDashboard = async () => {
     try {
       setLoading(true);
+      setAppointmentsLoading(true);
 
       const profileResponse = await api.get(
         "/api/doctors/profile/me"
       );
 
-      setProfile(profileResponse.data.profile);
+      setProfile(
+        profileResponse.data?.profile || null
+      );
 
-      // Doctor appointments
       const appointmentResponse = await api.get(
         "/api/appointments/doctor"
       );
 
       setAppointments(
-        appointmentResponse.data.appointments || []
+        appointmentResponse.data?.appointments || []
       );
     } catch (error) {
       console.error(
         "DOCTOR DASHBOARD ERROR:",
-        error
+        error.response?.data || error.message
       );
 
       if (error.response?.status === 404) {
@@ -53,37 +56,49 @@ export default function DoctorDashboard() {
   };
 
   // =====================================================
+  // ONLY ACTIVE / VISIBLE APPOINTMENTS
+  // Cancelled appointments are hidden from dashboard
+  // =====================================================
+
+  const visibleAppointments = appointments.filter(
+    (appointment) =>
+      appointment.status !== "cancelled"
+  );
+
+  // =====================================================
   // HELPERS
   // =====================================================
 
   const getLatestAppointment = () => {
-    if (!appointments.length) return null;
+    if (!visibleAppointments.length) {
+      return null;
+    }
 
-    const sorted = [...appointments].sort(
+    const sorted = [...visibleAppointments].sort(
       (a, b) =>
-        new Date(b.createdAt) -
-        new Date(a.createdAt)
+        new Date(b.createdAt || 0) -
+        new Date(a.createdAt || 0)
     );
 
     return sorted[0];
   };
 
   const getPendingAppointments = () => {
-    return appointments.filter(
+    return visibleAppointments.filter(
       (appointment) =>
         appointment.status === "pending"
     );
   };
 
   const getActiveAppointments = () => {
-    return appointments.filter(
+    return visibleAppointments.filter(
       (appointment) =>
         appointment.status === "accepted"
     );
   };
 
   const getCompletedAppointments = () => {
-    return appointments.filter(
+    return visibleAppointments.filter(
       (appointment) =>
         appointment.status === "completed"
     );
@@ -92,7 +107,13 @@ export default function DoctorDashboard() {
   const formatDate = (date) => {
     if (!date) return "—";
 
-    return new Date(date).toLocaleDateString(
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "—";
+    }
+
+    return parsedDate.toLocaleDateString(
       "en-IN",
       {
         day: "2-digit",
@@ -105,8 +126,7 @@ export default function DoctorDashboard() {
   const getSeverityClass = (severity) => {
     if (!severity) return "";
 
-    const value =
-      severity.toLowerCase();
+    const value = String(severity).toLowerCase();
 
     if (value.includes("high")) {
       return "severity-high";
@@ -123,6 +143,12 @@ export default function DoctorDashboard() {
     return "";
   };
 
+  const getStatusClass = (status) => {
+    if (!status) return "";
+
+    return `status-${String(status).toLowerCase()}`;
+  };
+
   // =====================================================
   // LOADING
   // =====================================================
@@ -132,7 +158,10 @@ export default function DoctorDashboard() {
       <div className="doctor-loading">
         <div className="doctor-loading-box">
           <div className="doctor-spinner"></div>
-          <p>Loading doctor dashboard...</p>
+
+          <p>
+            Loading doctor dashboard...
+          </p>
         </div>
       </div>
     );
@@ -151,6 +180,7 @@ export default function DoctorDashboard() {
         ================================================= */}
 
         <div className="doctor-header">
+
           <div>
             <p className="doctor-eyebrow">
               DERMADETECT AI
@@ -168,11 +198,13 @@ export default function DoctorDashboard() {
           </div>
 
           <button
+            type="button"
             className="doctor-refresh-btn"
             onClick={fetchDashboard}
           >
             ↻ Refresh
           </button>
+
         </div>
 
         {/* =================================================
@@ -180,7 +212,9 @@ export default function DoctorDashboard() {
         ================================================= */}
 
         {!profile ? (
+
           <div className="doctor-onboard-card">
+
             <div className="doctor-onboard-icon">
               +
             </div>
@@ -196,15 +230,20 @@ export default function DoctorDashboard() {
             </p>
 
             <button
+              type="button"
               onClick={() =>
                 navigate("/doctor-onboarding")
               }
             >
               Onboard to DermaDetect AI
             </button>
+
           </div>
+
         ) : (
+
           <>
+
             {/* =================================================
                 STATUS
             ================================================= */}
@@ -217,7 +256,8 @@ export default function DoctorDashboard() {
                 </span>
 
                 <strong className="verification-status">
-                  {profile.verificationStatus}
+                  {profile.verificationStatus ||
+                    "Pending"}
                 </strong>
               </div>
 
@@ -245,7 +285,7 @@ export default function DoctorDashboard() {
                 </span>
 
                 <strong>
-                  {appointments.length}
+                  {visibleAppointments.length}
                 </strong>
               </div>
 
@@ -267,7 +307,10 @@ export default function DoctorDashboard() {
 
             <div className="doctor-dashboard-grid">
 
+              {/* PROFILE */}
+
               <button
+                type="button"
                 onClick={() =>
                   navigate("/doctor-profile")
                 }
@@ -286,7 +329,10 @@ export default function DoctorDashboard() {
                 </p>
               </button>
 
+              {/* AVAILABILITY */}
+
               <button
+                type="button"
                 onClick={() =>
                   navigate("/doctor-availability")
                 }
@@ -305,7 +351,10 @@ export default function DoctorDashboard() {
                 </p>
               </button>
 
+              {/* APPOINTMENTS */}
+
               <button
+                type="button"
                 onClick={() =>
                   navigate("/doctor-appointments")
                 }
@@ -326,9 +375,11 @@ export default function DoctorDashboard() {
                 {getPendingAppointments().length >
                   0 && (
                   <span className="doctor-card-badge">
-                    {getPendingAppointments().length} pending
+                    {getPendingAppointments().length}{" "}
+                    pending
                   </span>
                 )}
+
               </button>
 
             </div>
@@ -340,6 +391,7 @@ export default function DoctorDashboard() {
             <section className="doctor-section">
 
               <div className="doctor-section-header">
+
                 <div>
                   <p className="doctor-section-label">
                     PATIENT CARE
@@ -356,6 +408,7 @@ export default function DoctorDashboard() {
                 </div>
 
                 <button
+                  type="button"
                   className="doctor-outline-btn"
                   onClick={() =>
                     navigate("/doctor-appointments")
@@ -363,14 +416,22 @@ export default function DoctorDashboard() {
                 >
                   View all
                 </button>
+
               </div>
 
+              {/* APPOINTMENT LOADING */}
+
               {appointmentsLoading ? (
+
                 <div className="doctor-empty-card">
                   Loading consultations...
                 </div>
-              ) : appointments.length === 0 ? (
+
+              ) : visibleAppointments.length ===
+                0 ? (
+
                 <div className="doctor-empty-card">
+
                   <div className="doctor-empty-icon">
                     📋
                   </div>
@@ -383,201 +444,238 @@ export default function DoctorDashboard() {
                     Patient consultation requests
                     will appear here.
                   </p>
+
                 </div>
+
               ) : (
+
                 <div className="doctor-consultation-list">
 
-                  {appointments
+                  {visibleAppointments
                     .slice(0, 5)
-                    .map((appointment) => (
-                      <div
-                        className="doctor-consultation-card"
-                        key={appointment._id}
-                      >
+                    .map((appointment) => {
 
-                        {/* Patient */}
-                        <div className="consultation-patient">
+                      const patient =
+                        appointment.patient || {};
 
-                          <div className="patient-avatar">
-                            {appointment.patient?.fullName
-                              ?.charAt(0)
-                              ?.toUpperCase() || "P"}
+                      const assessment =
+                        appointment.assessment;
+
+                      const prediction =
+                        assessment?.prediction || {};
+
+                      return (
+                        <div
+                          className="doctor-consultation-card"
+                          key={appointment._id}
+                        >
+
+                          {/* =================================
+                              PATIENT
+                          ================================= */}
+
+                          <div className="consultation-patient">
+
+                            <div className="patient-avatar">
+                              {patient.fullName
+                                ?.charAt(0)
+                                ?.toUpperCase() || "P"}
+                            </div>
+
+                            <div>
+
+                              <h3>
+                                {patient.fullName ||
+                                  "Patient"}
+                              </h3>
+
+                              <p>
+                                {patient.email ||
+                                  "No email available"}
+                              </p>
+
+                            </div>
+
                           </div>
 
-                          <div>
-                            <h3>
-                              {appointment.patient
-                                ?.fullName ||
-                                "Patient"}
-                            </h3>
+                          {/* =================================
+                              APPOINTMENT INFO
+                          ================================= */}
 
-                            <p>
-                              {appointment.patient
-                                ?.email ||
-                                "No email available"}
-                            </p>
-                          </div>
+                          <div className="consultation-info">
 
-                        </div>
-
-                        {/* Appointment */}
-                        <div className="consultation-info">
-
-                          <div>
-                            <span>
-                              Date
-                            </span>
-
-                            <strong>
-                              {appointment.date}
-                            </strong>
-                          </div>
-
-                          <div>
-                            <span>
-                              Time
-                            </span>
-
-                            <strong>
-                              {appointment.startTime}
-                              {" - "}
-                              {appointment.endTime}
-                            </strong>
-                          </div>
-
-                          <div>
-                            <span>
-                              Mode
-                            </span>
-
-                            <strong>
-                              {appointment.mode ===
-                              "video"
-                                ? "Video"
-                                : "Text"}
-                            </strong>
-                          </div>
-
-                        </div>
-
-                        {/* Status */}
-                        <div className="consultation-status">
-
-                          <span
-                            className={`appointment-status status-${appointment.status}`}
-                          >
-                            {appointment.status}
-                          </span>
-
-                        </div>
-
-                        {/* Report */}
-                        <div className="consultation-report">
-
-                          {appointment.assessment ? (
-                            <>
-                              <div className="report-label">
-                                AI SKIN REPORT
-                              </div>
-
-                              <div className="report-disease">
-                                {appointment.assessment
-                                  ?.prediction
-                                  ?.disease ||
-                                  "Analysis available"}
-                              </div>
-
-                              <div className="report-meta">
-
-                                <span>
-                                  Severity:
-                                  {" "}
-                                  <strong
-                                    className={getSeverityClass(
-                                      appointment
-                                        .assessment
-                                        ?.prediction
-                                        ?.severity
-                                    )}
-                                  >
-                                    {appointment
-                                      .assessment
-                                      ?.prediction
-                                      ?.severity ||
-                                      "—"}
-                                  </strong>
-                                </span>
-
-                                <span>
-                                  Confidence:
-                                  {" "}
-                                  {appointment
-                                    .assessment
-                                    ?.prediction
-                                    ?.confidence
-                                    ? `${Math.round(
-                                        appointment
-                                          .assessment
-                                          .prediction
-                                          .confidence *
-                                          100
-                                      )}%`
-                                    : "—"}
-                                </span>
-
-                                <span>
-                                  Report:
-                                  {" "}
-                                  {formatDate(
-                                    appointment
-                                      .assessment
-                                      ?.createdAt
-                                  )}
-                                </span>
-
-                              </div>
-
-                              <button
-                                className="view-report-btn"
-                                onClick={() =>
-                                  navigate(
-                                    `/doctor/assessment/${appointment.assessment._id}`
-                                  )
-                                }
-                              >
-                                View Patient Report →
-                              </button>
-                            </>
-                          ) : (
-                            <div className="no-report">
+                            <div>
                               <span>
-                                No AI assessment attached
+                                Date
                               </span>
 
-                              <small>
-                                Patient has not submitted
-                                an assessment for this
-                                consultation.
-                              </small>
+                              <strong>
+                                {appointment.date ||
+                                  "—"}
+                              </strong>
                             </div>
-                          )}
+
+                            <div>
+                              <span>
+                                Time
+                              </span>
+
+                              <strong>
+                                {appointment.startTime ||
+                                  "—"}
+
+                                {" - "}
+
+                                {appointment.endTime ||
+                                  "—"}
+                              </strong>
+                            </div>
+
+                            <div>
+                              <span>
+                                Mode
+                              </span>
+
+                              <strong>
+                                {appointment.mode ===
+                                "video"
+                                  ? "Video"
+                                  : "Text"}
+                              </strong>
+                            </div>
+
+                          </div>
+
+                          {/* =================================
+                              STATUS
+                          ================================= */}
+
+                          <div className="consultation-status">
+
+                            <span
+                              className={`appointment-status ${getStatusClass(
+                                appointment.status
+                              )}`}
+                            >
+                              {appointment.status ||
+                                "pending"}
+                            </span>
+
+                          </div>
+
+                          {/* =================================
+                              REPORT
+                          ================================= */}
+
+                          <div className="consultation-report">
+
+                            {assessment ? (
+
+                              <>
+
+                                <div className="report-label">
+                                  AI SKIN REPORT
+                                </div>
+
+                                <div className="report-disease">
+                                  {prediction.disease ||
+                                    "Analysis available"}
+                                </div>
+
+                                <div className="report-meta">
+
+                                  <span>
+                                    Severity:{" "}
+
+                                    <strong
+                                      className={getSeverityClass(
+                                        prediction.severity
+                                      )}
+                                    >
+                                      {prediction.severity ||
+                                        "—"}
+                                    </strong>
+                                  </span>
+
+                                  <span>
+                                    Confidence:{" "}
+
+                                    {prediction.confidence !=
+                                      null
+                                      ? `${Math.round(
+                                          Number(
+                                            prediction.confidence
+                                          ) * 100
+                                        )}%`
+                                      : "—"}
+                                  </span>
+
+                                  <span>
+                                    Report:{" "}
+
+                                    {formatDate(
+                                      assessment.createdAt
+                                    )}
+                                  </span>
+
+                                </div>
+
+                                <button
+                                  type="button"
+                                  className="view-report-btn"
+                                  onClick={() =>
+                                    navigate(
+                                      `/doctor/assessment/${assessment._id}`
+                                    )
+                                  }
+                                >
+                                  View Patient Report →
+                                </button>
+
+                              </>
+
+                            ) : (
+
+                              <div className="no-report">
+
+                                <span>
+                                  No AI assessment attached
+                                </span>
+
+                                <small>
+                                  Patient has not submitted
+                                  an assessment for this
+                                  consultation.
+                                </small>
+
+                              </div>
+
+                            )}
+
+                          </div>
+
+                          {/* =================================
+                              OPEN CONSULTATION
+                          ================================= */}
+
+                          <button
+                            type="button"
+                            className="consultation-open-btn"
+                            onClick={() =>
+                              navigate(
+                                `/doctor-appointments/${appointment._id}`
+                              )
+                            }
+                          >
+                            Open Consultation
+                          </button>
 
                         </div>
-
-                        {/* Open consultation */}
-                        <button
-                          className="consultation-open-btn"
-                          onClick={() =>
-                            navigate(`/doctor-appointments/${appointment._id}`)   // ✅ matches route
-                          }
-                        >
-                          Open Consultation
-                        </button>
-
-                      </div>
-                    ))}
+                      );
+                    })}
 
                 </div>
+
               )}
 
             </section>
@@ -587,9 +685,11 @@ export default function DoctorDashboard() {
             ================================================= */}
 
             {getLatestAppointment()?.assessment && (
+
               <section className="doctor-section">
 
                 <div className="doctor-section-header">
+
                   <div>
                     <p className="doctor-section-label">
                       AI ASSISTED SCREENING
@@ -604,17 +704,28 @@ export default function DoctorDashboard() {
                       associated with your consultation.
                     </p>
                   </div>
+
                 </div>
 
                 {(() => {
+
                   const latest =
                     getLatestAppointment();
 
                   const assessment =
-                    latest.assessment;
+                    latest?.assessment;
+
+                  const prediction =
+                    assessment?.prediction || {};
+
+                  if (!latest || !assessment) {
+                    return null;
+                  }
 
                   return (
                     <div className="latest-report-card">
+
+                      {/* PATIENT */}
 
                       <div className="latest-report-left">
 
@@ -623,6 +734,7 @@ export default function DoctorDashboard() {
                         </div>
 
                         <div>
+
                           <span className="latest-report-label">
                             PATIENT
                           </span>
@@ -639,9 +751,12 @@ export default function DoctorDashboard() {
                               assessment.createdAt
                             )}
                           </p>
+
                         </div>
 
                       </div>
+
+                      {/* DIAGNOSIS */}
 
                       <div className="latest-report-diagnosis">
 
@@ -650,12 +765,13 @@ export default function DoctorDashboard() {
                         </span>
 
                         <strong>
-                          {assessment.prediction
-                            ?.disease ||
+                          {prediction.disease ||
                             "Not available"}
                         </strong>
 
                       </div>
+
+                      {/* SEVERITY */}
 
                       <div className="latest-report-diagnosis">
 
@@ -665,18 +781,19 @@ export default function DoctorDashboard() {
 
                         <strong
                           className={getSeverityClass(
-                            assessment.prediction
-                              ?.severity
+                            prediction.severity
                           )}
                         >
-                          {assessment.prediction
-                            ?.severity ||
+                          {prediction.severity ||
                             "Not available"}
                         </strong>
 
                       </div>
 
+                      {/* OPEN REPORT */}
+
                       <button
+                        type="button"
                         className="latest-report-btn"
                         onClick={() =>
                           navigate(
@@ -692,6 +809,7 @@ export default function DoctorDashboard() {
                 })()}
 
               </section>
+
             )}
 
           </>

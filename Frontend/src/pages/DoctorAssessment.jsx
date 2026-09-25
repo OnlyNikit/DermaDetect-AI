@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios";
-import "../components/styles/doctorpages.css";
+import "../components/styles/doctorassessment.css";
 
 export default function DoctorAssessment() {
   const { assessmentId } = useParams();

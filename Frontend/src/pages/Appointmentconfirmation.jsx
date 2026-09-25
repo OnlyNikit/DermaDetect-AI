@@ -1,13 +1,21 @@
 import { useLocation, Link } from "react-router-dom";
 import "../components/styles/appointmentconfirmation.css";
+import { useToast } from "../components/context/ToastContext";
 
 export default function AppointmentConfirmation() {
   const { state } = useLocation();
+  const { showToast } = useToast();
 
   const appointment = state?.appointment;
 
-  // Fallback values
-  const mode = appointment?.mode || state?.mode || "video";
+  // --------------------------------------------------
+  // FALLBACK VALUES
+  // --------------------------------------------------
+
+  const mode =
+    appointment?.mode ||
+    state?.mode ||
+    "video";
 
   const modeLabel = {
     video: "Video call",
@@ -16,8 +24,11 @@ export default function AppointmentConfirmation() {
   }[mode] || mode;
 
   const doctor = appointment?.doctor;
-  const doctorProfile = appointment?.doctorProfile;
-  const assessment = appointment?.assessment;
+  const doctorProfile =
+    appointment?.doctorProfile;
+
+  const assessment =
+    appointment?.assessment;
 
   const doctorName =
     doctor?.fullName ||
@@ -56,22 +67,37 @@ export default function AppointmentConfirmation() {
     assessment?.prediction?.severity ||
     "";
 
-  const assessmentDate = assessment?.createdAt
-    ? new Date(
-        assessment.createdAt
-      ).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : "";
+  const assessmentDate =
+    assessment?.createdAt
+      ? new Date(
+          assessment.createdAt
+        ).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "";
+
+  // --------------------------------------------------
+  // CALENDAR
+  // --------------------------------------------------
+
+  const handleAddToCalendar = () => {
+    showToast(
+      "Calendar integration will be available soon.",
+      "info"
+    );
+  };
+
+  // --------------------------------------------------
+  // UI
+  // --------------------------------------------------
 
   return (
     <>
       {/* TOP BAR */}
 
       <div className="topbar">
-
         <div className="topbar__brand">
           DermaDetect
         </div>
@@ -82,7 +108,6 @@ export default function AppointmentConfirmation() {
         >
           Close
         </Link>
-
       </div>
 
       {/* PAGE */}
@@ -123,7 +148,6 @@ export default function AppointmentConfirmation() {
           {/* Doctor */}
 
           <div className="summary-row">
-
             <span>
               Doctor
             </span>
@@ -131,14 +155,12 @@ export default function AppointmentConfirmation() {
             <span>
               Dr. {doctorName}
             </span>
-
           </div>
 
           {/* Specialization */}
 
           {doctorProfile?.specialization && (
             <div className="summary-row">
-
               <span>
                 Specialization
               </span>
@@ -146,14 +168,12 @@ export default function AppointmentConfirmation() {
               <span>
                 {doctorProfile.specialization}
               </span>
-
             </div>
           )}
 
           {/* Mode */}
 
           <div className="summary-row">
-
             <span>
               Type
             </span>
@@ -161,13 +181,11 @@ export default function AppointmentConfirmation() {
             <span>
               {modeLabel}
             </span>
-
           </div>
 
           {/* Date */}
 
           <div className="summary-row">
-
             <span>
               Date
             </span>
@@ -175,13 +193,11 @@ export default function AppointmentConfirmation() {
             <span>
               {date}
             </span>
-
           </div>
 
           {/* Time */}
 
           <div className="summary-row">
-
             <span>
               Time
             </span>
@@ -189,13 +205,11 @@ export default function AppointmentConfirmation() {
             <span>
               {time}
             </span>
-
           </div>
 
           {/* Fee */}
 
           <div className="summary-row">
-
             <span>
               Consultation fee
             </span>
@@ -203,54 +217,51 @@ export default function AppointmentConfirmation() {
             <span>
               ₹{fee}
             </span>
-
           </div>
 
           {/* STATUS */}
 
           <div className="summary-row">
-
             <span>
               Status
             </span>
 
             <span>
-              {appointment?.status || "pending"}
+              {appointment?.status ||
+                "pending"}
             </span>
-
           </div>
 
           {/* REPORT */}
 
           <div className="summary-row">
-
             <span>
               Linked report
             </span>
 
             <span>
-
               {assessment ? (
                 <>
                   {disease}
 
                   {severity && (
-                    <> · {severity}</>
+                    <>
+                      {" · "}
+                      {severity}
+                    </>
                   )}
 
                   {assessmentDate && (
                     <>
-                      {" "}
-                      · {assessmentDate}
+                      {" · "}
+                      {assessmentDate}
                     </>
                   )}
                 </>
               ) : (
                 "No report attached"
               )}
-
             </span>
-
           </div>
 
         </div>
@@ -269,10 +280,12 @@ export default function AppointmentConfirmation() {
             sent to the doctor.
           </p>
 
-          {appointment?.status === "pending" && (
+          {appointment?.status ===
+            "pending" && (
             <p>
-              The consultation will become active
-              after the doctor accepts your request.
+              The consultation will become
+              active after the doctor accepts
+              your request.
             </p>
           )}
         </div>
@@ -280,15 +293,14 @@ export default function AppointmentConfirmation() {
         {/* BUTTONS */}
 
         <button
+          type="button"
           className="btn btn-primary btn-block"
           style={{
             marginBottom: 10,
           }}
-          onClick={() => {
-            alert(
-              "Calendar integration can be added here."
-            );
-          }}
+          onClick={
+            handleAddToCalendar
+          }
         >
           Add to calendar
         </button>

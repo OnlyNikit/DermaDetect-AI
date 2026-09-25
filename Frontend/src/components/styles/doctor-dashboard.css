@@ -1,5 +1,6 @@
 /* =========================================================
    DERMADETECT AI — DOCTOR DASHBOARD + ONBOARDING
+   Mobile-first, fully responsive rebuild
    ========================================================= */
 
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap");
@@ -19,6 +20,11 @@
   --color-success: #02c39a;
   --color-cream: #f0f3bd;
 
+  --color-warning: #d97706;
+  --color-warning-bg: rgba(217, 119, 6, 0.1);
+  --color-danger: #dc2626;
+  --color-danger-bg: rgba(220, 38, 38, 0.09);
+
   --bg-main: #ffffff;
   --bg-page: #f7f9f8;
   --bg-section: #f0f3bd;
@@ -26,36 +32,46 @@
 
   --text-primary: #1f2937;
   --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
   --text-light: #ffffff;
 
-  --btn-primary: #05668d;
-  --btn-primary-hover: #04506f;
+  --btn-primary: linear-gradient(135deg, #05668d, #04788f);
+  --btn-primary-solid: #05668d;
+  --btn-primary-hover: linear-gradient(135deg, #04566f, #036377);
 
   --btn-secondary: #02c39a;
   --btn-secondary-hover: #00a896;
 
   --border-color: #e5e7eb;
+  --border-color-strong: #d7dcdf;
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.09);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.12);
+  --shadow-sm: 0 2px 8px rgba(4, 32, 41, 0.06);
+  --shadow-md: 0 8px 22px rgba(4, 32, 41, 0.1);
+  --shadow-lg: 0 16px 40px rgba(4, 32, 41, 0.14);
+  --shadow-btn: 0 6px 16px rgba(5, 102, 141, 0.28);
 
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
   --radius-full: 999px;
 
-  --transition: all 0.25s ease;
+  --tap-min: 44px;
+
+  --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* =========================================================
-   GLOBAL
+   GLOBAL / RESET
    ========================================================= */
 
 .doctor-dashboard,
 .doctor-onboarding {
   width: 100%;
   min-height: 100vh;
+  max-width: 100vw;
+
+  overflow-x: hidden;
+
   background:
     radial-gradient(
       circle at 10% 0%,
@@ -68,6 +84,8 @@
   font-family: var(--font-secondary);
 
   box-sizing: border-box;
+
+  -webkit-text-size-adjust: 100%;
 }
 
 .doctor-dashboard *,
@@ -77,6 +95,21 @@
 .doctor-onboarding *::before,
 .doctor-onboarding *::after {
   box-sizing: border-box;
+  min-width: 0;
+}
+
+.doctor-dashboard img,
+.doctor-dashboard svg,
+.doctor-onboarding img,
+.doctor-onboarding svg {
+  max-width: 100%;
+  display: block;
+}
+
+.doctor-dashboard button {
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 /* =========================================================
@@ -90,6 +123,8 @@
   align-items: center;
   justify-content: center;
 
+  padding: 24px;
+
   background: var(--bg-page);
 
   color: var(--color-secondary);
@@ -97,14 +132,44 @@
   font-family: var(--font-secondary);
   font-size: 15px;
   font-weight: 600;
+  text-align: center;
+}
+
+.doctor-loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.doctor-spinner {
+  width: 28px;
+  height: 28px;
+
+  border: 3px solid rgba(0, 168, 150, 0.15);
+  border-top-color: var(--color-accent);
+
+  border-radius: 50%;
+
+  animation: doctorSpinner 0.8s linear infinite;
+}
+
+.doctor-loading-box p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: clamp(12px, 3.4vw, 13px);
+}
+
+@keyframes doctorSpinner {
+  to { transform: rotate(360deg); }
 }
 
 /* =========================================================
-   DASHBOARD
+   DASHBOARD SHELL
    ========================================================= */
 
 .doctor-dashboard {
-  padding: 50px 20px 80px;
+  padding: clamp(20px, 6vw, 50px) clamp(14px, 4vw, 20px) clamp(40px, 8vw, 80px);
 }
 
 .doctor-dashboard-container {
@@ -118,9 +183,20 @@
    ========================================================= */
 
 .doctor-header {
-  margin-bottom: 30px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  margin-bottom: clamp(20px, 5vw, 30px);
 
   animation: doctorFadeUp 0.45s ease both;
+}
+
+.doctor-header > div:first-child {
+  min-width: 0;
+  flex: 1 1 240px;
 }
 
 .doctor-eyebrow {
@@ -141,11 +217,13 @@
   color: var(--color-secondary);
 
   font-family: var(--font-tertiary);
-  font-size: clamp(30px, 5vw, 42px);
+  font-size: clamp(26px, 6vw, 42px);
   font-weight: 700;
 
   line-height: 1.1;
   letter-spacing: -0.03em;
+
+  overflow-wrap: break-word;
 }
 
 .doctor-header p:not(.doctor-eyebrow) {
@@ -155,781 +233,16 @@
 
   color: var(--text-secondary);
 
-  font-size: 15px;
+  font-size: clamp(13px, 3.6vw, 15px);
   line-height: 1.6;
-}
-
-/* =========================================================
-   ONBOARD CARD
-   ========================================================= */
-
-.doctor-onboard-card {
-  position: relative;
-
-  padding: 35px;
-
-  background: var(--bg-card);
-
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-
-  box-shadow: var(--shadow-sm);
-
-  overflow: hidden;
-
-  animation: doctorFadeUp 0.5s ease 0.1s both;
-}
-
-.doctor-onboard-card::before {
-  content: "";
-
-  position: absolute;
-
-  top: 0;
-  left: 0;
-
-  width: 100%;
-  height: 4px;
-
-  background: linear-gradient(
-    90deg,
-    var(--color-primary),
-    var(--color-accent)
-  );
-}
-
-.doctor-onboard-card h2 {
-  margin: 0;
-
-  color: var(--color-secondary);
-
-  font-family: var(--font-tertiary);
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.doctor-onboard-card p {
-  max-width: 600px;
-
-  margin: 10px 0 24px;
-
-  color: var(--text-secondary);
-
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.doctor-onboard-card button {
-  border: none;
-
-  padding: 13px 22px;
-
-  border-radius: var(--radius-full);
-
-  background: var(--btn-primary);
-  color: var(--text-light);
-
-  font-family: var(--font-secondary);
-  font-size: 14px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  box-shadow: var(--shadow-sm);
-
-  transition: var(--transition);
-}
-
-.doctor-onboard-card button:hover {
-  background: var(--btn-primary-hover);
-
-  transform: translateY(-2px);
-
-  box-shadow: var(--shadow-md);
-}
-
-.doctor-onboard-card button:active {
-  transform: translateY(0);
-}
-
-/* =========================================================
-   STATUS CARD
-   ========================================================= */
-
-.doctor-status-card {
-  display: grid;
-
-  grid-template-columns: repeat(2, 1fr);
-
-  gap: 16px;
-
-  margin-bottom: 20px;
-
-  animation: doctorFadeUp 0.5s ease 0.1s both;
-}
-
-.doctor-status-card > div {
-  min-height: 110px;
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-
-  padding: 22px;
-
-  background: var(--bg-card);
-
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-
-  box-shadow: var(--shadow-sm);
-
-  transition: var(--transition);
-}
-
-.doctor-status-card > div:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.doctor-status-card span {
-  margin-bottom: 8px;
-
-  color: var(--text-secondary);
-
-  font-family: var(--font-primary);
-  font-size: 11px;
-
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.doctor-status-card strong {
-  color: var(--color-secondary);
-
-  font-family: var(--font-tertiary);
-  font-size: 20px;
-}
-
-/* =========================================================
-   STATUS COLORS
-   ========================================================= */
-
-.doctor-status-card > div:first-child strong {
-  color: var(--color-primary);
-}
-
-.doctor-status-card > div:last-child strong {
-  color: var(--color-success);
-}
-
-/* =========================================================
-   DASHBOARD GRID
-   ========================================================= */
-
-.doctor-dashboard-grid {
-  display: grid;
-
-  grid-template-columns: repeat(3, 1fr);
-
-  gap: 18px;
-
-  animation: doctorFadeUp 0.5s ease 0.2s both;
-}
-
-.doctor-dashboard-grid button {
-  width: 100%;
-  min-height: 160px;
-
-  padding: 25px;
-
-  text-align: left;
-
-  background: var(--bg-card);
-
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-
-  box-shadow: var(--shadow-sm);
-
-  cursor: pointer;
-
-  font-family: var(--font-secondary);
-
-  transition: var(--transition);
-}
-
-.doctor-dashboard-grid button:hover {
-  transform: translateY(-5px);
-
-  border-color: rgba(0, 168, 150, 0.35);
-
-  box-shadow: var(--shadow-md);
-}
-
-.doctor-dashboard-grid button:active {
-  transform: translateY(-1px);
-}
-
-.doctor-dashboard-grid h3 {
-  margin: 0 0 10px;
-
-  color: var(--color-secondary);
-
-  font-family: var(--font-tertiary);
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.doctor-dashboard-grid p {
-  margin: 0;
-
-  color: var(--text-secondary);
-
-  font-size: 13px;
-  line-height: 1.55;
-}
-
-/* =========================================================
-   ONBOARDING PAGE
-   ========================================================= */
-
-.doctor-onboarding {
-  padding: 45px 20px 80px;
-}
-
-.doctor-form-container {
-  width: 100%;
-  max-width: 760px;
-
-  margin: 0 auto;
-
-  padding: 38px;
-
-  background: var(--bg-card);
-
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-
-  box-shadow: var(--shadow-md);
-
-  animation: doctorFadeUp 0.5s ease both;
-}
-
-/* =========================================================
-   ONBOARDING HEADER
-   ========================================================= */
-
-.doctor-form-container > h1 {
-  margin: 0;
-
-  color: var(--color-secondary);
-
-  font-family: var(--font-tertiary);
-  font-size: clamp(28px, 5vw, 38px);
-  font-weight: 700;
-
-  letter-spacing: -0.03em;
-}
-
-.doctor-form-container > p {
-  max-width: 600px;
-
-  margin: 10px 0 30px;
-
-  color: var(--text-secondary);
-
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-/* =========================================================
-   FORM
-   ========================================================= */
-
-.doctor-form-container form {
-  display: grid;
-
-  grid-template-columns: repeat(2, 1fr);
-
-  gap: 18px;
-}
-
-/* =========================================================
-   INPUTS
-   ========================================================= */
-
-.doctor-form-container input,
-.doctor-form-container textarea,
-.doctor-form-container select {
-  width: 100%;
-
-  padding: 13px 15px;
-
-  border: 1px solid var(--border-color);
-
-  border-radius: var(--radius-md);
-
-  background: #ffffff;
-
-  color: var(--text-primary);
-
-  font-family: var(--font-secondary);
-  font-size: 14px;
-
-  outline: none;
-
-  transition: var(--transition);
-}
-
-.doctor-form-container input::placeholder,
-.doctor-form-container textarea::placeholder {
-  color: #9ca3af;
-}
-
-.doctor-form-container input:hover,
-.doctor-form-container textarea:hover,
-.doctor-form-container select:hover {
-  border-color: #cbd5e1;
-}
-
-.doctor-form-container input:focus,
-.doctor-form-container textarea:focus,
-.doctor-form-container select:focus {
-  border-color: var(--color-accent);
-
-  box-shadow:
-    0 0 0 3px rgba(0, 168, 150, 0.12);
-}
-
-.doctor-form-container textarea {
-  resize: vertical;
-
-  min-height: 130px;
-
-  line-height: 1.6;
-}
-
-/* =========================================================
-   INPUT FULL WIDTH
-   ========================================================= */
-
-/*
-  Tumhare JSX me direct inputs hain.
-  Important fields ko full-width banane ke liye
-  ye selectors use ho rahe hain.
-*/
-
-.doctor-form-container textarea,
-.doctor-form-container button {
-  grid-column: 1 / -1;
-}
-
-/* =========================================================
-   CONSULTATION MODES
-   ========================================================= */
-
-.doctor-form-container form > div {
-  grid-column: 1 / -1;
-
-  padding: 18px;
-
-  background: #f8faf9;
-
-  border: 1px solid var(--border-color);
-
-  border-radius: var(--radius-md);
-}
-
-.doctor-form-container form > div p {
-  margin: 0 0 12px;
-
-  color: var(--color-secondary);
-
-  font-family: var(--font-tertiary);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.doctor-form-container form > div label {
-  display: inline-flex;
-
-  align-items: center;
-
-  gap: 8px;
-
-  margin-right: 20px;
-
-  color: var(--text-primary);
-
-  font-size: 14px;
-
-  cursor: pointer;
-}
-
-/* =========================================================
-   CHECKBOX
-   ========================================================= */
-
-.doctor-form-container input[type="checkbox"] {
-  width: 17px;
-  height: 17px;
-
-  padding: 0;
-
-  accent-color: var(--color-accent);
-
-  cursor: pointer;
-
-  box-shadow: none;
-}
-
-/* =========================================================
-   SUBMIT BUTTON
-   ========================================================= */
-
-.doctor-form-container form > button {
-  width: 100%;
-
-  min-height: 48px;
-
-  margin-top: 4px;
-
-  border: none;
-
-  border-radius: var(--radius-full);
-
-  background: var(--btn-primary);
-
-  color: var(--text-light);
-
-  font-family: var(--font-secondary);
-  font-size: 14px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  box-shadow: var(--shadow-sm);
-
-  transition: var(--transition);
-}
-
-.doctor-form-container form > button:hover:not(:disabled) {
-  background: var(--btn-primary-hover);
-
-  transform: translateY(-2px);
-
-  box-shadow: var(--shadow-md);
-}
-
-.doctor-form-container form > button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.doctor-form-container form > button:disabled {
-  opacity: 0.65;
-
-  cursor: not-allowed;
-}
-
-/* =========================================================
-   FOCUS / ACCESSIBILITY
-   ========================================================= */
-
-.doctor-dashboard button:focus-visible,
-.doctor-onboarding button:focus-visible,
-.doctor-onboarding input:focus-visible,
-.doctor-onboarding textarea:focus-visible,
-.doctor-onboarding select:focus-visible {
-  outline: 3px solid rgba(0, 168, 150, 0.25);
-
-  outline-offset: 2px;
-}
-
-/* =========================================================
-   ANIMATION
-   ========================================================= */
-
-@keyframes doctorFadeUp {
-  from {
-    opacity: 0;
-
-    transform: translateY(14px);
-  }
-
-  to {
-    opacity: 1;
-
-    transform: translateY(0);
-  }
-}
-
-/* =========================================================
-   TABLET
-   ========================================================= */
-
-@media (max-width: 850px) {
-  .doctor-dashboard {
-    padding: 35px 18px 60px;
-  }
-
-  .doctor-onboarding {
-    padding: 35px 18px 60px;
-  }
-
-  .doctor-dashboard-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .doctor-form-container {
-    padding: 30px;
-  }
-}
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media (max-width: 620px) {
-  .doctor-dashboard {
-    padding: 25px 14px 50px;
-  }
-
-  .doctor-onboarding {
-    padding: 20px 12px 50px;
-  }
-
-  .doctor-dashboard-container {
-    max-width: 100%;
-  }
-
-  .doctor-header {
-    margin-bottom: 22px;
-  }
-
-  .doctor-header h1 {
-    font-size: 30px;
-  }
-
-  .doctor-header p:not(.doctor-eyebrow) {
-    font-size: 13px;
-  }
-
-  /* Status */
-
-  .doctor-status-card {
-    grid-template-columns: 1fr;
-
-    gap: 12px;
-  }
-
-  .doctor-status-card > div {
-    min-height: 90px;
-
-    padding: 18px;
-  }
-
-  /* Dashboard cards */
-
-  .doctor-dashboard-grid {
-    grid-template-columns: 1fr;
-
-    gap: 12px;
-  }
-
-  .doctor-dashboard-grid button {
-    min-height: 125px;
-
-    padding: 20px;
-  }
-
-  .doctor-dashboard-grid h3 {
-    font-size: 18px;
-  }
-
-  /* Onboard card */
-
-  .doctor-onboard-card {
-    padding: 25px 20px;
-  }
-
-  .doctor-onboard-card h2 {
-    font-size: 21px;
-  }
-
-  .doctor-onboard-card button {
-    width: 100%;
-  }
-
-  /* Form */
-
-  .doctor-form-container {
-    padding: 24px 18px;
-
-    border-radius: 16px;
-  }
-
-  .doctor-form-container > h1 {
-    font-size: 28px;
-  }
-
-  .doctor-form-container > p {
-    margin-bottom: 24px;
-  }
-
-  .doctor-form-container form {
-    grid-template-columns: 1fr;
-
-    gap: 14px;
-  }
-
-  .doctor-form-container textarea,
-  .doctor-form-container button,
-  .doctor-form-container form > div {
-    grid-column: auto;
-  }
-
-  .doctor-form-container form > div {
-    padding: 15px;
-  }
-
-  .doctor-form-container form > div label {
-    margin-bottom: 8px;
-  }
-}
-
-/* =========================================================
-   VERY SMALL PHONES — 320px / 360px
-   ========================================================= */
-
-@media (max-width: 390px) {
-  .doctor-dashboard {
-    padding: 20px 10px 40px;
-  }
-
-  .doctor-onboarding {
-    padding: 14px 8px 40px;
-  }
-
-  .doctor-header h1 {
-    font-size: 27px;
-  }
-
-  .doctor-eyebrow {
-    font-size: 10px;
-  }
-
-  .doctor-header p:not(.doctor-eyebrow) {
-    font-size: 12px;
-  }
-
-  .doctor-onboard-card {
-    padding: 22px 16px;
-  }
-
-  .doctor-onboard-card h2 {
-    font-size: 19px;
-  }
-
-  .doctor-onboard-card p {
-    font-size: 13px;
-  }
-
-  .doctor-status-card > div {
-    padding: 16px;
-  }
-
-  .doctor-status-card strong {
-    font-size: 18px;
-  }
-
-  .doctor-dashboard-grid button {
-    min-height: 115px;
-
-    padding: 18px;
-  }
-
-  .doctor-dashboard-grid h3 {
-    font-size: 17px;
-  }
-
-  .doctor-dashboard-grid p {
-    font-size: 12px;
-  }
-
-  .doctor-form-container {
-    padding: 20px 14px;
-
-    border-radius: 14px;
-  }
-
-  .doctor-form-container > h1 {
-    font-size: 25px;
-  }
-
-  .doctor-form-container > p {
-    font-size: 13px;
-  }
-
-  .doctor-form-container input,
-  .doctor-form-container textarea,
-  .doctor-form-container select {
-    padding: 12px;
-
-    font-size: 13px;
-  }
-
-  .doctor-form-container form > div {
-    padding: 13px;
-  }
-
-  .doctor-form-container form > div label {
-    display: flex;
-
-    margin: 8px 0;
-
-    font-size: 13px;
-  }
-
-  .doctor-form-container form > button {
-    min-height: 46px;
-
-    font-size: 13px;
-  }
-}
-
-/* =========================================================
-   REDUCED MOTION
-   ========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-  .doctor-dashboard *,
-  .doctor-onboarding * {
-    animation: none !important;
-
-    transition: none !important;
-  }
-}
-
-/* =========================================================
-   DOCTOR DASHBOARD — NEW CONSULTATION UI
-   ========================================================= */
-
-/* ---------------------------------------------------------
-   HEADER ACTION
---------------------------------------------------------- */
-
-.doctor-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
 }
 
 .doctor-refresh-btn {
   flex-shrink: 0;
 
-  padding: 10px 16px;
+  min-height: var(--tap-min);
+
+  padding: 10px 18px;
 
   border: 1px solid var(--border-color);
   border-radius: var(--radius-full);
@@ -948,7 +261,6 @@
 
 .doctor-refresh-btn:hover {
   border-color: var(--color-accent);
-
   color: var(--color-accent);
 
   transform: translateY(-1px);
@@ -956,39 +268,253 @@
   box-shadow: var(--shadow-sm);
 }
 
+.doctor-refresh-btn:active {
+  transform: translateY(0) scale(0.98);
+}
 
-/* ---------------------------------------------------------
-   STATUS CARD — 4 ITEMS
---------------------------------------------------------- */
+/* =========================================================
+   ONBOARD CARD
+   ========================================================= */
+
+.doctor-onboard-card {
+  position: relative;
+
+  padding: clamp(22px, 6vw, 35px);
+
+  background: var(--bg-card);
+
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-sm);
+
+  overflow: hidden;
+
+  animation: doctorFadeUp 0.5s ease 0.1s both;
+}
+
+.doctor-onboard-card::before {
+  content: "";
+
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 4px;
+
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+}
+
+.doctor-onboard-icon {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 14px;
+
+  border-radius: 12px;
+
+  background: rgba(0, 168, 150, 0.1);
+  color: var(--color-accent);
+
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.doctor-onboard-card h2 {
+  margin: 0;
+
+  color: var(--color-secondary);
+
+  font-family: var(--font-tertiary);
+  font-size: clamp(19px, 5vw, 24px);
+  font-weight: 700;
+}
+
+.doctor-onboard-card p {
+  max-width: 600px;
+
+  margin: 10px 0 22px;
+
+  color: var(--text-secondary);
+
+  font-size: clamp(13px, 3.6vw, 14px);
+  line-height: 1.6;
+}
+
+.doctor-onboard-card button,
+.doctor-dashboard-grid button,
+.doctor-form-container form > button,
+.doctor-refresh-btn,
+.doctor-outline-btn,
+.view-report-btn,
+.consultation-open-btn,
+.latest-report-btn {
+  min-height: var(--tap-min);
+}
+
+.doctor-onboard-card button {
+  width: 100%;
+  max-width: 320px;
+
+  border: none;
+
+  padding: 13px 22px;
+
+  border-radius: var(--radius-full);
+
+  background: var(--btn-primary);
+  color: var(--text-light);
+
+  font-family: var(--font-secondary);
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow: var(--shadow-btn);
+
+  transition: var(--transition);
+}
+
+.doctor-onboard-card button:hover {
+  background: var(--btn-primary-hover);
+
+  transform: translateY(-2px);
+
+  box-shadow: var(--shadow-md);
+}
+
+.doctor-onboard-card button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* =========================================================
+   STATUS CARD
+   ========================================================= */
 
 .doctor-status-card {
+  display: grid;
+
   grid-template-columns: repeat(4, 1fr);
+
+  gap: clamp(10px, 2.5vw, 16px);
+
+  margin-bottom: 20px;
+
+  animation: doctorFadeUp 0.5s ease 0.1s both;
 }
 
 .doctor-status-item {
   position: relative;
+
+  min-height: 96px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: clamp(14px, 3.4vw, 22px);
+
+  background: var(--bg-card);
+
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-sm);
+
+  transition: var(--transition);
+}
+
+.doctor-status-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.doctor-status-item span {
+  margin-bottom: 8px;
+
+  color: var(--text-secondary);
+
+  font-family: var(--font-primary);
+  font-size: 10.5px;
+
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.doctor-status-item strong {
+  color: var(--color-secondary);
+
+  font-family: var(--font-tertiary);
+  font-size: clamp(16px, 4vw, 20px);
+
+  overflow-wrap: anywhere;
 }
 
 .verification-status {
   text-transform: capitalize;
 }
 
-.available-status {
-  color: var(--color-success) !important;
+.available-status { color: var(--color-success) !important; }
+.unavailable-status { color: var(--color-danger) !important; }
+.pending-status { color: var(--color-warning) !important; }
+
+/* =========================================================
+   DASHBOARD NAV GRID
+   ========================================================= */
+
+.doctor-dashboard-grid {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: clamp(12px, 2.6vw, 18px);
+
+  margin-top: clamp(16px, 3vw, 20px);
+
+  animation: doctorFadeUp 0.5s ease 0.2s both;
 }
 
-.unavailable-status {
-  color: #ef4444 !important;
+.doctor-dashboard-grid button {
+  position: relative;
+
+  width: 100%;
+  min-height: 150px;
+
+  padding: clamp(18px, 4vw, 25px);
+
+  text-align: left;
+
+  background: var(--bg-card);
+
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-sm);
+
+  cursor: pointer;
+
+  font-family: var(--font-secondary);
+
+  transition: var(--transition);
 }
 
-.pending-status {
-  color: #d97706 !important;
+.doctor-dashboard-grid button:hover {
+  transform: translateY(-4px);
+
+  border-color: rgba(0, 168, 150, 0.35);
+
+  box-shadow: var(--shadow-md);
 }
 
-
-/* ---------------------------------------------------------
-   DASHBOARD CARD ICON
---------------------------------------------------------- */
+.doctor-dashboard-grid button:active {
+  transform: translateY(-1px) scale(0.99);
+}
 
 .doctor-card-icon {
   width: 42px;
@@ -1007,22 +533,36 @@
   font-size: 20px;
 }
 
-.doctor-dashboard-grid button {
-  position: relative;
+.doctor-dashboard-grid h3 {
+  margin: 0 0 8px;
+
+  color: var(--color-secondary);
+
+  font-family: var(--font-tertiary);
+  font-size: clamp(16px, 4vw, 20px);
+  font-weight: 700;
+}
+
+.doctor-dashboard-grid p {
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .doctor-card-badge {
   position: absolute;
 
-  top: 18px;
-  right: 18px;
+  top: 16px;
+  right: 16px;
 
   padding: 5px 9px;
 
   border-radius: var(--radius-full);
 
-  background: rgba(217, 119, 6, 0.10);
-
+  background: var(--color-warning-bg);
   color: #b45309;
 
   font-family: var(--font-primary);
@@ -1030,15 +570,15 @@
   font-weight: 600;
 
   text-transform: uppercase;
+  white-space: nowrap;
 }
-
 
 /* =========================================================
    SECTION
-========================================================= */
+   ========================================================= */
 
 .doctor-section {
-  margin-top: 34px;
+  margin-top: clamp(26px, 6vw, 34px);
 
   animation: doctorFadeUp 0.5s ease 0.25s both;
 }
@@ -1046,12 +586,18 @@
 .doctor-section-header {
   display: flex;
 
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
 
-  gap: 20px;
+  gap: 14px;
 
   margin-bottom: 16px;
+}
+
+.doctor-section-header > div:first-child {
+  min-width: 0;
+  flex: 1 1 220px;
 }
 
 .doctor-section-label {
@@ -1074,7 +620,7 @@
 
   font-family: var(--font-tertiary);
 
-  font-size: 24px;
+  font-size: clamp(19px, 4.6vw, 24px);
 
   letter-spacing: -0.02em;
 }
@@ -1089,15 +635,10 @@
   line-height: 1.5;
 }
 
-
-/* =========================================================
-   OUTLINE BUTTON
-========================================================= */
-
 .doctor-outline-btn {
   flex-shrink: 0;
 
-  padding: 10px 16px;
+  padding: 10px 18px;
 
   border: 1px solid var(--border-color);
 
@@ -1110,7 +651,6 @@
   font-family: var(--font-secondary);
 
   font-size: 13px;
-
   font-weight: 600;
 
   cursor: pointer;
@@ -1120,34 +660,34 @@
 
 .doctor-outline-btn:hover {
   border-color: var(--color-accent);
-
   color: var(--color-accent);
 
   transform: translateY(-1px);
+
+  box-shadow: var(--shadow-sm);
 }
 
+.doctor-outline-btn:active {
+  transform: translateY(0) scale(0.98);
+}
 
 /* =========================================================
    EMPTY STATE
-========================================================= */
+   ========================================================= */
 
 .doctor-empty-card {
-  min-height: 190px;
+  min-height: 170px;
 
   display: flex;
-
   flex-direction: column;
-
   align-items: center;
-
   justify-content: center;
 
-  padding: 30px;
+  padding: clamp(22px, 5vw, 30px);
 
   background: var(--bg-card);
 
-  border: 1px solid var(--border-color);
-
+  border: 1px dashed var(--border-color-strong);
   border-radius: var(--radius-lg);
 
   box-shadow: var(--shadow-sm);
@@ -1160,7 +700,6 @@
   height: 48px;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
@@ -1180,7 +719,7 @@
 
   font-family: var(--font-tertiary);
 
-  font-size: 18px;
+  font-size: clamp(16px, 4vw, 18px);
 }
 
 .doctor-empty-card p {
@@ -1189,37 +728,31 @@
   color: var(--text-secondary);
 
   font-size: 13px;
+  max-width: 320px;
 }
-
 
 /* =========================================================
    CONSULTATION LIST
-========================================================= */
+   ========================================================= */
 
 .doctor-consultation-list {
   display: flex;
-
   flex-direction: column;
 
   gap: 14px;
 }
 
-
-/* =========================================================
-   CONSULTATION CARD
-========================================================= */
-
 .doctor-consultation-card {
   display: grid;
 
   grid-template-columns:
-    minmax(190px, 1.2fr)
-    minmax(230px, 1.5fr)
+    minmax(180px, 1.2fr)
+    minmax(210px, 1.5fr)
     auto;
 
-  gap: 18px;
+  gap: 16px;
 
-  padding: 22px;
+  padding: clamp(16px, 4vw, 22px);
 
   background: var(--bg-card);
 
@@ -1240,42 +773,31 @@
   transform: translateY(-2px);
 }
 
-
-/* =========================================================
-   PATIENT
-========================================================= */
+/* Patient */
 
 .consultation-patient {
   display: flex;
-
   align-items: center;
-
   gap: 12px;
-
   min-width: 0;
 }
 
 .patient-avatar {
-  width: 46px;
-  height: 46px;
-
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
-  border-radius: 14px;
+  border-radius: 13px;
 
-  background: rgba(5, 102, 141, 0.10);
-
+  background: rgba(5, 102, 141, 0.1);
   color: var(--color-primary);
 
   font-family: var(--font-tertiary);
-
-  font-size: 18px;
-
+  font-size: 17px;
   font-weight: 700;
 }
 
@@ -1285,15 +807,11 @@
   color: var(--color-secondary);
 
   font-family: var(--font-tertiary);
-
-  font-size: 16px;
-
+  font-size: 15.5px;
   font-weight: 700;
 
   white-space: nowrap;
-
   overflow: hidden;
-
   text-overflow: ellipsis;
 }
 
@@ -1301,36 +819,25 @@
   margin: 4px 0 0;
 
   color: var(--text-secondary);
-
   font-size: 11px;
 
   white-space: nowrap;
-
   overflow: hidden;
-
   text-overflow: ellipsis;
 }
 
-
-/* =========================================================
-   APPOINTMENT INFO
-========================================================= */
+/* Appointment info */
 
 .consultation-info {
   display: flex;
-
   flex-wrap: wrap;
-
-  gap: 16px;
-
   align-items: center;
+  gap: 14px;
 }
 
 .consultation-info > div {
   display: flex;
-
   flex-direction: column;
-
   gap: 4px;
 }
 
@@ -1338,11 +845,9 @@
   color: var(--text-secondary);
 
   font-family: var(--font-primary);
-
   font-size: 9px;
 
   text-transform: uppercase;
-
   letter-spacing: 0.07em;
 }
 
@@ -1350,89 +855,56 @@
   color: var(--text-primary);
 
   font-size: 12px;
-
   font-weight: 600;
 }
 
-
-/* =========================================================
-   STATUS
-========================================================= */
+/* Status */
 
 .consultation-status {
   display: flex;
-
   align-items: center;
-
   justify-content: flex-end;
 }
 
 .appointment-status {
   display: inline-flex;
-
   align-items: center;
-
   justify-content: center;
 
-  padding: 6px 10px;
+  padding: 6px 11px;
 
   border-radius: var(--radius-full);
 
   font-family: var(--font-primary);
-
   font-size: 9px;
-
   font-weight: 600;
 
   text-transform: uppercase;
-
   letter-spacing: 0.05em;
+
+  white-space: nowrap;
 }
 
-.status-pending {
-  background: rgba(217, 119, 6, 0.10);
-
-  color: #b45309;
-}
-
-.status-accepted {
-  background: rgba(2, 195, 154, 0.10);
-
-  color: #008f72;
-}
-
-.status-completed {
-  background: rgba(5, 102, 141, 0.10);
-
-  color: var(--color-primary);
-}
-
+.status-pending { background: var(--color-warning-bg); color: #b45309; }
+.status-accepted { background: rgba(2, 195, 154, 0.1); color: #008f72; }
+.status-completed { background: rgba(5, 102, 141, 0.1); color: var(--color-primary); }
 .status-rejected,
-.status-cancelled {
-  background: rgba(239, 68, 68, 0.09);
+.status-cancelled { background: var(--color-danger-bg); color: var(--color-danger); }
 
-  color: #dc2626;
-}
-
-
-/* =========================================================
-   REPORT
-========================================================= */
+/* Report */
 
 .consultation-report {
   grid-column: 1 / -1;
 
-  padding: 16px;
+  padding: clamp(13px, 3.6vw, 16px);
 
-  background:
-    linear-gradient(
-      135deg,
-      rgba(0, 168, 150, 0.055),
-      rgba(5, 102, 141, 0.035)
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(0, 168, 150, 0.055),
+    rgba(5, 102, 141, 0.035)
+  );
 
   border: 1px solid rgba(0, 168, 150, 0.12);
-
   border-radius: var(--radius-md);
 }
 
@@ -1442,9 +914,7 @@
   color: var(--color-accent);
 
   font-family: var(--font-primary);
-
   font-size: 9px;
-
   font-weight: 600;
 
   letter-spacing: 0.1em;
@@ -1456,62 +926,43 @@
   color: var(--color-secondary);
 
   font-family: var(--font-tertiary);
-
-  font-size: 19px;
-
+  font-size: clamp(16px, 4.4vw, 19px);
   font-weight: 700;
+
+  overflow-wrap: anywhere;
 }
 
 .report-meta {
   display: flex;
-
   flex-wrap: wrap;
-
-  gap: 18px;
+  gap: 16px;
 
   color: var(--text-secondary);
-
   font-size: 11px;
 }
 
-.report-meta strong {
-  font-weight: 600;
-}
+.report-meta strong { font-weight: 600; }
 
-.severity-low {
-  color: #008f72 !important;
-}
-
-.severity-medium {
-  color: #b45309 !important;
-}
-
-.severity-high {
-  color: #dc2626 !important;
-}
-
-
-/* =========================================================
-   VIEW REPORT
-========================================================= */
+.severity-low { color: #008f72 !important; }
+.severity-medium { color: #b45309 !important; }
+.severity-high { color: var(--color-danger) !important; }
 
 .view-report-btn {
   margin-top: 13px;
 
-  padding: 8px 13px;
+  min-height: 38px;
+
+  padding: 8px 15px;
 
   border: 1px solid rgba(0, 168, 150, 0.25);
 
   border-radius: var(--radius-full);
 
   background: white;
-
   color: var(--color-primary);
 
   font-family: var(--font-secondary);
-
-  font-size: 11px;
-
+  font-size: 11.5px;
   font-weight: 600;
 
   cursor: pointer;
@@ -1521,70 +972,58 @@
 
 .view-report-btn:hover {
   background: var(--color-primary);
-
   border-color: var(--color-primary);
-
   color: white;
 
   transform: translateY(-1px);
+
+  box-shadow: var(--shadow-sm);
 }
 
-
-/* =========================================================
-   NO REPORT
-========================================================= */
+.view-report-btn:active { transform: translateY(0) scale(0.98); }
 
 .no-report {
   display: flex;
-
   flex-direction: column;
-
   gap: 4px;
 }
 
 .no-report span {
   color: var(--text-secondary);
-
   font-size: 12px;
-
   font-weight: 600;
 }
 
 .no-report small {
-  color: #9ca3af;
-
-  font-size: 10px;
+  color: var(--text-muted);
+  font-size: 10.5px;
 }
-
-
-/* =========================================================
-   OPEN CONSULTATION
-========================================================= */
 
 .consultation-open-btn {
   justify-self: end;
-
   align-self: center;
 
-  padding: 9px 14px;
+  min-height: 40px;
+
+  padding: 9px 16px;
 
   border: none;
 
   border-radius: var(--radius-full);
 
   background: var(--btn-primary);
-
   color: white;
 
   font-family: var(--font-secondary);
-
-  font-size: 11px;
-
+  font-size: 11.5px;
   font-weight: 600;
 
   cursor: pointer;
 
+  box-shadow: 0 4px 10px rgba(5, 102, 141, 0.22);
+
   transition: var(--transition);
+  white-space: nowrap;
 }
 
 .consultation-open-btn:hover {
@@ -1592,33 +1031,33 @@
 
   transform: translateY(-1px);
 
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-btn);
 }
 
+.consultation-open-btn:active { transform: translateY(0) scale(0.98); }
 
 /* =========================================================
    LATEST REPORT
-========================================================= */
+   ========================================================= */
 
 .latest-report-card {
   display: grid;
 
   grid-template-columns:
     1.5fr
-    minmax(150px, 0.7fr)
-    minmax(130px, 0.6fr)
+    minmax(140px, 0.7fr)
+    minmax(120px, 0.6fr)
     auto;
 
   align-items: center;
 
-  gap: 20px;
+  gap: 18px;
 
-  padding: 22px;
+  padding: clamp(16px, 4vw, 22px);
 
   background: var(--bg-card);
 
   border: 1px solid var(--border-color);
-
   border-radius: var(--radius-lg);
 
   box-shadow: var(--shadow-sm);
@@ -1628,35 +1067,30 @@
 
 .latest-report-card:hover {
   border-color: rgba(0, 168, 150, 0.25);
-
   box-shadow: var(--shadow-md);
 }
 
 .latest-report-left {
   display: flex;
-
   align-items: center;
-
   gap: 14px;
+  min-width: 0;
 }
 
 .latest-report-icon {
-  width: 48px;
-  height: 48px;
-
+  width: 46px;
+  height: 46px;
   flex-shrink: 0;
 
   display: flex;
-
   align-items: center;
-
   justify-content: center;
 
   border-radius: 14px;
 
-  background: rgba(0, 168, 150, 0.10);
+  background: rgba(0, 168, 150, 0.1);
 
-  font-size: 21px;
+  font-size: 20px;
 }
 
 .latest-report-label {
@@ -1667,7 +1101,6 @@
   color: var(--text-secondary);
 
   font-family: var(--font-primary);
-
   font-size: 9px;
 
   letter-spacing: 0.09em;
@@ -1679,35 +1112,34 @@
   color: var(--color-secondary);
 
   font-family: var(--font-tertiary);
+  font-size: 15.5px;
 
-  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .latest-report-left p {
   margin: 4px 0 0;
 
   color: var(--text-secondary);
-
   font-size: 11px;
 }
 
 .latest-report-diagnosis {
   display: flex;
-
   flex-direction: column;
-
   gap: 5px;
+  min-width: 0;
 }
 
 .latest-report-diagnosis span {
   color: var(--text-secondary);
 
   font-family: var(--font-primary);
-
   font-size: 9px;
 
   text-transform: uppercase;
-
   letter-spacing: 0.07em;
 }
 
@@ -1715,85 +1147,274 @@
   color: var(--color-secondary);
 
   font-family: var(--font-tertiary);
+  font-size: 15.5px;
 
-  font-size: 16px;
+  overflow-wrap: anywhere;
 }
 
 .latest-report-btn {
-  padding: 10px 15px;
+  min-height: 40px;
+
+  padding: 10px 16px;
 
   border: none;
 
   border-radius: var(--radius-full);
 
   background: var(--color-secondary);
-
   color: white;
 
-  font-size: 11px;
-
+  font-size: 11.5px;
   font-weight: 600;
 
   cursor: pointer;
 
   transition: var(--transition);
+  white-space: nowrap;
 }
 
 .latest-report-btn:hover {
   background: var(--color-primary);
-
   transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
+.latest-report-btn:active { transform: translateY(0) scale(0.98); }
 
 /* =========================================================
-   LOADING
-========================================================= */
+   ONBOARDING PAGE
+   ========================================================= */
 
-.doctor-loading-box {
-  display: flex;
-
-  flex-direction: column;
-
-  align-items: center;
-
-  gap: 12px;
+.doctor-onboarding {
+  padding: clamp(16px, 5vw, 45px) clamp(12px, 4vw, 20px) clamp(40px, 8vw, 80px);
 }
 
-.doctor-spinner {
-  width: 28px;
-  height: 28px;
+.doctor-form-container {
+  width: 100%;
+  max-width: 760px;
 
-  border: 3px solid rgba(0, 168, 150, 0.15);
+  margin: 0 auto;
 
-  border-top-color: var(--color-accent);
+  padding: clamp(20px, 5vw, 38px);
 
-  border-radius: 50%;
+  background: var(--bg-card);
 
-  animation: doctorSpinner 0.8s linear infinite;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-md);
+
+  animation: doctorFadeUp 0.5s ease both;
 }
 
-.doctor-loading-box p {
+.doctor-form-container > h1 {
   margin: 0;
+
+  color: var(--color-secondary);
+
+  font-family: var(--font-tertiary);
+  font-size: clamp(24px, 6vw, 38px);
+  font-weight: 700;
+
+  letter-spacing: -0.03em;
+}
+
+.doctor-form-container > p {
+  max-width: 600px;
+
+  margin: 10px 0 clamp(20px, 5vw, 30px);
 
   color: var(--text-secondary);
 
-  font-size: 13px;
+  font-size: clamp(13px, 3.6vw, 14px);
+  line-height: 1.6;
 }
 
-@keyframes doctorSpinner {
-  to {
-    transform: rotate(360deg);
+.doctor-form-container form {
+  display: grid;
+
+  grid-template-columns: repeat(2, 1fr);
+
+  gap: clamp(14px, 3.4vw, 18px);
+}
+
+.doctor-form-container input,
+.doctor-form-container textarea,
+.doctor-form-container select {
+  width: 100%;
+
+  min-height: var(--tap-min);
+
+  padding: 13px 15px;
+
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+
+  background: #ffffff;
+  color: var(--text-primary);
+
+  font-family: var(--font-secondary);
+  font-size: 14px;
+
+  outline: none;
+
+  transition: var(--transition);
+}
+
+.doctor-form-container input::placeholder,
+.doctor-form-container textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.doctor-form-container input:hover,
+.doctor-form-container textarea:hover,
+.doctor-form-container select:hover {
+  border-color: var(--border-color-strong);
+}
+
+.doctor-form-container input:focus,
+.doctor-form-container textarea:focus,
+.doctor-form-container select:focus {
+  border-color: var(--color-accent);
+
+  box-shadow: 0 0 0 3px rgba(0, 168, 150, 0.14);
+}
+
+.doctor-form-container textarea {
+  resize: vertical;
+  min-height: 130px;
+  line-height: 1.6;
+}
+
+.doctor-form-container textarea,
+.doctor-form-container button {
+  grid-column: 1 / -1;
+}
+
+.doctor-form-container form > div {
+  grid-column: 1 / -1;
+
+  padding: clamp(14px, 3.6vw, 18px);
+
+  background: #f8faf9;
+
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.doctor-form-container form > div p {
+  margin: 0 0 12px;
+
+  color: var(--color-secondary);
+
+  font-family: var(--font-tertiary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.doctor-form-container form > div label {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-right: 20px;
+  margin-bottom: 8px;
+
+  color: var(--text-primary);
+  font-size: 14px;
+
+  cursor: pointer;
+}
+
+.doctor-form-container input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+
+  padding: 0;
+
+  accent-color: var(--color-accent);
+
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.doctor-form-container form > button {
+  width: 100%;
+  min-height: 48px;
+
+  margin-top: 4px;
+
+  border: none;
+  border-radius: var(--radius-full);
+
+  background: var(--btn-primary);
+  color: var(--text-light);
+
+  font-family: var(--font-secondary);
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow: var(--shadow-btn);
+
+  transition: var(--transition);
+}
+
+.doctor-form-container form > button:hover:not(:disabled) {
+  background: var(--btn-primary-hover);
+
+  transform: translateY(-2px);
+
+  box-shadow: var(--shadow-md);
+}
+
+.doctor-form-container form > button:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+.doctor-form-container form > button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* =========================================================
+   FOCUS / ACCESSIBILITY
+   ========================================================= */
+
+.doctor-dashboard button:focus-visible,
+.doctor-onboarding button:focus-visible,
+.doctor-onboarding input:focus-visible,
+.doctor-onboarding textarea:focus-visible,
+.doctor-onboarding select:focus-visible {
+  outline: 3px solid rgba(0, 168, 150, 0.3);
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   ANIMATION
+   ========================================================= */
+
+@keyframes doctorFadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doctor-dashboard *,
+  .doctor-onboarding * {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
-
 /* =========================================================
-   TABLET
-========================================================= */
+   BREAKPOINT: LARGE TABLET (≤ 950px)
+   ========================================================= */
 
 @media (max-width: 950px) {
-
   .doctor-status-card {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1819,15 +1440,40 @@
   }
 }
 
+/* =========================================================
+   BREAKPOINT: TABLET (≤ 850px)
+   ========================================================= */
+
+@media (max-width: 850px) {
+  .doctor-dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
 /* =========================================================
-   MOBILE
-========================================================= */
+   BREAKPOINT: SMALL TABLET / LARGE PHONE (≤ 700px)
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .doctor-form-container form {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-form-container textarea,
+  .doctor-form-container button,
+  .doctor-form-container form > div {
+    grid-column: auto;
+  }
+}
+
+/* =========================================================
+   BREAKPOINT: MOBILE (≤ 620px)
+   ========================================================= */
 
 @media (max-width: 620px) {
-
   .doctor-header {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .doctor-refresh-btn {
@@ -1835,12 +1481,26 @@
   }
 
   .doctor-status-card {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .doctor-status-item {
+    min-height: 84px;
+    padding: 14px;
+  }
+
+  .doctor-dashboard-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .doctor-dashboard-grid button {
+    min-height: 120px;
   }
 
   .doctor-section-header {
     align-items: flex-start;
-
     flex-direction: column;
   }
 
@@ -1850,10 +1510,8 @@
 
   .doctor-consultation-card {
     grid-template-columns: 1fr;
-
-    gap: 15px;
-
-    padding: 18px;
+    gap: 14px;
+    padding: 16px;
   }
 
   .consultation-status {
@@ -1866,51 +1524,143 @@
 
   .consultation-open-btn {
     width: 100%;
-
     justify-self: stretch;
+    min-height: 44px;
   }
 
   .latest-report-card {
     grid-template-columns: 1fr;
+    gap: 14px;
+  }
 
-    gap: 16px;
+  .latest-report-left h3,
+  .latest-report-left p {
+    white-space: normal;
   }
 
   .latest-report-btn {
     width: 100%;
+    min-height: 44px;
   }
 
   .report-meta {
     flex-direction: column;
-
     gap: 7px;
+  }
+
+  .doctor-onboard-card button {
+    max-width: none;
   }
 }
 
-
 /* =========================================================
-   SMALL MOBILE
-========================================================= */
+   BREAKPOINT: SMALL PHONE (≤ 480px)
+   ========================================================= */
 
-@media (max-width: 390px) {
-
-  .doctor-section-header h2 {
-    font-size: 21px;
+@media (max-width: 480px) {
+  .doctor-dashboard {
+    padding: 18px 12px 45px;
   }
 
-  .doctor-consultation-card {
-    padding: 15px;
+  .doctor-onboarding {
+    padding: 16px 10px 45px;
   }
 
-  .latest-report-card {
-    padding: 17px;
+  .doctor-status-card {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
-  .latest-report-left h3 {
+  .doctor-status-item {
+    min-height: 76px;
+    padding: 12px;
+  }
+
+  .doctor-status-item span {
+    font-size: 9.5px;
+  }
+
+  .consultation-patient {
+    flex-wrap: wrap;
+  }
+
+  .patient-avatar {
+    width: 40px;
+    height: 40px;
     font-size: 15px;
   }
 
-  .report-disease {
-    font-size: 17px;
+  .consultation-info {
+    gap: 12px;
+  }
+
+  .doctor-empty-card {
+    min-height: 150px;
+    padding: 22px 16px;
+  }
+}
+
+/* =========================================================
+   BREAKPOINT: VERY SMALL PHONE (≤ 390px)
+   ========================================================= */
+
+@media (max-width: 390px) {
+  .doctor-eyebrow {
+    font-size: 10px;
+  }
+
+  .doctor-onboard-card {
+    padding: 20px 16px;
+  }
+
+  .doctor-form-container {
+    padding: 18px 14px;
+    border-radius: 14px;
+  }
+
+  .doctor-form-container input,
+  .doctor-form-container textarea,
+  .doctor-form-container select {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .doctor-form-container form > div {
+    padding: 13px;
+  }
+
+  .doctor-form-container form > div label {
+    display: flex;
+    width: 100%;
+    margin: 6px 0;
+    font-size: 13px;
+  }
+
+  .doctor-form-container form > button {
+    min-height: 46px;
+    font-size: 13px;
+  }
+
+  .doctor-consultation-card {
+    padding: 14px;
+  }
+
+  .latest-report-card {
+    padding: 16px;
+  }
+
+  .doctor-card-badge {
+    top: 12px;
+    right: 12px;
+  }
+}
+
+/* =========================================================
+   BREAKPOINT: EXTRA SMALL PHONE (≤ 340px)
+   ========================================================= */
+
+@media (max-width: 340px) {
+  .doctor-status-card {
+    grid-template-columns: 1fr;
   }
 }
