@@ -50,7 +50,6 @@ import Appointmentconfirmation from "./pages/Appointmentconfirmation";
 // Utility
 import ScrollToTop from "./pages/ScrollToTop";
 
-
 function App() {
   const { loading } = useAuth();
 
@@ -69,51 +68,25 @@ function App() {
       <Navbar />
 
       <Routes>
-
         {/* =================================================
             PUBLIC ROUTES
         ================================================= */}
 
-        <Route
-          path="/"
-          element={<Home />}
-        />
+        <Route path="/" element={<Home />} />
 
-        <Route
-          path="/about"
-          element={<About />}
-        />
+        <Route path="/about" element={<About />} />
 
-        <Route
-          path="/contact"
-          element={<Contact />}
-        />
+        <Route path="/contact" element={<Contact />} />
 
-        <Route
-          path="/features"
-          element={<Features />}
-        />
+        <Route path="/features" element={<Features />} />
 
-        <Route
-          path="/how-its-works"
-          element={<HowItWorks />}
-        />
+        <Route path="/how-its-works" element={<HowItWorks />} />
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+        <Route path="/login" element={<Login />} />
 
-        <Route
-          path="/register"
-          element={<Register />}
-        />
+        <Route path="/register" element={<Register />} />
 
-        <Route
-          path="/choose"
-          element={<Choose />}
-        />
-
+        <Route path="/choose" element={<Choose />} />
 
         {/* =================================================
             PATIENT ROUTES
@@ -164,11 +137,7 @@ function App() {
           }
         />
 
-        <Route
-          path="/mobile-scan/:sessionId"
-          element={<MobileScan />}
-        />
-
+        <Route path="/mobile-scan/:sessionId" element={<MobileScan />} />
 
         {/* =================================================
             DOCTOR DASHBOARD
@@ -182,7 +151,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
 
         {/* =================================================
             DOCTOR PROFILE / ONBOARDING
@@ -206,7 +174,6 @@ function App() {
           }
         />
 
-
         {/* =================================================
             DOCTOR AVAILABILITY
         ================================================= */}
@@ -219,7 +186,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
 
         {/* =================================================
             DOCTOR APPOINTMENTS
@@ -243,7 +209,6 @@ function App() {
           }
         />
 
-
         {/* =================================================
             DOCTOR PATIENT ASSESSMENT
         ================================================= */}
@@ -256,7 +221,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
 
         {/* =================================================
             DOCTOR DETAILS
@@ -271,7 +235,6 @@ function App() {
           }
         />
 
-
         {/* =================================================
             BOOK APPOINTMENT
         ================================================= */}
@@ -284,7 +247,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
 
         {/* =================================================
             MY APPOINTMENTS
@@ -299,7 +261,6 @@ function App() {
           }
         />
 
-
         {/* =================================================
             APPOINTMENT CONFIRMATION
         ================================================= */}
@@ -312,9 +273,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-
       </Routes>
-
 
       {/* =================================================
           GLOBAL COMPONENTS

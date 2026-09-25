@@ -1,0 +1,887 @@
+/* =========================================================
+   DOCTOR PROFILE — CLEAN PROFESSIONAL RESPONSIVE UI
+========================================================= */
+
+:root {
+  --dp-primary: #2563eb;
+  --dp-primary-hover: #1d4ed8;
+  --dp-primary-soft: #eff6ff;
+
+  --dp-bg: #f6f8fc;
+  --dp-card: #ffffff;
+
+  --dp-heading: #111827;
+  --dp-text: #344054;
+  --dp-muted: #667085;
+
+  --dp-border: #e4e7ec;
+  --dp-border-hover: #cbd5e1;
+
+  --dp-success: #15803d;
+  --dp-success-bg: #f0fdf4;
+
+  --dp-danger: #b42318;
+  --dp-danger-bg: #fef3f2;
+
+  --dp-radius: 14px;
+  --dp-radius-small: 10px;
+
+  --dp-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.03),
+    0 8px 24px rgba(16, 24, 40, 0.04);
+
+  --dp-font:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+
+/* =========================================================
+   RESET FOR THIS PAGE
+========================================================= */
+
+.doctor-page,
+.doctor-page *,
+.doctor-page *::before,
+.doctor-page *::after {
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+.doctor-page {
+  width: 100%;
+  min-height: 100vh;
+
+  padding: 34px 24px 70px;
+
+  background: var(--dp-bg);
+
+  color: var(--dp-text);
+
+  font-family: var(--dp-font);
+}
+
+
+/* =========================================================
+   MAIN CONTAINER
+========================================================= */
+
+.doctor-page .doctor-container {
+  width: 100%;
+  max-width: 1100px;
+
+  margin: 0 auto;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.doctor-page .doctor-page-header {
+  width: 100%;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 24px;
+
+  margin-bottom: 24px;
+}
+
+.doctor-page .doctor-page-header > div {
+  min-width: 0;
+}
+
+.doctor-page .doctor-eyebrow {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 5px 10px;
+
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+
+  background: var(--dp-primary-soft);
+
+  color: var(--dp-primary);
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+.doctor-page .doctor-page-header h1 {
+  margin: 10px 0 5px;
+
+  color: var(--dp-heading);
+
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 750;
+
+  letter-spacing: -0.6px;
+}
+
+.doctor-page .doctor-page-header p {
+  margin: 0;
+
+  color: var(--dp-muted);
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.doctor-page .doctor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 42px;
+
+  padding: 10px 17px;
+
+  border-radius: 10px;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.doctor-page .doctor-btn:active {
+  transform: translateY(1px);
+}
+
+.doctor-page .doctor-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+/* Primary */
+
+.doctor-page .doctor-btn-primary {
+  border: 1px solid var(--dp-primary);
+
+  background: var(--dp-primary);
+
+  color: #ffffff;
+
+  box-shadow:
+    0 5px 14px rgba(37, 99, 235, 0.14);
+}
+
+.doctor-page .doctor-btn-primary:hover:not(:disabled) {
+  background: var(--dp-primary-hover);
+  border-color: var(--dp-primary-hover);
+
+  box-shadow:
+    0 7px 18px rgba(37, 99, 235, 0.18);
+}
+
+
+/* Secondary */
+
+.doctor-page .doctor-btn-secondary {
+  border: 1px solid var(--dp-border);
+
+  background: #ffffff;
+
+  color: #344054;
+}
+
+.doctor-page .doctor-btn-secondary:hover {
+  border-color: #bfdbfe;
+
+  background: #f8fbff;
+
+  color: var(--dp-primary);
+}
+
+
+/* =========================================================
+   ALERTS
+========================================================= */
+
+.doctor-page .doctor-alert {
+  width: 100%;
+
+  margin-bottom: 18px;
+
+  padding: 13px 15px;
+
+  border-radius: 10px;
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.doctor-page .doctor-alert-error {
+  background: var(--dp-danger-bg);
+
+  border: 1px solid #fecdca;
+
+  color: var(--dp-danger);
+}
+
+.doctor-page .doctor-alert-success {
+  background: var(--dp-success-bg);
+
+  border: 1px solid #bbf7d0;
+
+  color: var(--dp-success);
+}
+
+
+/* =========================================================
+   CARD
+========================================================= */
+
+.doctor-page .doctor-card {
+  width: 100%;
+
+  margin-bottom: 20px;
+
+  background: var(--dp-card);
+
+  border: 1px solid var(--dp-border);
+
+  border-radius: var(--dp-radius);
+
+  box-shadow: var(--dp-shadow);
+}
+
+
+/* =========================================================
+   VERIFICATION CARD
+========================================================= */
+
+.doctor-page .availability-overview {
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr) !important;
+
+  padding: 0;
+
+  overflow: hidden;
+}
+
+.doctor-page .availability-overview > div {
+  min-width: 0;
+
+  padding: 20px 24px;
+}
+
+.doctor-page .availability-overview > div + div {
+  border-left: 1px solid var(--dp-border);
+}
+
+.doctor-page .overview-label,
+.doctor-page .overview-item span {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #98a2b3;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.5px;
+}
+
+.doctor-page .availability-overview strong {
+  display: block;
+
+  color: var(--dp-heading);
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   IMPORTANT:
+   FORM MUST NOT BECOME A GRID
+========================================================= */
+
+.doctor-page form.profile-form {
+  display: block !important;
+
+  width: 100% !important;
+
+  padding: 28px !important;
+
+  margin: 0 0 20px !important;
+}
+
+
+/* =========================================================
+   PROFILE GRID
+========================================================= */
+
+.doctor-page .profile-grid {
+  display: grid !important;
+
+  width: 100% !important;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr) !important;
+
+  gap: 20px 22px !important;
+
+  margin: 0 0 20px !important;
+}
+
+
+/* =========================================================
+   FIELD
+========================================================= */
+
+.doctor-page .slot-field {
+  display: flex !important;
+
+  flex-direction: column !important;
+
+  width: 100% !important;
+
+  min-width: 0 !important;
+
+  margin: 0 0 20px !important;
+}
+
+.doctor-page .profile-grid .slot-field {
+  margin: 0 !important;
+}
+
+
+/* =========================================================
+   LABEL
+========================================================= */
+
+.doctor-page .slot-field label {
+  display: block;
+
+  width: 100%;
+
+  margin: 0 0 7px;
+
+  color: #344054;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  line-height: 1.35;
+}
+
+
+/* =========================================================
+   INPUTS
+========================================================= */
+
+.doctor-page .slot-field input,
+.doctor-page .slot-field textarea,
+.doctor-page .slot-field select {
+  display: block;
+
+  width: 100% !important;
+
+  max-width: 100% !important;
+
+  min-width: 0 !important;
+
+  margin: 0;
+
+  padding: 11px 13px;
+
+  border: 1px solid #dfe3ea;
+
+  border-radius: var(--dp-radius-small);
+
+  background: #ffffff;
+
+  color: var(--dp-text);
+
+  outline: none;
+
+  font-family: inherit;
+  font-size: 13px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.doctor-page .slot-field input {
+  height: 44px;
+}
+
+.doctor-page .slot-field textarea {
+  min-height: 125px;
+
+  resize: vertical;
+
+  line-height: 1.55;
+}
+
+.doctor-page .slot-field input::placeholder,
+.doctor-page .slot-field textarea::placeholder {
+  color: #98a2b3;
+}
+
+.doctor-page .slot-field input:hover,
+.doctor-page .slot-field textarea:hover,
+.doctor-page .slot-field select:hover {
+  border-color: var(--dp-border-hover);
+}
+
+.doctor-page .slot-field input:focus,
+.doctor-page .slot-field textarea:focus,
+.doctor-page .slot-field select:focus {
+  border-color: #60a5fa;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+
+/* =========================================================
+   CONSULTATION MODE
+========================================================= */
+
+.doctor-page .mode-row {
+  display: grid !important;
+
+  width: 100% !important;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr)) !important;
+
+  gap: 12px !important;
+}
+
+.doctor-page .toggle-row {
+  display: flex !important;
+
+  align-items: center !important;
+
+  width: 100% !important;
+
+  min-width: 0 !important;
+
+  min-height: 48px;
+
+  padding: 11px 13px;
+
+  border: 1px solid #e1e6ee;
+
+  border-radius: 11px;
+
+  background: #ffffff;
+
+  color: #344054;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.doctor-page .toggle-row:hover {
+  border-color: #93c5fd;
+
+  background: #f8fbff;
+}
+
+.doctor-page .toggle-row input {
+  flex: 0 0 auto;
+
+  width: 16px !important;
+  height: 16px !important;
+
+  margin: 0 9px 0 0 !important;
+
+  accent-color: var(--dp-primary);
+
+  cursor: pointer;
+}
+
+.doctor-page .toggle-row span {
+  min-width: 0;
+
+  overflow: hidden;
+
+  color: inherit;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+.doctor-page .toggle-row:has(input:checked) {
+  border-color: var(--dp-primary);
+
+  background: var(--dp-primary-soft);
+
+  color: var(--dp-primary-hover);
+
+  box-shadow:
+    0 0 0 1px rgba(37, 99, 235, 0.05);
+}
+
+
+/* =========================================================
+   BIO
+========================================================= */
+
+.doctor-page .profile-form > .slot-field {
+  width: 100% !important;
+}
+
+
+/* =========================================================
+   SAVE BUTTON
+========================================================= */
+
+/*
+   Important:
+   Save button should be normal full-width,
+   but ONLY inside the form.
+*/
+
+.doctor-page form.profile-form > button.doctor-btn-primary {
+  display: flex !important;
+
+  width: 100% !important;
+
+  min-height: 47px;
+
+  margin: 4px 0 0 !important;
+
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.doctor-page .doctor-empty {
+  padding: 60px 25px;
+
+  text-align: center;
+}
+
+.doctor-page .doctor-empty-icon {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 64px;
+  height: 64px;
+
+  margin: 0 auto 16px;
+
+  border-radius: 18px;
+
+  background: var(--dp-primary-soft);
+
+  font-size: 30px;
+}
+
+.doctor-page .doctor-empty h3 {
+  margin: 0 0 7px;
+
+  color: var(--dp-heading);
+
+  font-size: 18px;
+}
+
+.doctor-page .doctor-empty p {
+  max-width: 420px;
+
+  margin: 0 auto 20px;
+
+  color: var(--dp-muted);
+
+  font-size: 13px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.doctor-page .doctor-loading {
+  min-height: 420px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  background: #ffffff;
+
+  border: 1px solid var(--dp-border);
+
+  border-radius: var(--dp-radius);
+
+  box-shadow: var(--dp-shadow);
+}
+
+.doctor-page .doctor-loading p {
+  margin: 14px 0 0;
+
+  color: var(--dp-muted);
+
+  font-size: 13px;
+}
+
+.doctor-page .doctor-spinner {
+  width: 34px;
+  height: 34px;
+
+  border: 3px solid #e5e7eb;
+
+  border-top-color: var(--dp-primary);
+
+  border-radius: 50%;
+
+  animation: doctor-spin 0.75s linear infinite;
+}
+
+@keyframes doctor-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 800px) {
+
+  .doctor-page {
+    padding: 26px 18px 55px;
+  }
+
+  .doctor-page .doctor-container {
+    max-width: 720px;
+  }
+
+  .doctor-page .profile-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .doctor-page .mode-row {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .doctor-page {
+    padding: 18px 12px 45px;
+  }
+
+  .doctor-page .doctor-page-header {
+    flex-direction: column;
+
+    align-items: stretch;
+
+    gap: 16px;
+
+    margin-bottom: 18px;
+  }
+
+  .doctor-page .doctor-page-header h1 {
+    margin-top: 8px;
+
+    font-size: 25px;
+  }
+
+  .doctor-page .doctor-page-header p {
+    font-size: 13px;
+  }
+
+  .doctor-page .doctor-page-header .doctor-btn-secondary {
+    width: 100%;
+  }
+
+
+  /* Verification */
+
+  .doctor-page .availability-overview {
+    grid-template-columns: 1fr !important;
+  }
+
+  .doctor-page .availability-overview > div {
+    padding: 17px 18px;
+  }
+
+  .doctor-page .availability-overview > div + div {
+    border-top: 1px solid var(--dp-border);
+
+    border-left: none;
+  }
+
+
+  /* Form */
+
+  .doctor-page form.profile-form {
+    padding: 19px 16px !important;
+  }
+
+  .doctor-page .profile-grid {
+    grid-template-columns: 1fr !important;
+
+    gap: 17px !important;
+  }
+
+
+  /* Modes */
+
+  .doctor-page .mode-row {
+    grid-template-columns: 1fr !important;
+
+    gap: 9px !important;
+  }
+
+  .doctor-page .toggle-row {
+    min-height: 46px;
+  }
+
+  .doctor-page .toggle-row span {
+    white-space: normal;
+  }
+
+
+  /* Inputs */
+
+  .doctor-page .slot-field input {
+    height: 44px;
+  }
+
+  .doctor-page .slot-field textarea {
+    min-height: 115px;
+  }
+
+
+  /* Save */
+
+  .doctor-page form.profile-form > button.doctor-btn-primary {
+    min-height: 46px;
+  }
+
+
+  /* Empty */
+
+  .doctor-page .doctor-empty {
+    padding: 45px 18px;
+  }
+
+  .doctor-page .doctor-empty .doctor-btn {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+  .doctor-page {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+
+  .doctor-page .doctor-page-header h1 {
+    font-size: 23px;
+  }
+
+  .doctor-page form.profile-form {
+    padding: 16px 13px !important;
+  }
+
+  .doctor-page .slot-field label {
+    font-size: 11px;
+  }
+
+  .doctor-page .slot-field input,
+  .doctor-page .slot-field textarea {
+    font-size: 12px;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .doctor-page *,
+  .doctor-page *::before,
+  .doctor-page *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
-import "../components/styles/doctorpages.css";
-import "../components/styles/doctor-extra.css";
+import "../components/styles/doctorprofile.css";
+// import "../components/styles/doctor-extra.css";
 
 const MODES = [
   { value: "video", label: "Video" },
