@@ -516,3 +516,764 @@
   .ds-card { width: 100%; max-width: 300px; }
   .ds-qr-frame { width: 148px; height: 148px; }
 }
+
+/* =========================================================
+   DERMASCAN CHOOSE PAGE
+   Dashboard ke andar bhi proper layout maintain karega
+   ========================================================= */
+
+.dermascan-root {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  min-height: calc(100vh - 70px);
+
+  margin: 0;
+  padding: 0;
+
+  box-sizing: border-box;
+  overflow: hidden;
+
+  font-family: "Outfit", "Inter", sans-serif;
+}
+
+.dermascan-root *,
+.dermascan-root *::before,
+.dermascan-root *::after {
+  box-sizing: border-box;
+}
+
+/* Main choose page */
+
+.dermascan-root .ds-page {
+  position: relative;
+
+  width: 100%;
+  min-height: calc(100vh - 70px);
+
+  margin: 0;
+  padding: 70px 40px 60px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  overflow: hidden;
+}
+
+/* Background */
+
+.dermascan-root .ds-grid-overlay {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Everything above background */
+
+.dermascan-root .ds-page > *:not(.ds-grid-overlay) {
+  position: relative;
+  z-index: 1;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.dermascan-root .ds-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  margin-bottom: 10px;
+
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  white-space: nowrap;
+}
+
+.dermascan-root .ds-h1 {
+  width: 100%;
+  max-width: 850px;
+
+  margin: 0 auto;
+
+  text-align: center;
+
+  font-size: clamp(34px, 4vw, 54px);
+  line-height: 1.08;
+  font-weight: 700;
+
+  letter-spacing: -1.5px;
+}
+
+.dermascan-root .ds-h1 span {
+  color: #05668d;
+}
+
+.dermascan-root .ds-subtext {
+  width: 100%;
+  max-width: 650px;
+
+  margin: 16px auto 0;
+
+  text-align: center;
+
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   CARDS CONTAINER
+   ========================================================= */
+
+.dermascan-root .ds-cards {
+  width: 100%;
+  max-width: 1120px;
+
+  margin: 42px auto 0;
+
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 22px;
+
+  align-items: stretch;
+}
+
+/* =========================================================
+   CARD
+   ========================================================= */
+
+.dermascan-root .ds-card {
+  position: relative;
+
+  width: 100%;
+  min-width: 0;
+
+  min-height: 390px;
+
+  padding: 30px 26px 22px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  text-align: center;
+
+  border-radius: 24px;
+
+  overflow: hidden;
+
+  background: rgba(255, 255, 255, 0.94);
+
+  border: 1px solid rgba(5, 102, 141, 0.10);
+
+  box-shadow:
+    0 12px 30px rgba(5, 102, 141, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.dermascan-root .ds-card:hover {
+  transform: translateY(-5px);
+
+  box-shadow:
+    0 20px 45px rgba(5, 102, 141, 0.14),
+    0 5px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Selected */
+
+.dermascan-root .ds-card.selected {
+  border-color: #05668d;
+
+  box-shadow:
+    0 18px 40px rgba(5, 102, 141, 0.16);
+}
+
+/* =========================================================
+   BADGES
+   ========================================================= */
+
+.dermascan-root .ds-badge {
+  position: absolute;
+
+  top: 16px;
+  right: 16px;
+
+  padding: 5px 10px;
+
+  border-radius: 999px;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  letter-spacing: 0.8px;
+
+  text-transform: uppercase;
+
+  white-space: nowrap;
+
+  background: #f0f3bd;
+  color: #05668d;
+}
+
+.dermascan-root .ds-badge.accent {
+  background: #02c39a;
+  color: #063b32;
+}
+
+.dermascan-root .ds-badge.recommended {
+  background: #05668d;
+  color: white;
+}
+
+/* =========================================================
+   ICON
+   ========================================================= */
+
+.dermascan-root .ds-icon-wrap {
+  position: relative;
+
+  width: 72px;
+  height: 72px;
+
+  margin-bottom: 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+}
+
+.dermascan-root .ds-icon-wrap svg {
+  position: relative;
+
+  width: 30px;
+  height: 30px;
+
+  stroke: #05668d;
+
+  z-index: 2;
+}
+
+.dermascan-root .ds-icon-ring {
+  position: absolute;
+
+  inset: 0;
+
+  border-radius: 50%;
+
+  border: 2px solid rgba(5, 102, 141, 0.35);
+
+  background: rgba(5, 102, 141, 0.04);
+}
+
+.dermascan-root .ds-icon-ring.pulse {
+  animation: ds-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ds-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+.dermascan-root .ds-card-title {
+  width: 100%;
+
+  margin-bottom: 10px;
+
+  font-size: 20px;
+  line-height: 1.25;
+
+  font-weight: 700;
+
+  color: #17202b;
+}
+
+.dermascan-root .ds-card-desc {
+  width: 100%;
+  max-width: 290px;
+
+  min-height: 76px;
+
+  font-size: 13.5px;
+  line-height: 1.6;
+
+  color: #6b7280;
+}
+
+.dermascan-root .ds-card-desc strong {
+  color: #05668d;
+}
+
+/* =========================================================
+   TAGS
+   ========================================================= */
+
+.dermascan-root .ds-tag-row {
+  width: 100%;
+
+  min-height: 30px;
+
+  margin-top: 12px;
+
+  display: flex;
+  flex-wrap: wrap;
+
+  justify-content: center;
+
+  gap: 6px;
+}
+
+.dermascan-root .ds-tag {
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  background: #eef6f5;
+
+  color: #05668d;
+
+  font-size: 10.5px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   CARD BUTTON
+   ========================================================= */
+
+.dermascan-root .ds-card-cta {
+  width: 100%;
+
+  min-height: 44px;
+
+  margin-top: auto;
+  padding: 11px 16px;
+
+  border: none;
+  border-radius: 999px;
+
+  background: #05668d;
+  color: white;
+
+  font-family: inherit;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  letter-spacing: 0.5px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.dermascan-root .ds-card-cta:hover {
+  background: #04506f;
+}
+
+.dermascan-root .ds-card-cta:active {
+  transform: scale(0.98);
+}
+
+/* Smartphone */
+
+.dermascan-root .smartphone .ds-card-cta {
+  background: #02c39a;
+  color: #043b32;
+}
+
+.dermascan-root .smartphone .ds-card-cta:hover {
+  background: #00a896;
+}
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+
+.dermascan-root .ds-toast {
+  position: fixed;
+
+  left: 50%;
+  bottom: 30px;
+
+  transform: translate(-50%, 20px);
+
+  padding: 12px 20px;
+
+  border-radius: 999px;
+
+  background: #17202b;
+  color: white;
+
+  font-size: 13px;
+
+  opacity: 0;
+
+  pointer-events: none;
+
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+
+  z-index: 9999;
+}
+
+.dermascan-root .ds-toast.show {
+  opacity: 1;
+
+  transform: translate(-50%, 0);
+}
+
+/* =========================================================
+   QR OVERLAY
+   ========================================================= */
+
+.dermascan-root .ds-qr-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 99999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(0, 20, 30, 0.55);
+
+  backdrop-filter: blur(6px);
+}
+
+.dermascan-root .ds-qr-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 430px;
+
+  padding: 32px 28px;
+
+  border-radius: 24px;
+
+  background: white;
+
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+
+  text-align: center;
+}
+
+.dermascan-root .ds-qr-close {
+  position: absolute;
+
+  top: 14px;
+  right: 14px;
+
+  width: 34px;
+  height: 34px;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background: #f1f5f5;
+
+  cursor: pointer;
+
+  font-size: 16px;
+}
+
+.dermascan-root .ds-qr-title {
+  margin-bottom: 8px;
+
+  font-size: 22px;
+  font-weight: 700;
+
+  color: #17202b;
+}
+
+.dermascan-root .ds-qr-subtitle {
+  margin-bottom: 22px;
+
+  font-size: 13px;
+  line-height: 1.5;
+
+  color: #6b7280;
+}
+
+.dermascan-root .ds-qr-frame {
+  width: 190px;
+  height: 190px;
+
+  margin: 0 auto 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: white;
+
+  border-radius: 16px;
+
+  border: 1px solid #e5e7eb;
+}
+
+.dermascan-root .ds-qr-steps {
+  padding: 0;
+
+  margin: 0;
+
+  list-style: none;
+
+  text-align: left;
+}
+
+.dermascan-root .ds-qr-steps li {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 12px;
+
+  font-size: 13px;
+
+  color: #4b5563;
+}
+
+.dermascan-root .ds-step-num {
+  width: 25px;
+  height: 25px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #05668d;
+  color: white;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dermascan-root .ds-qr-status {
+  margin-top: 20px;
+  padding: 12px;
+
+  border-radius: 12px;
+
+  background: #eef6f5;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  font-size: 12px;
+
+  color: #05668d;
+}
+
+.dermascan-root .ds-qr-status .ds-dot {
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+
+  background: #02c39a;
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 1000px) {
+
+  .dermascan-root .ds-page {
+    padding: 55px 24px 45px;
+  }
+
+  .dermascan-root .ds-cards {
+    max-width: 800px;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dermascan-root .ds-card:last-child {
+    grid-column: 1 / -1;
+
+    max-width: 390px;
+
+    width: 100%;
+
+    justify-self: center;
+  }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 650px) {
+
+  .dermascan-root {
+    min-height: calc(100vh - 60px);
+  }
+
+  .dermascan-root .ds-page {
+    min-height: calc(100vh - 60px);
+
+    padding: 38px 16px 40px;
+
+    overflow-y: auto;
+  }
+
+  .dermascan-root .ds-h1 {
+    font-size: 32px;
+
+    letter-spacing: -0.8px;
+  }
+
+  .dermascan-root .ds-subtext {
+    font-size: 13px;
+
+    max-width: 420px;
+  }
+
+  .dermascan-root .ds-cards {
+    margin-top: 30px;
+
+    grid-template-columns: 1fr;
+
+    max-width: 430px;
+
+    gap: 16px;
+  }
+
+  .dermascan-root .ds-card,
+  .dermascan-root .ds-card:last-child {
+    grid-column: auto;
+
+    max-width: none;
+
+    min-height: 360px;
+  }
+
+  .dermascan-root .ds-card-title {
+    font-size: 19px;
+  }
+
+  .dermascan-root .ds-card-desc {
+    min-height: auto;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 400px) {
+
+  .dermascan-root .ds-page {
+    padding: 30px 12px;
+  }
+
+  .dermascan-root .ds-h1 {
+    font-size: 28px;
+  }
+
+  .dermascan-root .ds-card {
+    padding: 25px 20px 20px;
+  }
+
+}
+
+/* =========================================================
+   QR MODAL — ALWAYS CENTERED ABOVE DASHBOARD
+   ========================================================= */
+
+.dermascan-root .ds-qr-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+
+  width: 100vw !important;
+  height: 100vh !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 20px !important;
+
+  background: rgba(0, 20, 30, 0.60) !important;
+
+  backdrop-filter: blur(6px);
+
+  z-index: 999999 !important;
+
+  overflow-y: auto;
+}
+
+.dermascan-root .ds-qr-modal {
+  position: relative !important;
+
+  width: min(430px, calc(100vw - 40px)) !important;
+  max-width: 430px !important;
+
+  max-height: calc(100vh - 40px);
+
+  margin: auto !important;
+
+  padding: 30px 28px !important;
+
+  overflow-y: auto;
+
+  border-radius: 24px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.30);
+
+  text-align: center;
+
+  flex-shrink: 0;
+}
