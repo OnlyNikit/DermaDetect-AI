@@ -136,7 +136,7 @@
 .ds-card {
   --accent: var(--color-primary);
   position: relative;
-  width: 268px;
+  width: 368px;
   display: flex;
   flex-direction: column;
   background: var(--bg-card);
