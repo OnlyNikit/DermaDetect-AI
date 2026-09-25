@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 
 const Assessment = require("../models/skinAssessment");
-const Appointment = require("../models/appointment"); // ⚠️ adjust path/name if different
-const Doctor = require("../models/doctor"); // ⚠️ adjust path/name if different
+const Appointment = require("../models/appointment");
+const Doctor = require("../models/doctorProfile");
 
 // =====================================================
 // GET ASSESSMENT BY ID (FOR DOCTOR)
