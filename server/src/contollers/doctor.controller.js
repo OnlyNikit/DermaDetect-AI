@@ -1,16 +1,8 @@
 const DoctorProfile = require("../models/doctorProfile");
+const { todayIST } = require("../utils/istTime");
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-// Today's date as YYYY-MM-DD in server local time
-function todayString() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
 
 // =====================================================
 // CREATE DOCTOR PROFILE / ONBOARDING
@@ -236,7 +228,7 @@ async function updateMyAvailability(req, res) {
       });
     }
 
-    const today = todayString();
+    const today = todayIST();
     const cleaned = [];
 
     for (const slot of slots) {
