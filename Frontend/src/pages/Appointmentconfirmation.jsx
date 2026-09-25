@@ -1,5 +1,5 @@
 import { useLocation, Link } from "react-router-dom";
-import "./styles.css";
+import "../components/styles/appointmentconfirmation.css";
 
 export default function AppointmentConfirmation() {
   const { state } = useLocation();

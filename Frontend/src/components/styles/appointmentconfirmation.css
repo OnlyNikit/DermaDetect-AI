@@ -1,0 +1,360 @@
+/* =====================================================
+   APPOINTMENT CONFIRMATION
+   ===================================================== */
+
+.topbar {
+  width: 100%;
+  height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 32px;
+
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+
+  box-sizing: border-box;
+}
+
+.topbar__brand {
+  font-size: 21px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.topbar__back {
+  color: #4b5563;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+
+  padding: 8px 14px;
+  border-radius: 8px;
+
+  transition: 0.2s ease;
+}
+
+.topbar__back:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+
+/* =====================================================
+   PAGE
+   ===================================================== */
+
+.page {
+  width: calc(100% - 32px);
+  margin: 40px auto;
+
+  padding: 0 0 40px;
+
+  box-sizing: border-box;
+}
+
+
+/* =====================================================
+   SUCCESS ICON
+   ===================================================== */
+
+.confirm-icon {
+  width: 72px;
+  height: 72px;
+
+  margin: 0 auto 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #dcfce7;
+  color: #16a34a;
+
+  font-size: 38px;
+  font-weight: 700;
+
+  box-shadow: 0 4px 15px rgba(22, 163, 74, 0.12);
+}
+
+
+/* =====================================================
+   TITLE
+   ===================================================== */
+
+.page__title {
+  margin: 0 0 10px;
+
+  color: #111827;
+
+  font-size: 30px;
+  font-weight: 700;
+
+  line-height: 1.2;
+}
+
+.page__subtitle {
+  margin: 0 auto 28px;
+
+  max-width: 420px;
+
+  color: #6b7280;
+
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+
+/* =====================================================
+   PANEL
+   ===================================================== */
+
+.panel {
+  width: 100%;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  padding: 20px;
+
+  box-sizing: border-box;
+
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
+
+
+/* =====================================================
+   SUMMARY ROW
+   ===================================================== */
+
+.summary-row {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 13px 0;
+
+  border-bottom: 1px solid #f0f0f0;
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.summary-row:first-child {
+  padding-top: 0;
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.summary-row > span:first-child {
+  flex: 0 0 auto;
+
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.summary-row > span:last-child {
+  color: #111827;
+  font-weight: 600;
+
+  text-align: right;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =====================================================
+   BUTTONS
+   ===================================================== */
+
+.btn {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-height: 46px;
+
+  padding: 11px 18px;
+
+  border-radius: 10px;
+
+  box-sizing: border-box;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+
+  text-decoration: none;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+
+  border: 1px solid transparent;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+
+/* Primary */
+
+.btn-primary {
+  background: #111827;
+  color: #ffffff;
+  border-color: #111827;
+}
+
+.btn-primary:hover {
+  background: #1f2937;
+  border-color: #1f2937;
+}
+
+
+/* Outline */
+
+.btn-outline {
+  background: #ffffff;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+.btn-outline:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+
+/* Full width */
+
+.btn-block {
+  width: 100%;
+}
+
+
+/* =====================================================
+   INFO SECTION
+   ===================================================== */
+
+.page > div[style] {
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.page > div[style] p {
+  margin: 6px 0;
+}
+
+
+/* =====================================================
+   MOBILE
+   ===================================================== */
+
+@media (max-width: 600px) {
+
+  .topbar {
+    height: 58px;
+    padding: 0 18px;
+  }
+
+  .topbar__brand {
+    font-size: 19px;
+  }
+
+  .topbar__back {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+
+  .page {
+    width: calc(100% - 24px);
+    margin: 28px auto;
+  }
+
+  .confirm-icon {
+    width: 64px;
+    height: 64px;
+
+    font-size: 32px;
+
+    margin-bottom: 16px;
+  }
+
+  .page__title {
+    font-size: 25px;
+  }
+
+  .page__subtitle {
+    font-size: 14px;
+    margin-bottom: 22px;
+  }
+
+  .panel {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .summary-row {
+    gap: 12px;
+    padding: 12px 0;
+    font-size: 13px;
+  }
+
+  .summary-row > span:first-child {
+    max-width: 42%;
+  }
+
+  .summary-row > span:last-child {
+    max-width: 58%;
+  }
+
+  .btn {
+    min-height: 44px;
+  }
+}
+
+
+/* =====================================================
+   SMALL MOBILE
+   ===================================================== */
+
+@media (max-width: 380px) {
+
+  .page__title {
+    font-size: 23px;
+  }
+
+  .summary-row {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .summary-row > span:first-child,
+  .summary-row > span:last-child {
+    max-width: 100%;
+    text-align: left;
+  }
+}

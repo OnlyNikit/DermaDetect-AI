@@ -1,23 +1,62 @@
 const express = require("express");
-const router = express.Router();
+
+const router =
+  express.Router();
 
 const {
   getLatestAssessment,
   createAssessment,
   getAssessmentById,
   getHistory,
-} = require("../contollers/assessment.controller");
+} = require(
+  "../contollers/assessment.controller"
+);
 
-const authMiddleware = require("../middlewares/auth");
-// Latest analyzed report
-router.get("/latest", authMiddleware, getLatestAssessment);
+const authMiddleware =
+  require("../middlewares/auth");
 
-router.post("/", authMiddleware, createAssessment);
+// ==========================================
+// LATEST
+// GET /api/assessment/latest
+// ==========================================
 
-// IMPORTANT: /history must come BEFORE /:id, otherwise Express treats
-// "history" as the :id param and getAssessmentById runs instead.
-router.get("/history", authMiddleware, getHistory);
+router.get(
+  "/latest",
+  authMiddleware,
+  getLatestAssessment
+);
 
-router.get("/:id", authMiddleware, getAssessmentById);
+// ==========================================
+// CREATE
+// POST /api/assessment
+// ==========================================
+
+router.post(
+  "/",
+  authMiddleware,
+  createAssessment
+);
+
+// ==========================================
+// HISTORY
+// GET /api/assessment/history
+// ==========================================
+
+router.get(
+  "/history",
+  authMiddleware,
+  getHistory
+);
+
+// ==========================================
+// SINGLE
+// GET /api/assessment/:id
+// ==========================================
+
+router.get(
+  "/:id",
+  authMiddleware,
+  getAssessmentById
+);
 
 module.exports = router;

@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 import "../components/styles/dashboard.css";
+
 import { useAuth } from "../components/context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import api from "../api/axios";
-
 import Choose from "../pages/Choose";
 
 /* ============================================================
-   TITLE MAP
+   CONSTANTS
 ============================================================ */
 
 const TITLE_MAP = {
@@ -17,7 +17,7 @@ const TITLE_MAP = {
   result: "Scan Result",
   diseaseInfo: "Disease Information",
   history: "Scan History",
-  reports: "Reports",
+  reports: "Medical Reports",
   consult: "Consult a Dermatologist",
   appointments: "My Appointments",
   notifications: "Notifications",
@@ -25,8 +25,22 @@ const TITLE_MAP = {
   settings: "Settings",
 };
 
+const MODE_LABELS = {
+  video: "Video Call",
+  text: "Text Chat",
+  chat: "Text Chat",
+  "in-person": "In-Person",
+};
+
+const MODE_ICONS = {
+  video: "🎥",
+  text: "💬",
+  chat: "💬",
+  "in-person": "🏥",
+};
+
 /* ============================================================
-   DISEASE INFORMATION
+   DISEASE INFO
 ============================================================ */
 
 const diseaseInfoSections = [
@@ -58,7 +72,7 @@ const diseaseInfoSections = [
   {
     key: "treatment",
     label: "Treatment Options",
-    text: "Treatment may include topical creams, light therapy, or medicines prescribed by a dermatologist.",
+    text: "Topical creams, light therapy, and medicines prescribed by a dermatologist may be used depending on severity.",
   },
   {
     key: "whentosee",
@@ -72,6 +86,7 @@ const diseaseInfoSections = [
 ============================================================ */
 
 const emptyResult = {
+  id: null,
   disease: "No scans yet",
   confidence: 0,
   severity: "Low",
@@ -79,24 +94,8 @@ const emptyResult = {
   contagious: "Not available",
   recommendation: "Run your first scan to get a recommendation.",
   date: "—",
-};
-
-/* ============================================================
-   CONSULTATION CONSTANTS
-============================================================ */
-
-const MODE_LABELS = {
-  video: "Video call",
-  text: "Text chat",
-  chat: "Text chat",
-  "in-person": "In-person",
-};
-
-const MODE_ICONS = {
-  video: "🎥",
-  text: "💬",
-  chat: "💬",
-  "in-person": "🏥",
+  image: null,
+  status: "Not available",
 };
 
 /* ============================================================
@@ -104,8 +103,14 @@ const MODE_ICONS = {
 ============================================================ */
 
 function severityBadgeClass(severity) {
-  if (severity === "Low") return "badge badge-success";
-  if (severity === "High") return "badge badge-danger";
+  if (severity === "Low") {
+    return "badge badge-success";
+  }
+
+  if (severity === "High") {
+    return "badge badge-danger";
+  }
+
   return "badge badge-warn";
 }
 
@@ -114,23 +119,21 @@ function statusBadge(status) {
     return <span className="badge badge-success">Healthy</span>;
   }
 
-  return (
-    <span className="badge badge-warn">
-      Disease Detected
-    </span>
-  );
+  return <span className="badge badge-warn">Disease Detected</span>;
 }
 
 function formatDate(rawDate) {
-  if (!rawDate) return "Not available";
-
-  const d = new Date(rawDate);
-
-  if (Number.isNaN(d.getTime())) {
+  if (!rawDate) {
     return "Not available";
   }
 
-  return d.toLocaleString("en-IN", {
+  const date = new Date(rawDate);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Not available";
+  }
+
+  return date.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -139,66 +142,72 @@ function formatDate(rawDate) {
   });
 }
 
-function normalizeConfidence(rawConfidence) {
-  const n = Number(rawConfidence ?? 0);
+function formatAppointmentDate(rawDate) {
+  if (!rawDate) {
+    return "Date not available";
+  }
 
-  const safe = Number.isFinite(n) ? n : 0;
+  const date = new Date(rawDate);
 
-  const pct = safe > 1 ? safe : safe * 100;
+  if (Number.isNaN(date.getTime())) {
+    return rawDate;
+  }
 
-  return Math.min(100, Math.max(0, pct));
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
-/* ============================================================
-   MAP ASSESSMENT
-============================================================ */
+function normalizeConfidence(value) {
+  const number = Number(value ?? 0);
+
+  if (!Number.isFinite(number)) {
+    return 0;
+  }
+
+  const percentage = number > 1 ? number : number * 100;
+
+  return Math.min(100, Math.max(0, percentage));
+}
 
 function mapAssessmentToResult(assessment) {
-  if (!assessment) return null;
+  if (!assessment) {
+    return null;
+  }
 
   const prediction = assessment.prediction || {};
 
-  const disease =
-    prediction.disease || "Not available";
+  const disease = prediction.disease || "Not available";
 
   return {
     id: assessment._id,
 
     disease,
 
-    confidence: normalizeConfidence(
-      prediction.confidence
-    ),
+    confidence: normalizeConfidence(prediction.confidence),
 
-    severity:
-      prediction.severity || "Low",
+    severity: prediction.severity || "Low",
 
     description:
       assessment.explanation ||
       prediction.description ||
-      "No description available for this result.",
+      "No description available.",
 
-    contagious:
-      prediction.contagious ||
-      "Not available",
+    contagious: prediction.contagious || "Not available",
 
     recommendation:
       assessment.recommendation ||
       prediction.recommendation ||
       "Consult a dermatologist for a full evaluation.",
 
-    date: formatDate(
-      assessment.updatedAt ||
-        assessment.createdAt
-    ),
+    date: formatDate(assessment.updatedAt || assessment.createdAt),
 
-    image:
-      assessment.image || null,
+    image: assessment.image || null,
 
     status:
-      disease.toLowerCase() === "healthy"
-        ? "Healthy"
-        : "Disease Detected",
+      disease.toLowerCase() === "healthy" ? "Healthy" : "Disease Detected",
   };
 }
 
@@ -206,141 +215,66 @@ function mapAssessmentToResult(assessment) {
    APPOINTMENT HELPERS
 ============================================================ */
 
-function getAppointmentStatus(appointment) {
-  return (
-    appointment.status ||
-    appointment.appointmentStatus ||
-    "pending"
-  );
-}
-
-function getDoctorFromAppointment(appointment) {
-  return (
-    appointment.doctor ||
-    appointment.doctorProfile?.user ||
-    appointment.doctorProfile ||
-    {}
-  );
+function getAppointmentDoctor(appointment) {
+  return appointment?.doctor || appointment?.doctorProfile?.user || {};
 }
 
 function getAppointmentDoctorName(appointment) {
-  const doctor =
-    getDoctorFromAppointment(appointment);
+  const doctor = getAppointmentDoctor(appointment);
 
-  return (
-    doctor.fullName ||
-    doctor.name ||
-    appointment.doctorName ||
-    "Doctor"
-  );
+  return doctor.fullName || doctor.name || "Doctor";
 }
 
 function getAppointmentSpecialization(appointment) {
-  const doctor =
-    getDoctorFromAppointment(appointment);
+  const doctor = getAppointmentDoctor(appointment);
 
   return (
     doctor.specialization ||
-    appointment.specialization ||
+    appointment?.doctorProfile?.specialization ||
     "Dermatologist"
   );
 }
 
-function getAppointmentDate(appointment) {
-  return (
-    appointment.date ||
-    appointment.appointmentDate ||
-    appointment.startDate ||
-    null
-  );
-}
-
-function getAppointmentStartTime(appointment) {
-  return (
-    appointment.startTime ||
-    appointment.time ||
-    appointment.slot?.startTime ||
-    ""
-  );
-}
-
-function getAppointmentEndTime(appointment) {
-  return (
-    appointment.endTime ||
-    appointment.slot?.endTime ||
-    ""
-  );
-}
-
-function getAppointmentMode(appointment) {
-  return (
-    appointment.mode ||
-    appointment.type ||
-    "video"
-  );
-}
-
-function formatAppointmentDate(date) {
-  if (!date) return "Date not available";
-
-  const d = new Date(date);
-
-  if (Number.isNaN(d.getTime())) {
-    return date;
-  }
-
-  return d.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+function getAppointmentStatus(appointment) {
+  return appointment?.status || "pending";
 }
 
 function appointmentStatusClass(status) {
-  const normalized =
-    String(status).toLowerCase();
+  const normalized = String(status).toLowerCase();
 
   if (
-    normalized === "confirmed" ||
     normalized === "accepted" ||
-    normalized === "approved"
-  ) {
-    return "badge badge-success";
-  }
-
-  if (
-    normalized === "cancelled" ||
-    normalized === "canceled" ||
-    normalized === "rejected"
-  ) {
-    return "badge badge-danger";
-  }
-
-  if (
+    normalized === "confirmed" ||
     normalized === "completed"
   ) {
     return "badge badge-success";
+  }
+
+  if (
+    normalized === "rejected" ||
+    normalized === "cancelled" ||
+    normalized === "canceled"
+  ) {
+    return "badge badge-danger";
   }
 
   return "badge badge-warn";
 }
 
 function appointmentStatusLabel(status) {
-  const normalized =
-    String(status).toLowerCase();
+  const normalized = String(status).toLowerCase();
 
   const labels = {
     pending: "Pending",
-    confirmed: "Confirmed",
     accepted: "Accepted",
-    approved: "Approved",
+    confirmed: "Confirmed",
+    rejected: "Rejected",
     cancelled: "Cancelled",
     canceled: "Cancelled",
-    rejected: "Rejected",
     completed: "Completed",
   };
 
-  return labels[normalized] || status;
+  return labels[normalized] || status || "Pending";
 }
 
 /* ============================================================
@@ -349,175 +283,51 @@ function appointmentStatusLabel(status) {
 
 export default function DermaDetectAI() {
   const routerLocation = useLocation();
+
   const navigate = useNavigate();
 
-  const {
-    logout,
-  } = useAuth();
+  const { logout } = useAuth();
 
-  const [activeView, setActiveView] =
-    useState("dashboard");
+  const [activeView, setActiveView] = useState("dashboard");
 
-  const [sidebarOpen, setSidebarOpen] =
-    useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  /* ----------------------------------------------------------
-     CONSULT ASSESSMENT
-  ---------------------------------------------------------- */
+  const [consultAssessmentId, setConsultAssessmentId] = useState(null);
 
-  const [
-    consultAssessmentId,
-    setConsultAssessmentId,
-  ] = useState(null);
+  /* ==========================================================
+     DATA
+  ========================================================== */
 
-  /* ----------------------------------------------------------
-     ROUTER STATE
-  ---------------------------------------------------------- */
+  const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const requestedView =
-      routerLocation.state?.view;
+  const [history, setHistory] = useState([]);
 
-    if (requestedView) {
-      if (
-        routerLocation.state?.assessmentId
-      ) {
-        setConsultAssessmentId(
-          routerLocation.state.assessmentId
-        );
-      }
+  const [reports, setReports] = useState([]);
 
-      goTo(requestedView);
-    }
+  const [notifications, setNotifications] = useState([]);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routerLocation.state]);
+  const [appointments, setAppointments] = useState([]);
 
-  /* ----------------------------------------------------------
-     DARK MODE
-  ---------------------------------------------------------- */
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
 
-  const [darkMode, setDarkMode] =
-    useState(() => {
-      if (
-        typeof window === "undefined"
-      ) {
-        return false;
-      }
+  const [appointmentsError, setAppointmentsError] = useState("");
 
-      return (
-        window.matchMedia &&
-        window.matchMedia(
-          "(prefers-color-scheme: dark)"
-        ).matches
-      );
-    });
+  const [dashboardLoading, setDashboardLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "dermadetect-theme",
-        darkMode ? "dark" : "light"
-      );
-    } catch (error) {
-      console.error(error);
-    }
-  }, [darkMode]);
+  const [dashboardError, setDashboardError] = useState("");
 
-  /* ----------------------------------------------------------
-     SETTINGS
-  ---------------------------------------------------------- */
+  const [stats, setStats] = useState({
+    totalScans: 0,
+    lastScanDate: "Not available",
+    currentStatus: "Not available",
+    reportsAvailable: 0,
+  });
 
-  const [notifScan, setNotifScan] =
-    useState(true);
-
-  const [notifFollowup, setNotifFollowup] =
-    useState(true);
-
-  const [language, setLanguage] =
-    useState("English");
-
-  /* ----------------------------------------------------------
-     USER
-  ---------------------------------------------------------- */
-
-  const [user, setUser] =
-    useState(null);
-
-  /* ----------------------------------------------------------
-     DASHBOARD STATS
-  ---------------------------------------------------------- */
-
-  const [stats, setStats] =
-    useState({
-      totalScans: 0,
-      lastScanDate: "Not available",
-      currentStatus: "Not available",
-      reportsAvailable: 0,
-    });
-
-  /* ----------------------------------------------------------
-     HISTORY
-  ---------------------------------------------------------- */
-
-  const [history, setHistory] =
-    useState([]);
-
-  /* ----------------------------------------------------------
-     REPORTS
-  ---------------------------------------------------------- */
-
-  const [reports, setReports] =
-    useState([]);
-
-  /* ----------------------------------------------------------
-     NOTIFICATIONS
-  ---------------------------------------------------------- */
-
-  const [notifications, setNotifications] =
-    useState([]);
-
-  /* ----------------------------------------------------------
-     APPOINTMENTS
-  ---------------------------------------------------------- */
-
-  const [
-    appointments,
-    setAppointments,
-  ] = useState([]);
-
-  const [
-    appointmentsLoading,
-    setAppointmentsLoading,
-  ] = useState(false);
-
-  const [
-    appointmentsError,
-    setAppointmentsError,
-  ] = useState("");
-
-  /* ----------------------------------------------------------
-     DASHBOARD LOADING
-  ---------------------------------------------------------- */
-
-  const [
-    dashboardLoading,
-    setDashboardLoading,
-  ] = useState(true);
-
-  const [
-    dashboardError,
-    setDashboardError,
-  ] = useState("");
-
-  /* ----------------------------------------------------------
+  /* ==========================================================
      PROFILE
-  ---------------------------------------------------------- */
+  ========================================================== */
 
-  const [
-    profile,
-    setProfile,
-  ] = useState({
+  const [profile, setProfile] = useState({
     name: "",
     age: "",
     gender: "",
@@ -525,807 +335,376 @@ export default function DermaDetectAI() {
     phone: "",
   });
 
-  const [
-    savedProfile,
-    setSavedProfile,
-  ] = useState(profile);
+  const [savedProfile, setSavedProfile] = useState(profile);
 
-  /* ----------------------------------------------------------
-     HISTORY FILTER
-  ---------------------------------------------------------- */
+  /* ==========================================================
+     HISTORY
+  ========================================================== */
 
-  const [
-    historySearch,
-    setHistorySearch,
-  ] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
 
-  const [
-    historyFilter,
-    setHistoryFilter,
-  ] = useState("all");
+  const [historyFilter, setHistoryFilter] = useState("all");
 
-  /* ----------------------------------------------------------
-     DISEASE INFO
-  ---------------------------------------------------------- */
-
-  const [
-    openSection,
-    setOpenSection,
-  ] = useState("what");
-
-  /* ----------------------------------------------------------
+  /* ==========================================================
      RESULT
-  ---------------------------------------------------------- */
+  ========================================================== */
 
-  const [
-    selectedResult,
-    setSelectedResult,
-  ] = useState(null);
+  const [selectedResult, setSelectedResult] = useState(null);
 
-  /* ============================================================
+  /* ==========================================================
+     DISEASE INFO
+  ========================================================== */
+
+  const [openSection, setOpenSection] = useState("what");
+
+  /* ==========================================================
+     SETTINGS
+  ========================================================== */
+
+  const [darkMode, setDarkMode] = useState(false);
+
+  const [language, setLanguage] = useState("English");
+
+  const [notifScan, setNotifScan] = useState(true);
+
+  const [notifFollowup, setNotifFollowup] = useState(true);
+
+  /* ==========================================================
      NAVIGATION
-  ============================================================ */
+  ========================================================== */
 
   function goTo(view) {
     setActiveView(view);
     setSidebarOpen(false);
-
-    /*
-      Whenever appointments is opened,
-      refresh appointment data.
-    */
 
     if (view === "appointments") {
       loadAppointments();
     }
   }
 
-  /* ============================================================
+  /* ==========================================================
+     ROUTER STATE
+  ========================================================== */
+
+  useEffect(() => {
+    const requestedView = routerLocation.state?.view;
+
+    const assessmentId = routerLocation.state?.assessmentId;
+
+    if (assessmentId) {
+      setConsultAssessmentId(assessmentId);
+    }
+
+    if (requestedView) {
+      setActiveView(requestedView);
+    }
+  }, [routerLocation.state]);
+
+  /* ==========================================================
+     LOAD DASHBOARD
+  ========================================================== */
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  async function loadDashboardData() {
+    try {
+      setDashboardLoading(true);
+      setDashboardError("");
+
+      const results = await Promise.allSettled([
+        api.get("/api/user/profile"),
+
+        api.get("/api/assessment/history"),
+
+        api.get("/api/reports"),
+
+        api.get("/api/notifications"),
+      ]);
+
+      /* USER */
+
+      if (results[0].status === "fulfilled") {
+        const fetchedUser = results[0].value.data?.user || null;
+
+        setUser(fetchedUser);
+
+        if (fetchedUser) {
+          const profileData = {
+            name: fetchedUser.fullName || "",
+
+            age: fetchedUser.age ?? "",
+
+            gender: fetchedUser.gender || "",
+
+            email: fetchedUser.email || "",
+
+            phone: fetchedUser.phone || "",
+          };
+
+          setProfile(profileData);
+
+          setSavedProfile(profileData);
+        }
+      }
+
+      /* HISTORY */
+
+      let mappedHistory = [];
+
+      if (results[1].status === "fulfilled") {
+        const rawHistory = results[1].value.data?.history || [];
+
+        const sortedHistory = [...rawHistory].sort((a, b) => {
+          const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+
+          const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+
+          return dateB - dateA;
+        });
+
+        mappedHistory = sortedHistory.map(mapAssessmentToResult);
+
+        setHistory(mappedHistory);
+      }
+
+      /* REPORTS */
+
+      let fetchedReports = [];
+
+      if (results[2].status === "fulfilled") {
+        fetchedReports = results[2].value.data?.reports || [];
+
+        setReports(fetchedReports);
+      }
+
+      /* NOTIFICATIONS */
+
+      if (results[3].status === "fulfilled") {
+        setNotifications(results[3].value.data?.notifications || []);
+      }
+
+      setStats({
+        totalScans: mappedHistory.length,
+
+        lastScanDate: mappedHistory[0]?.date || "Not available",
+
+        currentStatus: mappedHistory[0]?.status || "Not available",
+
+        reportsAvailable: fetchedReports.length,
+      });
+    } catch (error) {
+      console.error("DASHBOARD ERROR:", error);
+
+      setDashboardError("Unable to load dashboard data.");
+    } finally {
+      setDashboardLoading(false);
+    }
+  }
+
+  /* ==========================================================
      LOAD APPOINTMENTS
-  ============================================================ */
+  ========================================================== */
 
   async function loadAppointments() {
     try {
       setAppointmentsLoading(true);
+
       setAppointmentsError("");
 
-      /*
-       IMPORTANT:
+      const response = await api.get("/api/appointments/my");
 
-       Your BookAppointment already uses:
-
-       POST /api/appointments
-
-       So here we use:
-
-       GET /api/appointments
-
-       Backend should return:
-
-       {
-         appointments: [...]
-       }
-
-       OR directly an array.
-      */
-
-      const response =
-        await api.get(
-          "/api/appointments"
-        );
-
-      const data =
-        response.data;
-
-      const fetchedAppointments =
-        Array.isArray(data)
-          ? data
-          : data?.appointments ||
-            data?.data ||
-            [];
-
-      setAppointments(
-        fetchedAppointments
-      );
-
-    } catch (err) {
+      setAppointments(response.data?.appointments || []);
+    } catch (error) {
       console.error(
-        "APPOINTMENTS FETCH ERROR:",
-        err.response?.data ||
-          err.message
+        "APPOINTMENTS ERROR:",
+        error.response?.data || error.message,
       );
 
       setAppointmentsError(
-        err.response?.data?.message ||
-          "Unable to load your appointments."
+        error.response?.data?.message || "Unable to load your appointments.",
       );
     } finally {
       setAppointmentsLoading(false);
     }
   }
 
-  /* ============================================================
+  /* ==========================================================
      CANCEL APPOINTMENT
-  ============================================================ */
+  ========================================================== */
 
-  async function handleCancelAppointment(
-    appointment
-  ) {
-    const appointmentId =
-      appointment._id ||
-      appointment.id;
+  async function handleCancelAppointment(appointment) {
+    const appointmentId = appointment?._id;
 
     if (!appointmentId) {
-      alert(
-        "Appointment ID not found."
-      );
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to cancel this appointment?"
-      );
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this appointment?",
+    );
 
     if (!confirmed) {
       return;
     }
 
     try {
-      /*
-        Expected backend:
-
-        PATCH /api/appointments/:id/cancel
-      */
-
-      await api.patch(
-        `/api/appointments/${appointmentId}/cancel`
-      );
-
-      alert(
-        "Appointment cancelled successfully."
-      );
+      await api.patch(`/api/appointments/${appointmentId}/cancel`);
 
       await loadAppointments();
-
-    } catch (err) {
+    } catch (error) {
       console.error(
         "CANCEL APPOINTMENT ERROR:",
-        err.response?.data ||
-          err.message
+        error.response?.data || error.message,
       );
 
-      alert(
-        err.response?.data?.message ||
-          "Unable to cancel appointment."
-      );
+      alert(error.response?.data?.message || "Unable to cancel appointment.");
     }
   }
 
-  /* ============================================================
-     INITIAL DASHBOARD DATA
-  ============================================================ */
-
-  useEffect(() => {
-    async function loadDashboardData() {
-      try {
-        setDashboardLoading(true);
-        setDashboardError("");
-
-        const [
-          userRes,
-          historyRes,
-          reportsRes,
-          notificationsRes,
-        ] = await Promise.all([
-          api.get(
-            "/api/user/profile"
-          ),
-
-          api.get(
-            "/api/assessment/history"
-          ),
-
-          api.get(
-            "/api/reports"
-          ),
-
-          api.get(
-            "/api/notifications"
-          ),
-        ]);
-
-        /* USER */
-
-        const fetchedUser =
-          userRes.data?.user ||
-          null;
-
-        setUser(
-          fetchedUser
-        );
-
-        if (fetchedUser) {
-          const initialProfile = {
-            name:
-              fetchedUser.fullName ||
-              "",
-
-            age:
-              fetchedUser.age ??
-              "",
-
-            gender:
-              fetchedUser.gender ||
-              "",
-
-            email:
-              fetchedUser.email ||
-              "",
-
-            phone:
-              fetchedUser.phone ||
-              "",
-          };
-
-          setProfile(
-            initialProfile
-          );
-
-          setSavedProfile(
-            initialProfile
-          );
-        }
-
-        /* HISTORY */
-
-        const rawHistory =
-          historyRes.data?.history ||
-          [];
-
-        const sortedRaw =
-          [...rawHistory].sort(
-            (a, b) => {
-              const aDate =
-                new Date(
-                  a.updatedAt ||
-                    a.createdAt ||
-                    0
-                ).getTime();
-
-              const bDate =
-                new Date(
-                  b.updatedAt ||
-                    b.createdAt ||
-                    0
-                ).getTime();
-
-              return (
-                bDate - aDate
-              );
-            }
-          );
-
-        const mappedHistory =
-          sortedRaw.map(
-            mapAssessmentToResult
-          );
-
-        setHistory(
-          mappedHistory
-        );
-
-        /* REPORTS */
-
-        const fetchedReports =
-          reportsRes.data?.reports ||
-          [];
-
-        setReports(
-          fetchedReports
-        );
-
-        /* NOTIFICATIONS */
-
-        const fetchedNotifications =
-          notificationsRes.data
-            ?.notifications ||
-          [];
-
-        setNotifications(
-          fetchedNotifications
-        );
-
-        /* STATS */
-
-        setStats({
-          totalScans:
-            mappedHistory.length,
-
-          lastScanDate:
-            mappedHistory[0]?.date ||
-            "Not available",
-
-          currentStatus:
-            mappedHistory[0]?.status ||
-            "Not available",
-
-          reportsAvailable:
-            fetchedReports.length,
-        });
-
-        /*
-          Load appointments separately.
-
-          If appointment endpoint doesn't exist yet,
-          dashboard should still work.
-        */
-
-        try {
-          await loadAppointments();
-        } catch (appointmentError) {
-          console.error(
-            appointmentError
-          );
-        }
-
-      } catch (err) {
-        console.error(
-          "Dashboard data fetch failed:",
-          err.response?.data ||
-            err.message
-        );
-
-        setDashboardError(
-          err.response?.data?.message ||
-            "Unable to load your dashboard data"
-        );
-      } finally {
-        setDashboardLoading(false);
-      }
-    }
-
-    loadDashboardData();
-  }, []);
-
-  /* ============================================================
-     RESULT DATA
-  ============================================================ */
-
-  const recentResult =
-    history[0] ||
-    null;
-
-  const displayedResult =
-    selectedResult ||
-    recentResult ||
-    emptyResult;
-
-  /* ============================================================
+  /* ==========================================================
      LOGOUT
-  ============================================================ */
+  ========================================================== */
 
-  const handleLogout =
-    async () => {
-      try {
-        const response =
-          await logout();
+  async function handleLogout() {
+    try {
+      await logout();
 
-        console.log(
-          "Logout response:",
-          response
-        );
+      navigate("/login");
+    } catch (error) {
+      console.error("LOGOUT ERROR:", error);
 
-        navigate("/login");
+      alert("Logout failed.");
+    }
+  }
 
-      } catch (err) {
-        console.error(
-          "Logout Error:",
-          err
-        );
-
-        alert(
-          "Logout failed"
-        );
-      }
-    };
-
-  /* ============================================================
-     SAVE PROFILE
-  ============================================================ */
+  /* ==========================================================
+     PROFILE
+  ========================================================== */
 
   async function handleSaveProfile() {
     try {
-      await api.put(
-        "/api/user/profile",
-        profile
-      );
+      await api.put("/api/user/profile", profile);
 
-      setSavedProfile(
-        profile
-      );
+      setSavedProfile(profile);
 
-      alert(
-        "Profile updated successfully."
-      );
+      alert("Profile updated successfully.");
+    } catch (error) {
+      console.error("PROFILE UPDATE ERROR:", error);
 
-    } catch (err) {
-      console.error(
-        "Profile save failed:",
-        err.response?.data ||
-          err.message
-      );
-
-      alert(
-        err.response?.data?.message ||
-          "Could not save profile changes."
-      );
+      alert(error.response?.data?.message || "Could not save profile.");
     }
   }
-
-  /* ============================================================
-     PASSWORD
-  ============================================================ */
 
   function handleChangePassword() {
-    alert(
-      "Change password flow will be connected here."
-    );
+    alert("Change password flow can be connected here.");
   }
 
-  /* ============================================================
+  /* ==========================================================
      REPORT ACTION
-  ============================================================ */
+  ========================================================== */
 
-  function handleReportAction(
-    action,
-    item
-  ) {
-    if (
-      action ===
-      "download-pdf"
-    ) {
-      alert(
-        "PDF download endpoint will be connected here."
-      );
+  function handleReportAction(action) {
+    if (action === "download-pdf") {
+      alert("PDF download API can be connected here.");
     }
 
-    if (
-      action ===
-      "print-report"
-    ) {
+    if (action === "print-report") {
       window.print();
     }
 
-    if (
-      action ===
-      "share-report"
-    ) {
-      alert(
-        "Share report feature will be connected here."
-      );
+    if (action === "share-report") {
+      alert("Report sharing can be connected here.");
     }
   }
 
-  /* ============================================================
-     VIEW HISTORY ITEM
-  ============================================================ */
+  /* ==========================================================
+     HISTORY
+  ========================================================== */
 
-  function viewHistoryItem(
-    item
-  ) {
-    setSelectedResult(
-      item
-    );
+  function viewHistoryItem(item) {
+    setSelectedResult(item);
 
     goTo("result");
   }
 
-  /* ============================================================
-     FILTER HISTORY
-  ============================================================ */
+  const filteredHistory = history.filter((item) => {
+    const matchesSearch = (item.disease || "")
+      .toLowerCase()
+      .includes(historySearch.toLowerCase());
 
-  const filteredHistory =
-    history.filter(
-      (h) => {
-        const matchesSearch =
-          (h.disease || "")
-            .toLowerCase()
-            .includes(
-              historySearch
-                .toLowerCase()
-            );
+    const matchesFilter =
+      historyFilter === "all" || item.status === historyFilter;
 
-        const matchesFilter =
-          historyFilter ===
-            "all" ||
-          h.status ===
-            historyFilter;
+    return matchesSearch && matchesFilter;
+  });
 
-        return (
-          matchesSearch &&
-          matchesFilter
-        );
-      }
-    );
+  /* ==========================================================
+     CURRENT RESULT
+  ========================================================== */
 
-  /* ============================================================
-     USER INFO
-  ============================================================ */
+  const recentResult = history[0] || null;
 
-  const userFirstName =
-    (
-      user?.fullName ||
-      "there"
-    ).split(" ")[0];
+  const displayedResult = selectedResult || recentResult || emptyResult;
 
-  const avatarInitial =
-    (
-      user?.fullName ||
-      "U"
-    )
-      .charAt(0)
-      .toUpperCase();
+  const userFirstName = (user?.fullName || "there").split(" ")[0];
 
-  /* ============================================================
+  const avatarInitial = (user?.fullName || "U").charAt(0).toUpperCase();
+
+  /* ==========================================================
      RENDER
-  ============================================================ */
+  ========================================================== */
 
   return (
-    <div
-      className="dtc-app"
-      data-theme={
-        darkMode
-          ? "dark"
-          : "light"
-      }
-    >
-
+    <div className="dtc-app" data-theme={darkMode ? "dark" : "light"}>
       {/* ======================================================
           SIDEBAR
       ====================================================== */}
 
-      <aside
-        className={`sidebar ${
-          sidebarOpen
-            ? "open"
-            : ""
-        }`}
-      >
-
+      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-brand">
           <span className="logo-dot"></span>
           Derma Detect AI
         </div>
 
         <ul className="nav-list">
+          {[
+            ["dashboard", "🏠", "Dashboard"],
 
-          <li
-            className={`nav-item ${
-              activeView ===
-              "dashboard"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              goTo("dashboard")
-            }
-          >
-            <span className="nav-icon">
-              🏠
-            </span>
-            Dashboard
-          </li>
+            ["scan", "📷", "New Scan"],
 
-          <li
-            className={`nav-item ${
-              activeView === "scan"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              goTo("scan")
-            }
-          >
-            <span className="nav-icon">
-              📷
-            </span>
-            New Scan
-          </li>
+            ["history", "📊", "Scan History"],
 
-          <li
-            className={`nav-item ${
-              activeView ===
-              "history"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              goTo("history")
-            }
-          >
-            <span className="nav-icon">
-              📊
-            </span>
-            Scan History
-          </li>
+            ["reports", "📄", "Reports"],
 
-          <li
-            className={`nav-item ${
-              activeView ===
-              "reports"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              goTo("reports")
-            }
-          >
-            <span className="nav-icon">
-              📄
-            </span>
-            Reports
-          </li>
+            ["consult", "🩺", "Consult Doctor"],
 
-          {/* ===============================================
-              NEW PATIENT APPOINTMENTS OPTION
-          =============================================== */}
+            ["appointments", "📅", "My Appointments"],
 
-          <li
-            className={`nav-item ${
-              activeView ===
-              "appointments"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              goTo(
-                "appointments"
-              )
-            }
-          >
-            <span className="nav-icon">
-              📅
-            </span>
+            ["notifications", "🔔", "Notifications"],
 
-            <span>
-              My Appointments
-            </span>
+            ["profile", "👤", "Profile"],
 
-            {appointments.filter(
-              (a) =>
-                String(
-                  getAppointmentStatus(
-                    a
-                  )
-                ).toLowerCase() ===
-                "pending"
-            ).length >
-              0 && (
-              <span
-                style={{
-                  marginLeft:
-                    "auto",
-                  fontSize:
-                    "11px",
-                  background:
-                    "var(--color-primary)",
-                  color:
-                    "#fff",
-                  minWidth:
-                    "20px",
-                  height:
-                    "20px",
-                  borderRadius:
-                    "50%",
-                  display:
-                    "flex",
-                  alignItems:
-                    "center",
-                  justifyContent:
-                    "center",
-                }}
-              >
-                {
-                  appointments.filter(
-                    (a) =>
-                      String(
-                        getAppointmentStatus(
-                          a
-                        )
-                      ).toLowerCase() ===
-                      "pending"
-                  ).length
-                }
-              </span>
-            )}
-          </li>
+            ["settings", "⚙️", "Settings"],
+          ].map(([key, icon, label]) => (
+            <li
+              key={key}
+              className={`nav-item ${activeView === key ? "active" : ""}`}
+              onClick={() => goTo(key)}
+            >
+              <span className="nav-icon">{icon}</span>
 
-          <li
-            className={`nav-item ${
-              activeView ===
-              "consult"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              goTo("consult")
-            }
-          >
-            <span className="nav-icon">
-              🩺
-            </span>
-            Consult Doctor
-          </li>
-
-          <li
-            className={`nav-item ${
-              activeView ===
-              "notifications"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              goTo(
-                "notifications"
-              )
-            }
-          >
-            <span className="nav-icon">
-              🔔
-            </span>
-            Notifications
-          </li>
-
-          <li
-            className={`nav-item ${
-              activeView ===
-              "profile"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              goTo("profile")
-            }
-          >
-            <span className="nav-icon">
-              👤
-            </span>
-            Profile
-          </li>
-
-          <li
-            className={`nav-item ${
-              activeView ===
-              "settings"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              goTo("settings")
-            }
-          >
-            <span className="nav-icon">
-              ⚙️
-            </span>
-            Settings
-          </li>
-
+              {label}
+            </li>
+          ))}
         </ul>
 
         <div className="sidebar-footer">
-
-          <div
-            className="logout-btn"
-            onClick={
-              handleLogout
-            }
-          >
+          <div className="logout-btn" onClick={handleLogout}>
             🚪 Logout
           </div>
-
         </div>
-
       </aside>
 
       {/* ======================================================
@@ -1333,81 +712,46 @@ export default function DermaDetectAI() {
       ====================================================== */}
 
       <div className="main">
-
         {/* TOPBAR */}
 
         <div className="topbar">
-
           <div
             style={{
-              display:
-                "flex",
-              alignItems:
-                "center",
+              display: "flex",
+              alignItems: "center",
               gap: 12,
             }}
           >
-
             <button
               className="menu-btn"
-              onClick={() =>
-                setSidebarOpen(
-                  (s) => !s
-                )
-              }
+              onClick={() => setSidebarOpen((value) => !value)}
             >
               ☰
             </button>
 
-            <div className="topbar-title">
-              {
-                TITLE_MAP[
-                  activeView
-                ]
-              }
-            </div>
-
+            <div className="topbar-title">{TITLE_MAP[activeView]}</div>
           </div>
 
           <div className="topbar-right">
-
-            <div
-              className="bell"
-              onClick={() =>
-                goTo(
-                  "notifications"
-                )
-              }
-            >
+            <div className="bell" onClick={() => goTo("notifications")}>
               <span className="dot"></span>
               🔔
             </div>
 
-            <div
-              className="avatar-chip"
-              onClick={() =>
-                goTo("profile")
-              }
-            >
-              <div className="avatar-circle">
-                {avatarInitial}
-              </div>
+            <div className="avatar-chip" onClick={() => goTo("profile")}>
+              <div className="avatar-circle">{avatarInitial}</div>
             </div>
-
           </div>
-
         </div>
 
         {/* CONTENT */}
 
         <div className="content">
-
           {dashboardLoading && (
             <div
               className="card"
               style={{
-                textAlign:
-                  "center",
+                textAlign: "center",
                 padding: 40,
               }}
             >
@@ -1415,244 +759,105 @@ export default function DermaDetectAI() {
             </div>
           )}
 
-          {!dashboardLoading &&
-            dashboardError && (
-              <div
-                className="card"
-                style={{
-                  textAlign:
-                    "center",
-                  padding: 40,
-                }}
-              >
-                {dashboardError}
-              </div>
-            )}
+          {!dashboardLoading && dashboardError && (
+            <div
+              className="card"
+              style={{
+                textAlign: "center",
+                padding: 40,
+              }}
+            >
+              {dashboardError}
+            </div>
+          )}
 
-          {!dashboardLoading &&
-            !dashboardError && (
-              <>
+          {!dashboardLoading && !dashboardError && (
+            <>
+              {activeView === "dashboard" && (
+                <DashboardView
+                  userFirstName={userFirstName}
+                  stats={stats}
+                  recentResult={recentResult || emptyResult}
+                  history={history}
+                  goTo={goTo}
+                  onViewResult={viewHistoryItem}
+                />
+              )}
 
-                {/* DASHBOARD */}
+              {activeView === "scan" && <Choose />}
 
-                {activeView ===
-                  "dashboard" && (
-                  <DashboardView
-                    userFirstName={
-                      userFirstName
-                    }
-                    stats={
-                      stats
-                    }
-                    recentResult={
-                      recentResult ||
-                      emptyResult
-                    }
-                    history={
-                      history
-                    }
-                    appointments={
-                      appointments
-                    }
-                    goTo={
-                      goTo
-                    }
-                    onViewResult={
-                      viewHistoryItem
-                    }
-                  />
-                )}
+              {activeView === "result" && (
+                <ResultView result={displayedResult} goTo={goTo} />
+              )}
 
-                {/* SCAN */}
+              {activeView === "diseaseInfo" && (
+                <DiseaseInfoView
+                  diseaseName={displayedResult.disease}
+                  openSection={openSection}
+                  setOpenSection={setOpenSection}
+                />
+              )}
 
-                {activeView ===
-                  "scan" && (
-                  <Choose />
-                )}
+              {activeView === "history" && (
+                <HistoryView
+                  rows={filteredHistory}
+                  search={historySearch}
+                  setSearch={setHistorySearch}
+                  filter={historyFilter}
+                  setFilter={setHistoryFilter}
+                  onView={viewHistoryItem}
+                />
+              )}
 
-                {/* RESULT */}
+              {activeView === "reports" && (
+                <ReportsView reports={reports} onAction={handleReportAction} />
+              )}
 
-                {activeView ===
-                  "result" && (
-                  <ResultView
-                    result={
-                      displayedResult
-                    }
-                    goTo={
-                      goTo
-                    }
-                  />
-                )}
+              {activeView === "consult" && (
+                <ConsultView assessmentId={consultAssessmentId} />
+              )}
 
-                {/* DISEASE INFO */}
+              {activeView === "appointments" && (
+                <AppointmentsView
+                  appointments={appointments}
+                  loading={appointmentsLoading}
+                  error={appointmentsError}
+                  onRefresh={loadAppointments}
+                  onCancel={handleCancelAppointment}
+                  onGoDoctors={() => goTo("consult")}
+                />
+              )}
 
-                {activeView ===
-                  "diseaseInfo" && (
-                  <DiseaseInfoView
-                    diseaseName={
-                      displayedResult.disease
-                    }
-                    openSection={
-                      openSection
-                    }
-                    setOpenSection={
-                      setOpenSection
-                    }
-                  />
-                )}
+              {activeView === "notifications" && (
+                <NotificationsView items={notifications} />
+              )}
 
-                {/* HISTORY */}
+              {activeView === "profile" && (
+                <ProfileView
+                  profile={profile}
+                  setProfile={setProfile}
+                  savedProfile={savedProfile}
+                  onSave={handleSaveProfile}
+                  onChangePassword={handleChangePassword}
+                />
+              )}
 
-                {activeView ===
-                  "history" && (
-                  <HistoryView
-                    rows={
-                      filteredHistory
-                    }
-                    search={
-                      historySearch
-                    }
-                    setSearch={
-                      setHistorySearch
-                    }
-                    filter={
-                      historyFilter
-                    }
-                    setFilter={
-                      setHistoryFilter
-                    }
-                    onView={
-                      viewHistoryItem
-                    }
-                  />
-                )}
-
-                {/* REPORTS */}
-
-                {activeView ===
-                  "reports" && (
-                  <ReportsView
-                    reports={
-                      reports
-                    }
-                    onAction={
-                      handleReportAction
-                    }
-                  />
-                )}
-
-                {/* CONSULT DOCTOR */}
-
-                {activeView ===
-                  "consult" && (
-                  <ConsultView
-                    assessmentId={
-                      consultAssessmentId
-                    }
-                  />
-                )}
-
-                {/* MY APPOINTMENTS */}
-
-                {activeView ===
-                  "appointments" && (
-                  <AppointmentsView
-                    appointments={
-                      appointments
-                    }
-                    loading={
-                      appointmentsLoading
-                    }
-                    error={
-                      appointmentsError
-                    }
-                    onRefresh={
-                      loadAppointments
-                    }
-                    onCancel={
-                      handleCancelAppointment
-                    }
-                    onGoDoctors={() =>
-                      goTo(
-                        "consult"
-                      )
-                    }
-                  />
-                )}
-
-                {/* NOTIFICATIONS */}
-
-                {activeView ===
-                  "notifications" && (
-                  <NotificationsView
-                    items={
-                      notifications
-                    }
-                  />
-                )}
-
-                {/* PROFILE */}
-
-                {activeView ===
-                  "profile" && (
-                  <ProfileView
-                    profile={
-                      profile
-                    }
-                    setProfile={
-                      setProfile
-                    }
-                    savedProfile={
-                      savedProfile
-                    }
-                    onSave={
-                      handleSaveProfile
-                    }
-                    onChangePassword={
-                      handleChangePassword
-                    }
-                  />
-                )}
-
-                {/* SETTINGS */}
-
-                {activeView ===
-                  "settings" && (
-                  <SettingsView
-                    darkMode={
-                      darkMode
-                    }
-                    setDarkMode={
-                      setDarkMode
-                    }
-                    language={
-                      language
-                    }
-                    setLanguage={
-                      setLanguage
-                    }
-                    notifScan={
-                      notifScan
-                    }
-                    setNotifScan={
-                      setNotifScan
-                    }
-                    notifFollowup={
-                      notifFollowup
-                    }
-                    setNotifFollowup={
-                      setNotifFollowup
-                    }
-                  />
-                )}
-
-              </>
-            )}
-
+              {activeView === "settings" && (
+                <SettingsView
+                  darkMode={darkMode}
+                  setDarkMode={setDarkMode}
+                  language={language}
+                  setLanguage={setLanguage}
+                  notifScan={notifScan}
+                  setNotifScan={setNotifScan}
+                  notifFollowup={notifFollowup}
+                  setNotifFollowup={setNotifFollowup}
+                />
+              )}
+            </>
+          )}
         </div>
-
       </div>
-
     </div>
   );
 }
@@ -1666,255 +871,68 @@ function DashboardView({
   stats,
   recentResult,
   history,
-  appointments,
   goTo,
   onViewResult,
 }) {
-  const upcomingAppointment =
-    appointments.find(
-      (appointment) => {
-        const status =
-          String(
-            getAppointmentStatus(
-              appointment
-            )
-          ).toLowerCase();
-
-        return (
-          status !==
-            "cancelled" &&
-          status !==
-            "canceled" &&
-          status !==
-            "rejected" &&
-          status !==
-            "completed"
-        );
-      }
-    );
-
   return (
     <section className="view active">
-
       <div className="welcome">
-
         <div>
-          <h1>
-            Hello,{" "}
-            {userFirstName} 👋
-          </h1>
+          <h1>Hello, {userFirstName} 👋</h1>
 
-          <p>
-            Here's a quick look at
-            your skin health overview.
-          </p>
+          <p>Here's a quick look at your skin health overview.</p>
         </div>
-
       </div>
 
-      {/* STATS */}
-
       <div className="stats-grid">
-
         <StatCard
           icon="📷"
           iconClass="blue"
-          value={
-            stats.totalScans
-          }
+          value={stats.totalScans}
           label="Total Scans"
         />
 
         <StatCard
           icon="📅"
           iconClass="teal"
-          value={
-            stats.lastScanDate
-          }
+          value={stats.lastScanDate}
           label="Last Scan Date"
         />
 
         <StatCard
           icon="✅"
           iconClass="green"
-          value={
-            stats.currentStatus
-          }
+          value={stats.currentStatus}
           label="Current Status"
         />
 
         <StatCard
           icon="📄"
           iconClass="mint"
-          value={
-            stats.reportsAvailable
-          }
+          value={stats.reportsAvailable}
           label="Reports Available"
         />
-
       </div>
 
-      {/* SCAN CTA */}
-
       <div className="cta-scan">
-
         <div>
-          <h3>
-            📷 Ready for your
-            next check-up?
-          </h3>
+          <h3>📷 Ready for your next check-up?</h3>
 
           <p>
-            Scan your skin in seconds
-            and get an instant
-            AI-powered analysis.
+            Scan your skin in seconds and get an instant AI-powered analysis.
           </p>
         </div>
 
-        <button
-          className="btn btn-secondary"
-          onClick={() =>
-            goTo("scan")
-          }
-        >
+        <button className="btn btn-secondary" onClick={() => goTo("scan")}>
           Quick Scan
         </button>
-
       </div>
 
-      {/* APPOINTMENT */}
-
-      {upcomingAppointment && (
-        <div
-          className="card"
-          style={{
-            marginBottom: 20,
-          }}
-        >
-
-          <div className="result-preview-row">
-
-            <div
-              className="section-title"
-              style={{
-                marginBottom: 0,
-              }}
-            >
-              📅 Upcoming Appointment
-            </div>
-
-            <button
-              className="btn btn-outline"
-              onClick={() =>
-                goTo(
-                  "appointments"
-                )
-              }
-            >
-              View All
-            </button>
-
-          </div>
-
-          <div className="result-item">
-            <span className="k">
-              Doctor
-            </span>
-
-            <span className="v">
-              {
-                getAppointmentDoctorName(
-                  upcomingAppointment
-                )
-              }
-            </span>
-          </div>
-
-          <div className="result-item">
-            <span className="k">
-              Date
-            </span>
-
-            <span className="v">
-              {formatAppointmentDate(
-                getAppointmentDate(
-                  upcomingAppointment
-                )
-              )}
-            </span>
-          </div>
-
-          <div className="result-item">
-            <span className="k">
-              Time
-            </span>
-
-            <span className="v">
-              {
-                getAppointmentStartTime(
-                  upcomingAppointment
-                )
-              }
-              {getAppointmentEndTime(
-                upcomingAppointment
-              )
-                ? ` - ${getAppointmentEndTime(
-                    upcomingAppointment
-                  )}`
-                : ""}
-            </span>
-          </div>
-
-          <div className="result-item">
-            <span className="k">
-              Mode
-            </span>
-
-            <span className="v">
-              {
-                MODE_LABELS[
-                  getAppointmentMode(
-                    upcomingAppointment
-                  )
-                ] ||
-                getAppointmentMode(
-                  upcomingAppointment
-                )
-              }
-            </span>
-          </div>
-
-          <div
-            style={{
-              marginTop: 12,
-            }}
-          >
-            <span
-              className={appointmentStatusClass(
-                getAppointmentStatus(
-                  upcomingAppointment
-                )
-              )}
-            >
-              {appointmentStatusLabel(
-                getAppointmentStatus(
-                  upcomingAppointment
-                )
-              )}
-            </span>
-          </div>
-
-        </div>
-      )}
-
-      {/* GRID */}
-
       <div className="dash-grid">
+        {/* RESULT */}
 
         <div className="card">
-
           <div className="result-preview-row">
-
             <div
               className="section-title"
               style={{
@@ -1924,53 +942,29 @@ function DashboardView({
               📈 Recent Scan Result
             </div>
 
-            <span
-              className={severityBadgeClass(
-                recentResult.severity
-              )}
-            >
-              {
-                recentResult.severity
-              }
-            </span>
-
-          </div>
-
-          <div className="result-item">
-            <span className="k">
-              Disease
-            </span>
-
-            <span className="v">
-              {
-                recentResult.disease
-              }
+            <span className={severityBadgeClass(recentResult.severity)}>
+              {recentResult.severity}
             </span>
           </div>
 
           <div className="result-item">
-            <span className="k">
-              Confidence
-            </span>
+            <span className="k">Disease</span>
+
+            <span className="v">{recentResult.disease}</span>
+          </div>
+
+          <div className="result-item">
+            <span className="k">Confidence</span>
 
             <span className="v">
-              {recentResult.confidence.toFixed(
-                0
-              )}
-              %
+              {Number(recentResult.confidence || 0).toFixed(0)}%
             </span>
           </div>
 
           <div className="result-item">
-            <span className="k">
-              Scanned on
-            </span>
+            <span className="k">Scanned on</span>
 
-            <span className="v">
-              {
-                recentResult.date
-              }
-            </span>
+            <span className="v">{recentResult.date}</span>
           </div>
 
           <button
@@ -1978,89 +972,56 @@ function DashboardView({
             style={{
               marginTop: 16,
             }}
-            onClick={() =>
-              onViewResult(
-                recentResult
-              )
-            }
+            onClick={() => onViewResult(recentResult)}
           >
             View Full Report
           </button>
-
         </div>
 
+        {/* HISTORY */}
+
         <div className="card">
+          <div className="section-title">📜 Recent History</div>
 
-          <div className="section-title">
-            📜 Recent History
-          </div>
-
-          {history.length ===
-          0 ? (
+          {history.length === 0 ? (
             <p
               style={{
-                color:
-                  "var(--text-secondary)",
-                fontSize:
-                  13.5,
+                color: "var(--text-secondary)",
+                fontSize: 13.5,
               }}
             >
-              No scans yet — your
-              history will show up
-              here.
+              No scans yet.
             </p>
           ) : (
             <ul className="history-mini">
+              {history.slice(0, 4).map((item) => (
+                <li
+                  key={item.id}
+                  onClick={() => onViewResult(item)}
+                  style={{
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>
+                    <span
+                      className={`dot ${
+                        item.status === "Healthy" ? "dot-green" : "dot-amber"
+                      }`}
+                    ></span>
 
-              {history
-                .slice(0, 4)
-                .map((item) => (
-                  <li
-                    key={item.id}
-                    onClick={() =>
-                      onViewResult(
-                        item
-                      )
-                    }
+                    {item.disease}
+                  </span>
+
+                  <span
                     style={{
-                      cursor:
-                        "pointer",
+                      color: "var(--text-secondary)",
+                      fontSize: 12.5,
                     }}
                   >
-
-                    <span>
-
-                      <span
-                        className={`dot ${
-                          item.status ===
-                          "Healthy"
-                            ? "dot-green"
-                            : "dot-amber"
-                        }`}
-                      ></span>
-
-                      {
-                        item.disease
-                      }
-
-                    </span>
-
-                    <span
-                      style={{
-                        color:
-                          "var(--text-secondary)",
-                        fontSize:
-                          12.5,
-                      }}
-                    >
-                      {
-                        item.date
-                      }
-                    </span>
-
-                  </li>
-                ))}
-
+                    {item.date}
+                  </span>
+                </li>
+              ))}
             </ul>
           )}
 
@@ -2070,17 +1031,12 @@ function DashboardView({
               marginTop: 14,
               width: "100%",
             }}
-            onClick={() =>
-              goTo("history")
-            }
+            onClick={() => goTo("history")}
           >
             View All History
           </button>
-
         </div>
-
       </div>
-
     </section>
   );
 }
@@ -2089,33 +1045,16 @@ function DashboardView({
    STAT CARD
 ============================================================ */
 
-function StatCard({
-  icon,
-  iconClass,
-  value,
-  label,
-}) {
+function StatCard({ icon, iconClass, value, label }) {
   return (
     <div className="stat-card">
-
-      <div
-        className={`stat-icon ${iconClass}`}
-      >
-        {icon}
-      </div>
+      <div className={`stat-icon ${iconClass}`}>{icon}</div>
 
       <div>
+        <div className="stat-value">{value}</div>
 
-        <div className="stat-value">
-          {value}
-        </div>
-
-        <div className="stat-label">
-          {label}
-        </div>
-
+        <div className="stat-label">{label}</div>
       </div>
-
     </div>
   );
 }
@@ -2124,75 +1063,45 @@ function StatCard({
    RESULT VIEW
 ============================================================ */
 
-function ResultView({
-  result,
-  goTo,
-}) {
+function ResultView({ result, goTo }) {
   return (
     <section className="view active">
-
-      <div className="section-title">
-        🤖 Scan Result
-      </div>
+      <div className="section-title">🤖 Scan Result</div>
 
       <div className="card mb">
-
         <div className="result-hero">
-
           <div className="result-photo">
-
             {result.image ? (
-              <img
-                src={
-                  result.image
-                }
-                alt="Scanned"
-              />
+              <img src={result.image} alt="Scanned" />
             ) : (
               "No image available"
             )}
-
           </div>
 
           <div className="result-main">
+            <div className="result-disease">{result.disease}</div>
 
-            <div className="result-disease">
-              {
-                result.disease
-              }
-            </div>
-
-            <span
-              className={severityBadgeClass(
-                result.severity
-              )}
-            >
-              Severity:{" "}
-              {
-                result.severity
-              }
+            <span className={severityBadgeClass(result.severity)}>
+              Severity: {result.severity}
             </span>
 
             <div
               style={{
                 marginTop: 14,
                 fontSize: 13,
-                color:
-                  "var(--text-secondary)",
+                color: "var(--text-secondary)",
               }}
             >
               Confidence Score
             </div>
 
             <div className="confidence-bar-track">
-
               <div
                 className="confidence-bar-fill"
                 style={{
                   width: `${result.confidence}%`,
                 }}
               ></div>
-
             </div>
 
             <div
@@ -2201,32 +1110,18 @@ function ResultView({
                 fontSize: 14,
               }}
             >
-              {result.confidence.toFixed(
-                0
-              )}
-              %
+              {Number(result.confidence || 0).toFixed(0)}%
             </div>
 
             <div className="recommend-box">
-              <b>
-                Recommended Action:
-              </b>{" "}
-              {
-                result.recommendation
-              }
+              <b>Recommended Action:</b> {result.recommendation}
             </div>
-
           </div>
-
         </div>
 
         <div className="info-grid">
-
           <div className="info-box">
-
-            <div className="lbl">
-              Short Description
-            </div>
+            <div className="lbl">Short Description</div>
 
             <div
               className="val"
@@ -2234,89 +1129,46 @@ function ResultView({
                 fontWeight: 500,
               }}
             >
-              {
-                result.description
-              }
+              {result.description}
             </div>
-
           </div>
 
           <div className="info-box">
+            <div className="lbl">Is it Contagious?</div>
 
-            <div className="lbl">
-              Is it Contagious?
-            </div>
-
-            <div className="val">
-              {
-                result.contagious
-              }
-            </div>
-
+            <div className="val">{result.contagious}</div>
           </div>
 
           <div className="info-box">
+            <div className="lbl">Scanned On</div>
 
-            <div className="lbl">
-              Scanned On
-            </div>
-
-            <div className="val">
-              {
-                result.date
-              }
-            </div>
-
+            <div className="val">{result.date}</div>
           </div>
-
         </div>
 
         <div
           className="scan-actions"
           style={{
-            justifyContent:
-              "flex-start",
+            justifyContent: "flex-start",
             marginTop: 22,
           }}
         >
-
           <button
             className="btn btn-primary"
-            onClick={() =>
-              goTo(
-                "diseaseInfo"
-              )
-            }
+            onClick={() => goTo("diseaseInfo")}
           >
             📖 Learn About This Disease
           </button>
 
-          <button
-            className="btn btn-outline"
-            onClick={() =>
-              goTo(
-                "reports"
-              )
-            }
-          >
-            📄 View / Download Report
+          <button className="btn btn-outline" onClick={() => goTo("reports")}>
+            📄 View Report
           </button>
 
-          <button
-            className="btn btn-outline"
-            onClick={() =>
-              goTo(
-                "consult"
-              )
-            }
-          >
-            🩺 Consult a Dermatologist
+          <button className="btn btn-outline" onClick={() => goTo("consult")}>
+            🩺 Consult Doctor
           </button>
-
         </div>
-
       </div>
-
     </section>
   );
 }
@@ -2325,63 +1177,32 @@ function ResultView({
    DISEASE INFO
 ============================================================ */
 
-function DiseaseInfoView({
-  diseaseName,
-  openSection,
-  setOpenSection,
-}) {
+function DiseaseInfoView({ diseaseName, openSection, setOpenSection }) {
   return (
     <section className="view active">
-
       <div className="section-title">
-        📖 Disease Information —{" "}
-        {diseaseName}
+        📖 Disease Information — {diseaseName}
       </div>
 
-      <div>
+      {diseaseInfoSections.map((section) => (
+        <div
+          key={section.key}
+          className={`accordion ${openSection === section.key ? "open" : ""}`}
+        >
+          <div
+            className="accordion-head"
+            onClick={() =>
+              setOpenSection(openSection === section.key ? null : section.key)
+            }
+          >
+            {section.label}
 
-        {diseaseInfoSections.map(
-          (sec) => (
-            <div
-              key={sec.key}
-              className={`accordion ${
-                openSection ===
-                sec.key
-                  ? "open"
-                  : ""
-              }`}
-            >
+            <span className="chev">▾</span>
+          </div>
 
-              <div
-                className="accordion-head"
-                onClick={() =>
-                  setOpenSection(
-                    openSection ===
-                      sec.key
-                      ? null
-                      : sec.key
-                  )
-                }
-              >
-
-                {sec.label}
-
-                <span className="chev">
-                  ▾
-                </span>
-
-              </div>
-
-              <div className="accordion-body">
-                {sec.text}
-              </div>
-
-            </div>
-          )
-        )}
-
-      </div>
-
+          <div className="accordion-body">{section.text}</div>
+        </div>
+      ))}
     </section>
   );
 }
@@ -2390,178 +1211,87 @@ function DiseaseInfoView({
    HISTORY
 ============================================================ */
 
-function HistoryView({
-  rows,
-  search,
-  setSearch,
-  filter,
-  setFilter,
-  onView,
-}) {
+function HistoryView({ rows, search, setSearch, filter, setFilter, onView }) {
   return (
     <section className="view active">
-
-      <div className="section-title">
-        📊 Scan History
-      </div>
+      <div className="section-title">📊 Scan History</div>
 
       <div className="card">
-
         <div className="table-toolbar">
-
           <div className="search-box">
-            🔍{" "}
-
+            🔍
             <input
               type="text"
               placeholder="Search by disease..."
-              value={
-                search
-              }
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
-
           </div>
 
           <select
             className="filter-select"
-            value={
-              filter
-            }
-            onChange={(e) =>
-              setFilter(
-                e.target.value
-              )
-            }
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
           >
-            <option value="all">
-              All Status
-            </option>
+            <option value="all">All Status</option>
 
-            <option value="Healthy">
-              Healthy
-            </option>
+            <option value="Healthy">Healthy</option>
 
-            <option value="Disease Detected">
-              Disease Detected
-            </option>
-
+            <option value="Disease Detected">Disease Detected</option>
           </select>
-
         </div>
 
-        {rows.length ===
-        0 ? (
+        {rows.length === 0 ? (
           <p
             style={{
-              color:
-                "var(--text-secondary)",
-              padding:
-                "16px 4px",
+              color: "var(--text-secondary)",
+              padding: "16px 4px",
             }}
           >
-            No scans match this
-            search/filter yet.
+            No scans found.
           </p>
         ) : (
-
           <table>
-
             <thead>
-
               <tr>
                 <th>Date</th>
+
                 <th>Disease</th>
+
                 <th>Confidence</th>
+
                 <th>Status</th>
+
                 <th>Actions</th>
               </tr>
-
             </thead>
 
             <tbody>
+              {rows.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.date}</td>
 
-              {rows.map(
-                (item) => (
-                  <tr
-                    key={
-                      item.id
-                    }
-                  >
+                  <td>{item.disease}</td>
 
-                    <td>
-                      {
-                        item.date
-                      }
-                    </td>
+                  <td>{Number(item.confidence || 0).toFixed(0)}%</td>
 
-                    <td>
-                      {
-                        item.disease
-                      }
-                    </td>
+                  <td>{statusBadge(item.status)}</td>
 
-                    <td>
-                      {item.confidence.toFixed(
-                        0
-                      )}
-                      %
-                    </td>
-
-                    <td>
-                      {statusBadge(
-                        item.status
-                      )}
-                    </td>
-
-                    <td>
-
-                      <div className="row-actions">
-
-                        <button
-                          className="icon-btn"
-                          title="View Report"
-                          onClick={() =>
-                            onView(
-                              item
-                            )
-                          }
-                        >
-                          👁
-                        </button>
-
-                        <button
-                          className="icon-btn"
-                          title="Download PDF"
-                          onClick={() =>
-                            alert(
-                              "PDF download will be connected here."
-                            )
-                          }
-                        >
-                          ⬇
-                        </button>
-
-                      </div>
-
-                    </td>
-
-                  </tr>
-                )
-              )}
-
+                  <td>
+                    <button
+                      className="icon-btn"
+                      title="View Report"
+                      onClick={() => onView(item)}
+                    >
+                      👁
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
-
           </table>
-
         )}
-
       </div>
-
     </section>
   );
 }
@@ -2570,115 +1300,343 @@ function HistoryView({
    REPORTS
 ============================================================ */
 
-function ReportsView({
-  reports,
-  onAction,
-}) {
+function ReportsView({ reports, onAction }) {
   return (
     <section className="view active">
-
-      <div className="section-title">
-        📄 Medical Reports
-      </div>
+      <div className="section-title">📄 Medical Reports</div>
 
       <div className="card">
-
-        {reports.length ===
-        0 ? (
+        {reports.length === 0 ? (
           <p
             style={{
-              color:
-                "var(--text-secondary)",
+              color: "var(--text-secondary)",
             }}
           >
-            No reports available
-            yet.
+            No reports available yet.
           </p>
         ) : (
+          reports.map((report, index) => (
+            <div className="report-card" key={report._id || report.id || index}>
+              <div className="report-left">
+                <div className="report-icon">📄</div>
 
-          reports.map(
-            (r, i) => (
-              <div
-                className="report-card"
-                key={
-                  r.id ||
-                  r._id ||
-                  i
-                }
-              >
+                <div>
+                  <div className="report-title">{report.title}</div>
 
-                <div className="report-left">
-
-                  <div className="report-icon">
-                    📄
-                  </div>
-
-                  <div>
-
-                    <div className="report-title">
-                      {
-                        r.title
-                      }
-                    </div>
-
-                    <div className="report-sub">
-                      {
-                        r.date
-                      }
-                    </div>
-
-                  </div>
-
+                  <div className="report-sub">{report.date}</div>
                 </div>
-
-                <div className="report-actions">
-
-                  <button
-                    className="btn btn-outline"
-                    onClick={() =>
-                      onAction(
-                        "download-pdf",
-                        r
-                      )
-                    }
-                  >
-                    ⬇ Download
-                  </button>
-
-                  <button
-                    className="btn btn-outline"
-                    onClick={() =>
-                      onAction(
-                        "print-report",
-                        r
-                      )
-                    }
-                  >
-                    🖨 Print
-                  </button>
-
-                  <button
-                    className="btn btn-outline"
-                    onClick={() =>
-                      onAction(
-                        "share-report",
-                        r
-                      )
-                    }
-                  >
-                    🔗 Share
-                  </button>
-
-                </div>
-
               </div>
-            )
-          )
 
+              <div className="report-actions">
+                <button
+                  className="btn btn-outline"
+                  onClick={() => onAction("download-pdf")}
+                >
+                  ⬇ Download
+                </button>
+
+                <button
+                  className="btn btn-outline"
+                  onClick={() => onAction("print-report")}
+                >
+                  🖨 Print
+                </button>
+
+                <button
+                  className="btn btn-outline"
+                  onClick={() => onAction("share-report")}
+                >
+                  🔗 Share
+                </button>
+              </div>
+            </div>
+          ))
         )}
+      </div>
+    </section>
+  );
+}
 
+/* ============================================================
+   CONSULT DOCTOR
+   IMPORTANT:
+   NO HARDCODED DOCTORS
+============================================================ */
+
+function ConsultView({ assessmentId }) {
+  const navigate = useNavigate();
+
+  const [doctors, setDoctors] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
+
+  const [activeFilter, setActiveFilter] = useState("All doctors");
+
+  /* ==========================================================
+     FETCH REAL DOCTORS
+  ========================================================== */
+
+  useEffect(() => {
+    loadDoctors();
+  }, []);
+
+  async function loadDoctors() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await api.get("/api/doctors");
+
+      const fetchedDoctors =
+        response.data?.doctors || response.data?.data || [];
+
+      setDoctors(fetchedDoctors);
+    } catch (error) {
+      console.error(
+        "DOCTORS FETCH ERROR:",
+        error.response?.data || error.message,
+      );
+
+      setError(error.response?.data?.message || "Unable to load doctors.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ==========================================================
+     FILTER
+  ========================================================== */
+
+  const visibleDoctors =
+    activeFilter === "Available now"
+      ? doctors.filter(
+          (doctor) =>
+            doctor.isAvailable === true || doctor.status === "available",
+        )
+      : doctors;
+
+  /* ==========================================================
+     LOADING
+  ========================================================== */
+
+  if (loading) {
+    return (
+      <section className="view active">
+        <div className="section-title">🩺 Find a Dermatologist</div>
+
+        <div
+          className="card"
+          style={{
+            textAlign: "center",
+            padding: 40,
+          }}
+        >
+          Loading doctors...
+        </div>
+      </section>
+    );
+  }
+
+  /* ==========================================================
+     VIEW
+  ========================================================== */
+
+  return (
+    <section className="view active">
+      <div className="section-title">🩺 Find a Dermatologist</div>
+
+      <p
+        style={{
+          color: "var(--text-secondary)",
+          marginTop: -6,
+          marginBottom: 16,
+        }}
+      >
+        Choose a verified dermatologist for your consultation.
+      </p>
+
+      {/* FILTER */}
+
+      <div className="filters">
+        {["All doctors", "Available now"].map((filter) => (
+          <div
+            key={filter}
+            className={`filter-chip ${
+              activeFilter === filter ? "is-active" : ""
+            }`}
+            onClick={() => setActiveFilter(filter)}
+          >
+            {filter}
+          </div>
+        ))}
       </div>
 
+      {/* ERROR */}
+
+      {error && (
+        <div
+          className="card"
+          style={{
+            marginBottom: 16,
+          }}
+        >
+          <p>{error}</p>
+
+          <button className="btn btn-primary" onClick={loadDoctors}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* EMPTY */}
+
+      {!error && visibleDoctors.length === 0 && (
+        <div
+          className="card"
+          style={{
+            textAlign: "center",
+            padding: 40,
+          }}
+        >
+          <h3>No doctors available</h3>
+
+          <p
+            style={{
+              color: "var(--text-secondary)",
+            }}
+          >
+            No verified and available doctors were found.
+          </p>
+        </div>
+      )}
+
+      {/* DOCTORS */}
+
+      {visibleDoctors.map((doctor) => {
+        const user = doctor.user || {};
+
+        const doctorId = doctor._id || doctor.id;
+
+        const name =
+          user.fullName || doctor.fullName || doctor.name || "Doctor";
+
+        const specialization = doctor.specialization || "Dermatologist";
+
+        const qualification = doctor.qualification || "";
+
+        const experience = doctor.experience;
+
+        const modes = doctor.consultationModes || [];
+
+        const profileImage = doctor.profileImage || doctor.profilePhoto || "";
+
+        return (
+          <div
+            className="doctor-card"
+            key={doctorId}
+            onClick={() => navigate(`/doctors/${doctorId}`)}
+          >
+            {/* AVATAR */}
+
+            <div className="doctor-card__avatar">
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt={name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: "50%",
+                  }}
+                />
+              ) : (
+                name.charAt(0).toUpperCase()
+              )}
+            </div>
+
+            {/* BODY */}
+
+            <div className="doctor-card__body">
+              <div className="doctor-card__name">
+                Dr. {name.replace(/^Dr\.\s*/i, "")}
+              </div>
+
+              <div className="doctor-card__role">
+                {specialization}
+
+                {qualification ? ` · ${qualification}` : ""}
+
+                {experience != null ? ` · ${experience} yrs experience` : ""}
+              </div>
+
+              <div className="doctor-card__meta">
+                {doctor.rating != null && <span>⭐ {doctor.rating}</span>}
+
+                {doctor.city && <span>📍 {doctor.city}</span>}
+              </div>
+
+              {/* AVAILABILITY */}
+
+              {doctor.isAvailable ? (
+                <span className="status-dot">Available</span>
+              ) : (
+                <span
+                  className="status-dot"
+                  style={{
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Currently unavailable
+                </span>
+              )}
+
+              {/* MODES */}
+
+              <div className="mode-row">
+                {modes.map((mode) => (
+                  <span className="mode-tag" key={mode}>
+                    {MODE_ICONS[mode] || "💬"} {MODE_LABELS[mode] || mode}
+                  </span>
+                ))}
+              </div>
+
+              {/* BOOK BUTTON */}
+
+              <div
+                style={{
+                  marginTop: 12,
+                }}
+              >
+                <button
+                  className="btn btn-primary"
+                  disabled={!doctorId}
+                  onClick={(event) => {
+                    event.stopPropagation();
+
+                    if (!doctorId) {
+                      console.error("Doctor ID is missing");
+                      return;
+                    }
+
+                    console.log("Opening booking page for doctor:", doctorId);
+
+                    navigate(`/book-appointment/${doctorId}/book`, {
+                      state: {
+                        assessmentId: assessmentId || "",
+                      },
+                    });
+                  }}
+                >
+                  Book Consultation
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </section>
   );
 }
@@ -2695,81 +1653,47 @@ function AppointmentsView({
   onCancel,
   onGoDoctors,
 }) {
-  const navigate =
-    useNavigate();
-
   return (
     <section className="view active">
-
       {/* HEADER */}
 
       <div
         style={{
-          display:
-            "flex",
-          justifyContent:
-            "space-between",
-          alignItems:
-            "center",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           gap: 12,
           marginBottom: 18,
-          flexWrap:
-            "wrap",
+          flexWrap: "wrap",
         }}
       >
-
         <div>
-
-          <div
-            className="section-title"
-            style={{
-              marginBottom: 4,
-            }}
-          >
-            📅 My Appointments
-          </div>
+          <div className="section-title">📅 My Appointments</div>
 
           <p
             style={{
-              color:
-                "var(--text-secondary)",
-              margin: 0,
+              color: "var(--text-secondary)",
+              marginTop: -8,
             }}
           >
-            Manage your dermatologist
-            consultations.
+            View and manage your dermatologist consultations.
           </p>
-
         </div>
 
         <div
           style={{
-            display:
-              "flex",
+            display: "flex",
             gap: 10,
           }}
         >
-
-          <button
-            className="btn btn-outline"
-            onClick={
-              onRefresh
-            }
-          >
-            ↻ Refresh
+          <button className="btn btn-outline" onClick={onRefresh}>
+            🔄 Refresh
           </button>
 
-          <button
-            className="btn btn-primary"
-            onClick={
-              onGoDoctors
-            }
-          >
+          <button className="btn btn-primary" onClick={onGoDoctors}>
             + Book Consultation
           </button>
-
         </div>
-
       </div>
 
       {/* LOADING */}
@@ -2778,570 +1702,268 @@ function AppointmentsView({
         <div
           className="card"
           style={{
-            textAlign:
-              "center",
+            textAlign: "center",
             padding: 40,
           }}
         >
-          Loading your
-          appointments...
+          Loading appointments...
         </div>
       )}
 
       {/* ERROR */}
 
-      {!loading &&
-        error && (
-          <div
-            className="card"
-            style={{
-              textAlign:
-                "center",
-              padding: 30,
-            }}
-          >
+      {!loading && error && (
+        <div className="card">
+          <p>{error}</p>
 
-            <div
-              style={{
-                fontSize:
-                  "2rem",
-                marginBottom:
-                  10,
-              }}
-            >
-              ⚠️
-            </div>
-
-            <p>
-              {error}
-            </p>
-
-            <button
-              className="btn btn-primary"
-              onClick={
-                onRefresh
-              }
-            >
-              Try Again
-            </button>
-
-          </div>
-        )}
+          <button className="btn btn-primary" onClick={onRefresh}>
+            Try Again
+          </button>
+        </div>
+      )}
 
       {/* EMPTY */}
 
-      {!loading &&
-        !error &&
-        appointments.length ===
-          0 && (
+      {!loading && !error && appointments.length === 0 && (
+        <div
+          className="card"
+          style={{
+            textAlign: "center",
+            padding: 50,
+          }}
+        >
           <div
-            className="card"
             style={{
-              textAlign:
-                "center",
-              padding: 50,
+              fontSize: 48,
+              marginBottom: 12,
             }}
           >
-
-            <div
-              style={{
-                fontSize:
-                  "3rem",
-                marginBottom:
-                  12,
-              }}
-            >
-              📅
-            </div>
-
-            <h3>
-              No appointments yet
-            </h3>
-
-            <p
-              style={{
-                color:
-                  "var(--text-secondary)",
-                marginBottom:
-                  20,
-              }}
-            >
-              You haven't booked
-              a dermatologist
-              consultation yet.
-            </p>
-
-            <button
-              className="btn btn-primary"
-              onClick={
-                onGoDoctors
-              }
-            >
-              Find a Dermatologist
-            </button>
-
+            📅
           </div>
-        )}
 
-      {/* APPOINTMENT LIST */}
+          <h3>No appointments yet</h3>
 
-      {!loading &&
-        !error &&
-        appointments.length >
-          0 && (
-
-          <div
+          <p
             style={{
-              display:
-                "flex",
-              flexDirection:
-                "column",
-              gap: 16,
+              color: "var(--text-secondary)",
             }}
           >
+            You have not booked a dermatologist consultation yet.
+          </p>
 
-            {appointments.map(
-              (
-                appointment,
-                index
-              ) => {
+          <button className="btn btn-primary" onClick={onGoDoctors}>
+            Find a Doctor
+          </button>
+        </div>
+      )}
 
-                const appointmentId =
-                  appointment._id ||
-                  appointment.id ||
-                  index;
+      {/* APPOINTMENTS */}
 
-                const status =
-                  getAppointmentStatus(
-                    appointment
-                  );
+      {!loading && !error && appointments.length > 0 && (
+        <div
+          style={{
+            display: "grid",
+            gap: 16,
+          }}
+        >
+          {appointments.map((appointment) => {
+            const doctor = getAppointmentDoctor(appointment);
 
-                const doctorName =
-                  getAppointmentDoctorName(
-                    appointment
-                  );
+            const status = getAppointmentStatus(appointment);
 
-                const specialization =
-                  getAppointmentSpecialization(
-                    appointment
-                  );
+            const specialization = getAppointmentSpecialization(appointment);
 
-                const appointmentDate =
-                  getAppointmentDate(
-                    appointment
-                  );
+            const date = appointment.date;
 
-                const startTime =
-                  getAppointmentStartTime(
-                    appointment
-                  );
+            const mode = appointment.mode || "video";
 
-                const endTime =
-                  getAppointmentEndTime(
-                    appointment
-                  );
+            const canCancel = ["pending", "accepted"].includes(
+              String(status).toLowerCase(),
+            );
 
-                const mode =
-                  getAppointmentMode(
-                    appointment
-                  );
+            return (
+              <div className="card" key={appointment._id}>
+                {/* TOP */}
 
-                const doctor =
-                  getDoctorFromAppointment(
-                    appointment
-                  );
-
-                const doctorId =
-                  appointment
-                    .doctorProfileId ||
-                  appointment
-                    .doctorProfile?._id ||
-                  doctor._id ||
-                  appointment.doctorId;
-
-                const normalizedStatus =
-                  String(
-                    status
-                  ).toLowerCase();
-
-                const canCancel =
-                  ![
-                    "cancelled",
-                    "canceled",
-                    "completed",
-                    "rejected",
-                  ].includes(
-                    normalizedStatus
-                  );
-
-                return (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: 16,
+                    flexWrap: "wrap",
+                  }}
+                >
                   <div
-                    className="card"
-                    key={
-                      appointmentId
-                    }
+                    style={{
+                      display: "flex",
+                      gap: 14,
+                      alignItems: "center",
+                    }}
                   >
-
-                    {/* TOP */}
-
                     <div
+                      className="doctor-card__avatar"
                       style={{
-                        display:
-                          "flex",
-                        justifyContent:
-                          "space-between",
-                        gap: 16,
-                        alignItems:
-                          "flex-start",
-                        flexWrap:
-                          "wrap",
+                        width: 58,
+                        height: 58,
+                        flexShrink: 0,
                       }}
                     >
+                      {doctor.fullName?.charAt(0).toUpperCase() || "D"}
+                    </div>
+
+                    <div>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 17,
+                        }}
+                      >
+                        Dr.{" "}
+                        {getAppointmentDoctorName(appointment).replace(
+                          /^Dr\.\s*/i,
+                          "",
+                        )}
+                      </div>
 
                       <div
                         style={{
-                          display:
-                            "flex",
-                          gap: 14,
-                          alignItems:
-                            "center",
+                          color: "var(--text-secondary)",
+                          fontSize: 13,
+                          marginTop: 4,
                         }}
                       >
-
-                        {/* DOCTOR AVATAR */}
-
-                        <div
-                          style={{
-                            width:
-                              56,
-                            height:
-                              56,
-                            borderRadius:
-                              "50%",
-                            background:
-                              "var(--bg-section)",
-                            display:
-                              "flex",
-                            alignItems:
-                              "center",
-                            justifyContent:
-                              "center",
-                            fontSize:
-                              "1.2rem",
-                            fontWeight:
-                              700,
-                            overflow:
-                              "hidden",
-                            flexShrink:
-                              0,
-                          }}
-                        >
-
-                          {doctor.profileImage ? (
-                            <img
-                              src={
-                                doctor.profileImage
-                              }
-                              alt={
-                                doctorName
-                              }
-                              style={{
-                                width:
-                                  "100%",
-                                height:
-                                  "100%",
-                                objectFit:
-                                  "cover",
-                              }}
-                            />
-                          ) : (
-                            doctorName
-                              .replace(
-                                "Dr. ",
-                                ""
-                              )
-                              .charAt(
-                                0
-                              )
-                              .toUpperCase()
-                          )}
-
-                        </div>
-
-                        <div>
-
-                          <h3
-                            style={{
-                              margin:
-                                0,
-                              marginBottom:
-                                4,
-                            }}
-                          >
-                            {doctorName}
-                          </h3>
-
-                          <p
-                            style={{
-                              margin:
-                                0,
-                              color:
-                                "var(--text-secondary)",
-                              fontSize:
-                                13,
-                            }}
-                          >
-                            {
-                              specialization
-                            }
-                          </p>
-
-                        </div>
-
+                        {specialization}
                       </div>
-
-                      <span
-                        className={appointmentStatusClass(
-                          status
-                        )}
-                      >
-                        {appointmentStatusLabel(
-                          status
-                        )}
-                      </span>
-
                     </div>
-
-                    {/* DETAILS */}
-
-                    <div
-                      style={{
-                        display:
-                          "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(180px, 1fr))",
-                        gap: 14,
-                        marginTop:
-                          22,
-                        paddingTop:
-                          18,
-                        borderTop:
-                          "1px solid var(--border-color)",
-                      }}
-                    >
-
-                      <AppointmentDetail
-                        icon="📅"
-                        label="Date"
-                        value={formatAppointmentDate(
-                          appointmentDate
-                        )}
-                      />
-
-                      <AppointmentDetail
-                        icon="⏰"
-                        label="Time"
-                        value={
-                          startTime
-                            ? `${startTime}${
-                                endTime
-                                  ? ` - ${endTime}`
-                                  : ""
-                              }`
-                            : "Not specified"
-                        }
-                      />
-
-                      <AppointmentDetail
-                        icon={
-                          MODE_ICONS[
-                            mode
-                          ] ||
-                          "💬"
-                        }
-                        label="Consultation"
-                        value={
-                          MODE_LABELS[
-                            mode
-                          ] ||
-                          mode
-                        }
-                      />
-
-                      <AppointmentDetail
-                        icon="💰"
-                        label="Fee"
-                        value={
-                          appointment.fee ||
-                          appointment.consultationFee
-                            ? `₹${
-                                appointment.fee ||
-                                appointment.consultationFee
-                              }`
-                            : "Not specified"
-                        }
-                      />
-
-                    </div>
-
-                    {/* REASON */}
-
-                    {(appointment.reason ||
-                      appointment.patientMessage) && (
-                      <div
-                        style={{
-                          marginTop:
-                            18,
-                          padding:
-                            14,
-                          borderRadius:
-                            10,
-                          background:
-                            "var(--bg-section)",
-                        }}
-                      >
-
-                        {appointment.reason && (
-                          <div
-                            style={{
-                              marginBottom:
-                                appointment.patientMessage
-                                  ? 8
-                                  : 0,
-                            }}
-                          >
-                            <strong>
-                              Reason:
-                            </strong>{" "}
-                            {
-                              appointment.reason
-                            }
-                          </div>
-                        )}
-
-                        {appointment.patientMessage && (
-                          <div>
-                            <strong>
-                              Message:
-                            </strong>{" "}
-                            {
-                              appointment.patientMessage
-                            }
-                          </div>
-                        )}
-
-                      </div>
-                    )}
-
-                    {/* REPORT */}
-
-                    {appointment.assessmentId && (
-                      <div
-                        style={{
-                          marginTop:
-                            14,
-                          fontSize:
-                            13,
-                          color:
-                            "var(--text-secondary)",
-                        }}
-                      >
-                        📄 AI skin assessment
-                        attached to this
-                        consultation.
-                      </div>
-                    )}
-
-                    {/* ACTIONS */}
-
-                    <div
-                      style={{
-                        display:
-                          "flex",
-                        gap: 10,
-                        marginTop:
-                          20,
-                        flexWrap:
-                          "wrap",
-                      }}
-                    >
-
-                      {doctorId && (
-                        <button
-                          className="btn btn-outline"
-                          onClick={() =>
-                            navigate(
-                              `/doctors/${doctorId}`
-                            )
-                          }
-                        >
-                          👨‍⚕️ View Doctor
-                        </button>
-                      )}
-
-                      {mode ===
-                        "video" &&
-                        normalizedStatus ===
-                          "confirmed" && (
-                          <button
-                            className="btn btn-primary"
-                            onClick={() =>
-                              alert(
-                                "Video consultation will open here."
-                              )
-                            }
-                          >
-                            🎥 Join Video Call
-                          </button>
-                        )}
-
-                      {(mode ===
-                        "text" ||
-                        mode ===
-                          "chat") &&
-                        normalizedStatus ===
-                          "confirmed" && (
-                          <button
-                            className="btn btn-primary"
-                            onClick={() =>
-                              alert(
-                                "Doctor chat will open here."
-                              )
-                            }
-                          >
-                            💬 Open Chat
-                          </button>
-                        )}
-
-                      {canCancel && (
-                        <button
-                          className="btn btn-outline"
-                          onClick={() =>
-                            onCancel(
-                              appointment
-                            )
-                          }
-                          style={{
-                            color:
-                              "#dc2626",
-                            borderColor:
-                              "#dc2626",
-                          }}
-                        >
-                          Cancel Appointment
-                        </button>
-                      )}
-
-                    </div>
-
                   </div>
-                );
-              }
-            )}
 
-          </div>
-        )}
+                  <span className={appointmentStatusClass(status)}>
+                    {appointmentStatusLabel(status)}
+                  </span>
+                </div>
 
+                {/* DETAILS */}
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                    gap: 16,
+                    marginTop: 22,
+                  }}
+                >
+                  <AppointmentDetail
+                    icon="📅"
+                    label="Date"
+                    value={formatAppointmentDate(date)}
+                  />
+
+                  <AppointmentDetail
+                    icon="⏰"
+                    label="Time"
+                    value={`${appointment.startTime || ""} - ${
+                      appointment.endTime || ""
+                    }`}
+                  />
+
+                  <AppointmentDetail
+                    icon={MODE_ICONS[mode] || "💬"}
+                    label="Consultation"
+                    value={MODE_LABELS[mode] || mode}
+                  />
+
+                  <AppointmentDetail
+                    icon="💰"
+                    label="Status"
+                    value={appointmentStatusLabel(status)}
+                  />
+                </div>
+
+                {/* REPORT */}
+
+                {appointment.assessment && (
+                  <div
+                    style={{
+                      marginTop: 18,
+                      padding: 14,
+                      borderRadius: 10,
+                      background: "var(--bg-section)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        marginBottom: 6,
+                      }}
+                    >
+                      📄 Linked Skin Report
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {appointment.assessment?.prediction?.disease ||
+                        "Skin assessment"}
+
+                      {" · "}
+
+                      {appointment.assessment?.prediction?.severity ||
+                        "Not available"}
+                    </div>
+                  </div>
+                )}
+
+                {/* ACTIONS */}
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    marginTop: 20,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => alert(`Appointment ID: ${appointment._id}`)}
+                  >
+                    View Details
+                  </button>
+
+                  {canCancel && (
+                    <button
+                      className="btn btn-outline"
+                      style={{
+                        color: "#dc2626",
+                        borderColor: "#dc2626",
+                      }}
+                      onClick={() => onCancel(appointment)}
+                    >
+                      Cancel Appointment
+                    </button>
+                  )}
+
+                  {String(status).toLowerCase() === "accepted" &&
+                    mode === "video" && (
+                      <button
+                        className="btn btn-primary"
+                        onClick={() =>
+                          alert("Video consultation will open here.")
+                        }
+                      >
+                        🎥 Join Video Call
+                      </button>
+                    )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
@@ -3350,416 +1972,27 @@ function AppointmentsView({
    APPOINTMENT DETAIL
 ============================================================ */
 
-function AppointmentDetail({
-  icon,
-  label,
-  value,
-}) {
+function AppointmentDetail({ icon, label, value }) {
   return (
     <div>
-
       <div
         style={{
-          color:
-            "var(--text-secondary)",
-          fontSize:
-            12,
-          marginBottom:
-            5,
+          color: "var(--text-secondary)",
+          fontSize: 12,
+          marginBottom: 5,
         }}
       >
-        {icon}{" "}
-        {label}
+        {icon} {label}
       </div>
 
       <strong
         style={{
-          fontSize:
-            14,
+          fontSize: 14,
         }}
       >
         {value}
       </strong>
-
     </div>
-  );
-}
-
-/* ============================================================
-   CONSULT DOCTOR
-============================================================ */
-
-function ConsultView({
-  assessmentId,
-}) {
-  const navigate =
-    useNavigate();
-
-  const [doctors, setDoctors] =
-    useState([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
-
-  const [activeFilter, setActiveFilter] =
-    useState("All doctors");
-
-  useEffect(() => {
-    loadDoctors();
-  }, []);
-
-  async function loadDoctors() {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response =
-        await api.get(
-          "/api/doctors"
-        );
-
-      const fetchedDoctors =
-        response.data?.doctors ||
-        response.data?.data ||
-        [];
-
-      setDoctors(
-        fetchedDoctors
-      );
-
-    } catch (err) {
-      console.error(
-        "DOCTORS FETCH ERROR:",
-        err.response?.data ||
-          err.message
-      );
-
-      setError(
-        err.response?.data?.message ||
-          "Unable to load doctors."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const visibleDoctors =
-    activeFilter ===
-    "Available now"
-      ? doctors.filter(
-          (doctor) =>
-            doctor.isAvailable ||
-            doctor.status ===
-              "available"
-        )
-      : doctors;
-
-  if (loading) {
-    return (
-      <section className="view active">
-
-        <div className="section-title">
-          🩺 Find a Dermatologist
-        </div>
-
-        <div
-          className="card"
-          style={{
-            textAlign:
-              "center",
-            padding: 40,
-          }}
-        >
-          Loading doctors...
-        </div>
-
-      </section>
-    );
-  }
-
-  return (
-    <section className="view active">
-
-      <div className="section-title">
-        🩺 Find a Dermatologist
-      </div>
-
-      <p
-        style={{
-          color:
-            "var(--text-secondary)",
-          marginTop: -6,
-          marginBottom: 16,
-        }}
-      >
-        Choose a dermatologist
-        for your consultation.
-      </p>
-
-      <div className="filters">
-
-        {[
-          "All doctors",
-          "Available now",
-        ].map((filter) => (
-          <div
-            key={filter}
-            className={`filter-chip ${
-              activeFilter ===
-              filter
-                ? "is-active"
-                : ""
-            }`}
-            onClick={() =>
-              setActiveFilter(
-                filter
-              )
-            }
-          >
-            {filter}
-          </div>
-        ))}
-
-      </div>
-
-      {error && (
-        <div
-          className="card"
-          style={{
-            marginBottom:
-              16,
-          }}
-        >
-          <p>
-            {error}
-          </p>
-
-          <button
-            className="btn btn-primary"
-            onClick={
-              loadDoctors
-            }
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {!error &&
-        visibleDoctors.length ===
-          0 && (
-          <div
-            className="card"
-            style={{
-              textAlign:
-                "center",
-              padding: 40,
-            }}
-          >
-            No doctors available
-            right now.
-          </div>
-        )}
-
-      {visibleDoctors.map(
-        (doctor) => {
-
-          const user =
-            doctor.user ||
-            {};
-
-          const name =
-            user.fullName ||
-            doctor.fullName ||
-            doctor.name ||
-            "Doctor";
-
-          const specialization =
-            doctor.specialization ||
-            "Dermatologist";
-
-          const qualification =
-            doctor.qualification ||
-            "";
-
-          const experience =
-            doctor.experience;
-
-          const modes =
-            doctor.consultationModes ||
-            [];
-
-          const profileImage =
-            doctor.profileImage;
-
-          return (
-            <div
-              className="doctor-card"
-              key={
-                doctor._id ||
-                doctor.id
-              }
-              onClick={() =>
-                navigate(
-                  `/doctors/${
-                    doctor._id ||
-                    doctor.id
-                  }`
-                )
-              }
-            >
-
-              <div className="doctor-card__avatar">
-
-                {profileImage ? (
-                  <img
-                    src={
-                      profileImage
-                    }
-                    alt={name}
-                    style={{
-                      width:
-                        "100%",
-                      height:
-                        "100%",
-                      objectFit:
-                        "cover",
-                      borderRadius:
-                        "50%",
-                    }}
-                  />
-                ) : (
-                  name
-                    .charAt(0)
-                    .toUpperCase()
-                )}
-
-              </div>
-
-              <div className="doctor-card__body">
-
-                <div className="doctor-card__name">
-                  Dr.{" "}
-                  {name.replace(
-                    /^Dr\.\s*/i,
-                    ""
-                  )}
-                </div>
-
-                <div className="doctor-card__role">
-                  {specialization}
-
-                  {qualification
-                    ? ` · ${qualification}`
-                    : ""}
-
-                  {experience !=
-                    null
-                    ? ` · ${experience} yrs experience`
-                    : ""}
-                </div>
-
-                <div className="doctor-card__meta">
-
-                  {doctor.rating && (
-                    <span>
-                      ⭐{" "}
-                      {
-                        doctor.rating
-                      }
-                    </span>
-                  )}
-
-                  {doctor.city && (
-                    <span>
-                      📍{" "}
-                      {
-                        doctor.city
-                      }
-                    </span>
-                  )}
-
-                </div>
-
-                {doctor.isAvailable ? (
-                  <span className="status-dot">
-                    Available
-                  </span>
-                ) : (
-                  <span
-                    className="status-dot"
-                    style={{
-                      color:
-                        "var(--text-secondary)",
-                    }}
-                  >
-                    Currently unavailable
-                  </span>
-                )}
-
-                <div className="mode-row">
-
-                  {modes.map(
-                    (mode) => (
-                      <span
-                        className="mode-tag"
-                        key={
-                          mode
-                        }
-                      >
-                        {
-                          MODE_LABELS[
-                            mode
-                          ] ||
-                          mode
-                        }
-                      </span>
-                    )
-                  )}
-
-                </div>
-
-                <div
-                  style={{
-                    marginTop:
-                      12,
-                  }}
-                >
-                  <button
-                    className="btn btn-primary"
-                    onClick={(
-                      e
-                    ) => {
-                      e.stopPropagation();
-
-                      navigate(
-                        `/doctors/${
-                          doctor._id ||
-                          doctor.id
-                        }/book`,
-                        {
-                          state: {
-                            assessmentId,
-                          },
-                        }
-                      );
-                    }}
-                  >
-                    Book Consultation
-                  </button>
-                </div>
-
-              </div>
-
-            </div>
-          );
-        }
-      )}
-
-    </section>
   );
 }
 
@@ -3767,83 +2000,44 @@ function ConsultView({
    NOTIFICATIONS
 ============================================================ */
 
-function NotificationsView({
-  items,
-}) {
+function NotificationsView({ items }) {
   return (
     <section className="view active">
-
-      <div className="section-title">
-        🔔 Notifications
-      </div>
+      <div className="section-title">🔔 Notifications</div>
 
       <div className="card">
-
-        {items.length ===
-        0 ? (
+        {items.length === 0 ? (
           <p
             style={{
-              color:
-                "var(--text-secondary)",
+              color: "var(--text-secondary)",
             }}
           >
-            You're all caught up —
-            no notifications.
+            You're all caught up.
           </p>
         ) : (
-
-          items.map(
-            (n, i) => (
+          items.map((item, index) => (
+            <div
+              className={`notif-item ${item.unread ? "unread" : ""}`}
+              key={item._id || item.id || index}
+            >
               <div
-                className={`notif-item ${
-                  n.unread
-                    ? "unread"
-                    : ""
-                }`}
-                key={
-                  n.id ||
-                  n._id ||
-                  i
-                }
+                className="notif-icon"
+                style={{
+                  background: "var(--bg-main)",
+                }}
               >
-
-                <div
-                  className="notif-icon"
-                  style={{
-                    background:
-                      "var(--bg-main)",
-                  }}
-                >
-                  {
-                    n.icon ||
-                    "🔔"
-                  }
-                </div>
-
-                <div>
-
-                  <div className="notif-title">
-                    {
-                      n.title
-                    }
-                  </div>
-
-                  <div className="notif-time">
-                    {
-                      n.time
-                    }
-                  </div>
-
-                </div>
-
+                {item.icon || "🔔"}
               </div>
-            )
-          )
 
+              <div>
+                <div className="notif-title">{item.title}</div>
+
+                <div className="notif-time">{item.time}</div>
+              </div>
+            </div>
+          ))
         )}
-
       </div>
-
     </section>
   );
 }
@@ -3859,219 +2053,110 @@ function ProfileView({
   onSave,
   onChangePassword,
 }) {
-  function update(
-    field,
-    value
-  ) {
-    setProfile(
-      (p) => ({
-        ...p,
-        [field]:
-          value,
-      })
-    );
+  function update(field, value) {
+    setProfile((current) => ({
+      ...current,
+      [field]: value,
+    }));
   }
 
   return (
     <section className="view active">
-
-      <div className="section-title">
-        👤 Profile
-      </div>
+      <div className="section-title">👤 Profile</div>
 
       <div className="card">
-
         <div className="profile-head">
-
           <div className="profile-avatar">
-            {(
-              savedProfile.name ||
-              "U"
-            )
-              .charAt(0)
-              .toUpperCase()}
+            {(savedProfile.name || "U").charAt(0).toUpperCase()}
           </div>
 
           <div>
-
             <div className="profile-name">
-              {
-                savedProfile.name ||
-                "Not available"
-              }
+              {savedProfile.name || "Not available"}
             </div>
 
             <div className="profile-email">
-              {
-                savedProfile.email ||
-                "Not available"
-              }
+              {savedProfile.email || "Not available"}
             </div>
-
           </div>
-
         </div>
 
         <div className="form-grid">
-
           <div className="field">
-
-            <label>
-              Full Name
-            </label>
+            <label>Full Name</label>
 
             <input
               type="text"
-              value={
-                profile.name
-              }
-              onChange={(e) =>
-                update(
-                  "name",
-                  e.target.value
-                )
-              }
+              value={profile.name}
+              onChange={(e) => update("name", e.target.value)}
             />
-
           </div>
 
           <div className="field">
-
-            <label>
-              Age
-            </label>
+            <label>Age</label>
 
             <input
               type="number"
-              value={
-                profile.age
-              }
-              onChange={(e) =>
-                update(
-                  "age",
-                  e.target.value
-                )
-              }
+              value={profile.age}
+              onChange={(e) => update("age", e.target.value)}
             />
-
           </div>
 
           <div className="field">
-
-            <label>
-              Gender
-            </label>
+            <label>Gender</label>
 
             <select
-              value={
-                profile.gender
-              }
-              onChange={(e) =>
-                update(
-                  "gender",
-                  e.target.value
-                )
-              }
+              value={profile.gender}
+              onChange={(e) => update("gender", e.target.value)}
             >
+              <option value="">Select</option>
 
-              <option value="">
-                Select
-              </option>
+              <option>Male</option>
 
-              <option>
-                Male
-              </option>
+              <option>Female</option>
 
-              <option>
-                Female
-              </option>
-
-              <option>
-                Other
-              </option>
-
+              <option>Other</option>
             </select>
-
           </div>
 
           <div className="field">
-
-            <label>
-              Email
-            </label>
+            <label>Email</label>
 
             <input
               type="email"
-              value={
-                profile.email
-              }
-              onChange={(e) =>
-                update(
-                  "email",
-                  e.target.value
-                )
-              }
+              value={profile.email}
+              onChange={(e) => update("email", e.target.value)}
             />
-
           </div>
 
           <div className="field">
-
-            <label>
-              Phone
-            </label>
+            <label>Phone</label>
 
             <input
               type="tel"
-              value={
-                profile.phone
-              }
-              onChange={(e) =>
-                update(
-                  "phone",
-                  e.target.value
-                )
-              }
+              value={profile.phone}
+              onChange={(e) => update("phone", e.target.value)}
             />
-
           </div>
-
         </div>
 
         <div
           style={{
-            marginTop:
-              20,
-            display:
-              "flex",
+            marginTop: 20,
+            display: "flex",
             gap: 12,
-            flexWrap:
-              "wrap",
+            flexWrap: "wrap",
           }}
         >
-
-          <button
-            className="btn btn-primary"
-            onClick={
-              onSave
-            }
-          >
+          <button className="btn btn-primary" onClick={onSave}>
             Save Changes
           </button>
 
-          <button
-            className="btn btn-outline"
-            onClick={
-              onChangePassword
-            }
-          >
+          <button className="btn btn-outline" onClick={onChangePassword}>
             Change Password
           </button>
-
         </div>
-
       </div>
-
     </section>
   );
 }
@@ -4092,151 +2177,78 @@ function SettingsView({
 }) {
   return (
     <section className="view active">
-
-      <div className="section-title">
-        ⚙ Settings
-      </div>
+      <div className="section-title">⚙ Settings</div>
 
       <div className="card">
-
         <div className="settings-row">
-
           <div>
-
-            <div className="settings-label">
-              Dark Mode
-            </div>
+            <div className="settings-label">Dark Mode</div>
 
             <div className="settings-sub">
-              Switch between light
-              and dark theme
+              Switch between light and dark theme
             </div>
-
           </div>
 
           <div
-            className={`toggle ${
-              darkMode
-                ? "on"
-                : ""
-            }`}
-            onClick={() =>
-              setDarkMode(
-                (d) => !d
-              )
-            }
+            className={`toggle ${darkMode ? "on" : ""}`}
+            onClick={() => setDarkMode((value) => !value)}
           >
             <div className="knob"></div>
           </div>
-
         </div>
 
         <div className="settings-row">
-
           <div>
+            <div className="settings-label">Language</div>
 
-            <div className="settings-label">
-              Language
-            </div>
-
-            <div className="settings-sub">
-              Choose your preferred
-              language
-            </div>
-
+            <div className="settings-sub">Choose your preferred language</div>
           </div>
 
           <select
             className="filter-select"
-            value={
-              language
-            }
-            onChange={(e) =>
-              setLanguage(
-                e.target.value
-              )
-            }
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
           >
+            <option>English</option>
 
-            <option>
-              English
-            </option>
-
-            <option>
-              हिन्दी
-            </option>
-
+            <option>हिन्दी</option>
           </select>
-
         </div>
 
         <div className="settings-row">
-
           <div>
-
-            <div className="settings-label">
-              Scan Completed Alerts
-            </div>
+            <div className="settings-label">Scan Completed Alerts</div>
 
             <div className="settings-sub">
-              Get notified when a
-              scan result is ready
+              Get notified when a scan result is ready
             </div>
-
           </div>
 
           <div
-            className={`toggle ${
-              notifScan
-                ? "on"
-                : ""
-            }`}
-            onClick={() =>
-              setNotifScan(
-                (v) => !v
-              )
-            }
+            className={`toggle ${notifScan ? "on" : ""}`}
+            onClick={() => setNotifScan((value) => !value)}
           >
             <div className="knob"></div>
           </div>
-
         </div>
 
         <div className="settings-row">
-
           <div>
-
-            <div className="settings-label">
-              Follow-up Reminders
-            </div>
+            <div className="settings-label">Follow-up Reminders</div>
 
             <div className="settings-sub">
-              Reminders for
-              recommended doctor
-              visits
+              Reminders for recommended doctor visits
             </div>
-
           </div>
 
           <div
-            className={`toggle ${
-              notifFollowup
-                ? "on"
-                : ""
-            }`}
-            onClick={() =>
-              setNotifFollowup(
-                (v) => !v
-              )
-            }
+            className={`toggle ${notifFollowup ? "on" : ""}`}
+            onClick={() => setNotifFollowup((value) => !value)}
           >
             <div className="knob"></div>
           </div>
-
         </div>
-
       </div>
-
     </section>
   );
 }

@@ -1,23 +1,42 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+
 import api from "../api/axios";
+
 import "../components/styles/bookAppointment.css";
+import "../components/styles/doctor-extra.css";
+
+const pad = (n) => String(n).padStart(2, "0");
+
+const todayString = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+const formatDay = (dateString) =>
+  new Date(`${dateString}T00:00:00`).toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+  });
 
 export default function BookAppointment() {
-  const { id } = useParams();
+  const { doctorId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const passedAssessmentId = location.state?.assessmentId || "";
 
   const [doctor, setDoctor] = useState(null);
   const [assessments, setAssessments] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
-
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const [form, setForm] = useState({
-    assessmentId: "",
+    assessmentId: passedAssessmentId,
     mode: "",
     date: "",
     startTime: "",
@@ -27,267 +46,187 @@ export default function BookAppointment() {
   });
 
   useEffect(() => {
+    if (!doctorId) {
+      setError("Doctor ID is missing.");
+      setLoading(false);
+      return;
+    }
+
     loadData();
-  }, [id]);
+  }, [doctorId]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const [doctorResponse, assessmentResponse] =
-        await Promise.all([
-          api.get(`/api/doctors/${id}`),
-          api.get("/api/assessment"),
-        ]);
+      const [doctorResponse, assessmentResponse] = await Promise.all([
+        api.get(`/api/doctors/${doctorId}`),
+        api.get("/api/assessment/history"),
+      ]);
 
-      setDoctor(doctorResponse.data?.doctor || null);
+      const doctorData =
+        doctorResponse.data?.doctor ||
+        doctorResponse.data?.doctorProfile ||
+        null;
 
-      setAssessments(
-        assessmentResponse.data?.assessments || []
-      );
+      const assessmentData =
+        assessmentResponse.data?.history ||
+        assessmentResponse.data?.assessments ||
+        [];
+
+      const analyzed = Array.isArray(assessmentData)
+        ? assessmentData.filter((a) => a.status === "analyzed")
+        : [];
+
+      setDoctor(doctorData);
+      setAssessments(analyzed);
+
+      // Attach the latest analyzed report by default (patient can change it)
+      if (!passedAssessmentId && analyzed.length > 0) {
+        const latest = [...analyzed].sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        )[0];
+
+        setForm((prev) => ({ ...prev, assessmentId: latest._id }));
+      }
     } catch (err) {
-      console.error(
-        "BOOK PAGE ERROR:",
-        err.response?.data || err.message
-      );
-
-      setError(
-        err.response?.data?.message ||
-          "Unable to load booking information"
-      );
+      console.error("BOOK PAGE ERROR:", err.response?.data || err.message);
+      setError(err.response?.data?.message || "Unable to load booking information.");
     } finally {
       setLoading(false);
     }
   };
 
-  const enabledSlots = useMemo(() => {
-    return (doctor?.availability || []).filter(
-      (slot) => slot.enabled
-    );
+  // ==========================================
+  // DATE-WISE AVAILABILITY (today + future only)
+  // ==========================================
+
+  const futureSlots = useMemo(() => {
+    const today = todayString();
+    const now = new Date();
+    const nowTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    return (doctor?.availabilitySlots || []).filter((slot) => {
+      if (slot.date < today) return false;
+      if (slot.date === today && slot.endTime <= nowTime) return false;
+      return true;
+    });
   }, [doctor]);
 
-  const selectedDayAvailability = useMemo(() => {
-    if (!form.date) return null;
+  const availableDates = useMemo(() => {
+    const map = {};
 
-    const date = new Date(
-      `${form.date}T00:00:00`
-    );
-
-    const dayName = date.toLocaleDateString("en-US", {
-      weekday: "long",
+    futureSlots.forEach((slot) => {
+      if (!map[slot.date]) map[slot.date] = [];
+      map[slot.date].push(slot);
     });
 
+    return Object.keys(map)
+      .sort()
+      .map((date) => ({
+        date,
+        slots: map[date].sort((a, b) => a.startTime.localeCompare(b.startTime)),
+      }));
+  }, [futureSlots]);
+
+  const selectedDay = useMemo(
+    () => availableDates.find((d) => d.date === form.date) || null,
+    [availableDates, form.date]
+  );
+
+  // The doctor's time frame that contains the chosen start time
+  const activeRange = useMemo(() => {
+    if (!selectedDay || !form.startTime) return null;
+
     return (
-      enabledSlots.find(
-        (slot) => slot.day === dayName
+      selectedDay.slots.find(
+        (slot) => form.startTime >= slot.startTime && form.startTime < slot.endTime
       ) || null
     );
-  }, [form.date, enabledSlots]);
+  }, [selectedDay, form.startTime]);
 
-  const availableDates = useMemo(() => {
-    const dates = [];
-
-    const today = new Date();
-
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(today);
-
-      date.setDate(today.getDate() + i);
-
-      const dayName = date.toLocaleDateString(
-        "en-US",
-        {
-          weekday: "long",
-        }
-      );
-
-      const available = enabledSlots.some(
-        (slot) => slot.day === dayName
-      );
-
-      if (available) {
-        dates.push(
-          date.toISOString().split("T")[0]
-        );
-      }
-    }
-
-    return dates;
-  }, [enabledSlots]);
-
-  const isDateAvailable = (dateString) => {
-    return availableDates.includes(dateString);
-  };
+  // ==========================================
+  // HANDLERS
+  // ==========================================
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    if (name === "date") {
-      setForm((prev) => ({
-        ...prev,
-        date: value,
-        startTime: "",
-        endTime: "",
-      }));
-    }
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleStartTimeChange = (e) => {
-    const startTime = e.target.value;
+  const selectDate = (date) => {
+    setForm((prev) => ({ ...prev, date, startTime: "", endTime: "" }));
+  };
 
+  const selectRange = (slot) => {
     setForm((prev) => ({
       ...prev,
-      startTime,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
     }));
-
-    if (
-      selectedDayAvailability &&
-      startTime
-    ) {
-      setForm((prev) => ({
-        ...prev,
-        startTime,
-        endTime:
-          prev.endTime &&
-          prev.endTime > startTime
-            ? prev.endTime
-            : "",
-      }));
-    }
   };
+
+  const isInsideSlot = () =>
+    selectedDay?.slots.some(
+      (slot) => form.startTime >= slot.startTime && form.endTime <= slot.endTime
+    );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     setError("");
     setSuccess("");
 
-    if (!doctor) {
-      setError("Doctor information is unavailable.");
-      return;
-    }
+    if (!doctor) return setError("Doctor information is unavailable.");
+    if (!doctor.isAvailable) return setError("This doctor is currently unavailable.");
+    if (!form.mode) return setError("Please select consultation mode.");
+    if (!form.date || !selectedDay) return setError("Please select an available date.");
+    if (!form.startTime || !form.endTime) return setError("Please select start and end time.");
+    if (form.startTime >= form.endTime) return setError("End time must be after start time.");
 
-    if (!doctor.isAvailable) {
-      setError(
-        "This doctor is currently unavailable."
-      );
-      return;
-    }
-
-    if (!form.mode) {
-      setError(
-        "Please select consultation mode."
-      );
-      return;
-    }
-
-    if (!form.date) {
-      setError(
-        "Please select an appointment date."
-      );
-      return;
-    }
-
-    if (!isDateAvailable(form.date)) {
-      setError(
-        "Doctor is not available on the selected date."
-      );
-      return;
-    }
-
-    if (!form.startTime || !form.endTime) {
-      setError(
-        "Please select start and end time."
-      );
-      return;
-    }
-
-    if (
-      form.startTime >= form.endTime
-    ) {
-      setError(
-        "End time must be after start time."
-      );
-      return;
-    }
-
-    if (selectedDayAvailability) {
-      if (
-        form.startTime <
-          selectedDayAvailability.startTime ||
-        form.endTime >
-          selectedDayAvailability.endTime
-      ) {
-        setError(
-          `Please select a time between ${selectedDayAvailability.startTime} and ${selectedDayAvailability.endTime}.`
-        );
-        return;
-      }
+    if (!isInsideSlot()) {
+      const ranges = selectedDay.slots
+        .map((s) => `${s.startTime}-${s.endTime}`)
+        .join(", ");
+      return setError(`Please select a time inside the doctor's hours: ${ranges}`);
     }
 
     try {
       setBooking(true);
 
-      const response = await api.post(
-        "/api/appointments",
-        {
-          doctorProfileId: id,
+      const response = await api.post("/api/appointments", {
+        doctorProfileId: doctorId,
+        assessmentId: form.assessmentId || undefined,
+        mode: form.mode,
+        date: form.date,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        reason: form.reason.trim(),
+        patientMessage: form.patientMessage.trim(),
+      });
 
-          assessmentId:
-            form.assessmentId || undefined,
-
-          mode: form.mode,
-
-          date: form.date,
-
-          startTime: form.startTime,
-
-          endTime: form.endTime,
-
-          reason: form.reason.trim(),
-
-          patientMessage:
-            form.patientMessage.trim(),
-        }
-      );
-
-      const appointment =
-        response.data?.appointment;
+      const appointment = response.data?.appointment;
 
       setSuccess(
-        response.data?.message ||
-          "Appointment request sent successfully."
+        response.data?.message || "Appointment request sent successfully."
       );
 
       setTimeout(() => {
         navigate("/appointment-confirmation", {
-          state: {
-            appointment,
-            doctor,
-          },
+          state: { appointment, doctor },
         });
       }, 800);
-
     } catch (err) {
-      console.error(
-        "BOOK APPOINTMENT ERROR:",
-        err.response?.data || err.message
-      );
-
-      setError(
-        err.response?.data?.message ||
-          "Unable to book appointment."
-      );
+      console.error("BOOK APPOINTMENT ERROR:", err.response?.data || err.message);
+      setError(err.response?.data?.message || "Unable to book appointment.");
     } finally {
       setBooking(false);
     }
   };
+
+  // ==========================================
+  // STATES
+  // ==========================================
 
   if (loading) {
     return (
@@ -305,17 +244,8 @@ export default function BookAppointment() {
       <div className="booking-page">
         <div className="booking-state">
           <h3>Doctor not found</h3>
-
-          <p>
-            {error ||
-              "The requested doctor profile could not be found."}
-          </p>
-
-          <button
-            onClick={() => navigate("/doctors")}
-          >
-            ← Back to Doctors
-          </button>
+          <p>{error || "The requested doctor profile could not be found."}</p>
+          <button onClick={() => navigate("/dashboard")}>← Back</button>
         </div>
       </div>
     );
@@ -323,526 +253,268 @@ export default function BookAppointment() {
 
   const user = doctor.user || {};
 
+  const Avatar = () =>
+    doctor.profileImage ? (
+      <img src={doctor.profileImage} alt={user.fullName || "Doctor"} />
+    ) : (
+      <span>{(user.fullName || "D").charAt(0).toUpperCase()}</span>
+    );
+
+  const modeOptions = [
+    { value: "video", icon: "🎥", title: "Video Consultation", sub: "Online video call" },
+    { value: "text", icon: "💬", title: "Text Consultation", sub: "Chat with doctor" },
+    { value: "in-person", icon: "🏥", title: "In-person Consultation", sub: "Visit clinic" },
+  ].filter((m) => doctor.consultationModes?.includes(m.value));
+
   return (
     <div className="booking-page">
-
       <div className="booking-container">
-
-        {/* BACK */}
         <button
           className="booking-back-btn"
-          onClick={() =>
-            navigate(
-              `/doctors/${doctor._id}`
-            )
-          }
+          onClick={() => navigate(`/doctors/${doctorId}`)}
         >
           ← Back to Doctor
         </button>
 
-        {/* HEADER */}
         <div className="booking-page-header">
-
           <div>
-            <span className="booking-eyebrow">
-              Consultation
-            </span>
-
-            <h1>
-              Book an appointment
-            </h1>
-
-            <p>
-              Choose a suitable time and share
-              your skin assessment with the doctor.
-            </p>
+            <span className="booking-eyebrow">Consultation</span>
+            <h1>Book an appointment</h1>
+            <p>Choose a suitable time and share your skin assessment with the doctor.</p>
           </div>
-
         </div>
 
-        {/* MAIN */}
         <div className="booking-layout">
-
           {/* LEFT */}
           <div className="booking-main">
-
-            {/* DOCTOR CARD */}
             <div className="booking-card doctor-booking-card">
-
               <div className="booking-doctor-info">
-
                 <div className="booking-avatar">
-
-                  {doctor.profileImage ? (
-                    <img
-                      src={doctor.profileImage}
-                      alt={
-                        user.fullName ||
-                        "Doctor"
-                      }
-                    />
-                  ) : (
-                    <span>
-                      {(user.fullName ||
-                        "D")
-                        .charAt(0)
-                        .toUpperCase()}
-                    </span>
-                  )}
-
+                  <Avatar />
                 </div>
 
                 <div>
                   <div className="booking-doctor-name-row">
-
-                    <h2>
-                      Dr.{" "}
-                      {user.fullName ||
-                        "Doctor"}
-                    </h2>
-
-                    <span className="mini-verified">
-                      ✓ Verified
-                    </span>
-
+                    <h2>Dr. {user.fullName || "Doctor"}</h2>
+                    <span className="mini-verified">✓ Verified</span>
                   </div>
 
-                  <p>
-                    {doctor.specialization ||
-                      "Dermatologist"}
-                  </p>
-
-                  <span>
-                    📍 {doctor.city ||
-                      "Location not specified"}
-                  </span>
+                  <p>{doctor.specialization || "Dermatologist"}</p>
+                  <span>📍 {doctor.city || "Location not specified"}</span>
                 </div>
-
               </div>
 
               <div className="booking-doctor-stats">
-
                 <div>
                   <span>Experience</span>
-                  <strong>
-                    {doctor.experience ||
-                      0} years
-                  </strong>
+                  <strong>{doctor.experience || 0} years</strong>
                 </div>
 
                 <div>
                   <span>Fee</span>
-                  <strong>
-                    ₹
-                    {doctor.consultationFee ||
-                      0}
-                  </strong>
+                  <strong>₹{doctor.consultationFee || 0}</strong>
                 </div>
 
                 <div>
                   <span>Status</span>
-                  <strong className="green-text">
-                    Available
+                  <strong className={doctor.isAvailable ? "green-text" : ""}>
+                    {doctor.isAvailable ? "Available" : "Unavailable"}
                   </strong>
                 </div>
-
               </div>
-
             </div>
 
-            {/* FORM */}
-            <form
-              className="booking-card booking-form"
-              onSubmit={handleSubmit}
-            >
-
-              {/* REPORT */}
+            <form className="booking-card booking-form" onSubmit={handleSubmit}>
+              {/* 01 ASSESSMENT */}
               <div className="booking-section">
-
                 <div className="booking-section-heading">
                   <span>01</span>
-
                   <div>
-                    <h2>
-                      Attach AI Skin Assessment
-                    </h2>
-
-                    <p>
-                      Share your DermaDetect
-                      assessment with the doctor.
-                    </p>
+                    <h2>Attach AI Skin Assessment</h2>
+                    <p>Share your DermaDetect assessment with the doctor.</p>
                   </div>
                 </div>
 
                 <div className="booking-field">
-
-                  <label>
-                    Select assessment
-                  </label>
+                  <label>Select assessment</label>
 
                   <select
                     name="assessmentId"
-                    value={
-                      form.assessmentId
-                    }
-                    onChange={
-                      handleChange
-                    }
+                    value={form.assessmentId}
+                    onChange={handleChange}
                   >
-                    <option value="">
-                      Don't attach a report
-                    </option>
+                    <option value="">Don't attach a report</option>
 
-                    {assessments.map(
-                      (assessment) => (
-                        <option
-                          key={
-                            assessment._id
-                          }
-                          value={
-                            assessment._id
-                          }
-                        >
-                          {assessment
-                            .prediction
-                            ?.disease ||
-                            "Skin Assessment"}{" "}
-                          •{" "}
-                          {assessment
-                            .prediction
-                            ?.severity ||
-                            "Unknown severity"}
-                        </option>
-                      )
-                    )}
+                    {assessments.map((assessment) => (
+                      <option key={assessment._id} value={assessment._id}>
+                        {assessment.prediction?.disease || "Skin Assessment"} •{" "}
+                        {assessment.prediction?.severity || "Unknown severity"} •{" "}
+                        {assessment.createdAt
+                          ? new Date(assessment.createdAt).toLocaleDateString("en-IN")
+                          : ""}
+                      </option>
+                    ))}
                   </select>
 
                   <small>
-                    The selected assessment will
-                    be linked to this appointment
-                    and can be viewed by the doctor.
+                    The selected assessment, along with your profile details, will
+                    be visible to the doctor.
                   </small>
-
                 </div>
 
                 {assessments.length === 0 && (
                   <div className="no-report-box">
                     <span>📄</span>
-
                     <div>
-                      <strong>
-                        No AI assessment found
-                      </strong>
-
-                      <p>
-                        You can book without a
-                        report or create a skin
-                        assessment first.
-                      </p>
+                      <strong>No AI assessment found</strong>
+                      <p>You can book without a report or create a skin assessment first.</p>
                     </div>
                   </div>
                 )}
-
               </div>
 
-              {/* MODE */}
+              {/* 02 MODE */}
               <div className="booking-section">
-
                 <div className="booking-section-heading">
                   <span>02</span>
-
                   <div>
-                    <h2>
-                      Consultation Mode
-                    </h2>
-
-                    <p>
-                      Select how you want to
-                      consult the doctor.
-                    </p>
+                    <h2>Consultation Mode</h2>
+                    <p>Select how you want to consult the doctor.</p>
                   </div>
                 </div>
 
                 <div className="mode-selection">
-
-                  {doctor.consultationModes?.includes(
-                    "video"
-                  ) && (
+                  {modeOptions.map((m) => (
                     <label
-                      className={`mode-option ${
-                        form.mode === "video"
-                          ? "selected"
-                          : ""
-                      }`}
+                      key={m.value}
+                      className={`mode-option ${form.mode === m.value ? "selected" : ""}`}
                     >
                       <input
                         type="radio"
                         name="mode"
-                        value="video"
-                        checked={
-                          form.mode ===
-                          "video"
-                        }
-                        onChange={
-                          handleChange
-                        }
+                        value={m.value}
+                        checked={form.mode === m.value}
+                        onChange={handleChange}
                       />
-
-                      <span className="mode-option-icon">
-                        🎥
-                      </span>
-
+                      <span className="mode-option-icon">{m.icon}</span>
                       <span>
-                        <strong>
-                          Video Consultation
-                        </strong>
-
-                        <small>
-                          Online video call
-                        </small>
+                        <strong>{m.title}</strong>
+                        <small>{m.sub}</small>
                       </span>
                     </label>
-                  )}
-
-                  {doctor.consultationModes?.includes(
-                    "text"
-                  ) && (
-                    <label
-                      className={`mode-option ${
-                        form.mode === "text"
-                          ? "selected"
-                          : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="mode"
-                        value="text"
-                        checked={
-                          form.mode ===
-                          "text"
-                        }
-                        onChange={
-                          handleChange
-                        }
-                      />
-
-                      <span className="mode-option-icon">
-                        💬
-                      </span>
-
-                      <span>
-                        <strong>
-                          Text Consultation
-                        </strong>
-
-                        <small>
-                          Chat with doctor
-                        </small>
-                      </span>
-                    </label>
-                  )}
-
+                  ))}
                 </div>
-
               </div>
 
-              {/* DATE */}
+              {/* 03 DATE + TIME */}
               <div className="booking-section">
-
                 <div className="booking-section-heading">
                   <span>03</span>
-
                   <div>
-                    <h2>
-                      Select Date & Time
-                    </h2>
-
-                    <p>
-                      Choose from the doctor's
-                      available schedule.
-                    </p>
+                    <h2>Select Date & Time</h2>
+                    <p>Only dates and hours added by the doctor are shown.</p>
                   </div>
                 </div>
 
-                {enabledSlots.length === 0 ? (
+                {availableDates.length === 0 ? (
                   <div className="no-report-box">
                     <span>🕐</span>
-
                     <div>
-                      <strong>
-                        No availability added
-                      </strong>
-
-                      <p>
-                        This doctor has not added
-                        consultation hours yet.
-                      </p>
+                      <strong>No upcoming availability</strong>
+                      <p>This doctor has not added consultation hours yet.</p>
                     </div>
                   </div>
                 ) : (
                   <>
                     <div className="booking-field">
+                      <label>Available dates</label>
 
-                      <label>
-                        Appointment date
-                      </label>
-
-                      <input
-                        type="date"
-                        name="date"
-                        value={
-                          form.date
-                        }
-                        min={
-                          new Date()
-                            .toISOString()
-                            .split(
-                              "T"
-                            )[0]
-                        }
-                        onChange={
-                          handleChange
-                        }
-                        required
-                      />
-
-                      <small>
-                        Available days are based
-                        on the doctor's schedule.
-                      </small>
-
+                      <div className="date-chip-row">
+                        {availableDates.map((d) => (
+                          <button
+                            type="button"
+                            key={d.date}
+                            className={`date-chip ${form.date === d.date ? "active" : ""}`}
+                            onClick={() => selectDate(d.date)}
+                          >
+                            {formatDay(d.date)}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
-                    {form.date && (
-                      <div className="selected-day-info">
-
-                        {selectedDayAvailability ? (
-                          <>
-                            <span>✓</span>
-
-                            <div>
-                              <strong>
-                                {
-                                  selectedDayAvailability.day
-                                }
-                              </strong>
-
-                              <p>
-                                Available from{" "}
-                                {
-                                  selectedDayAvailability.startTime
-                                }{" "}
-                                to{" "}
-                                {
-                                  selectedDayAvailability.endTime
-                                }
-                              </p>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <span>!</span>
-
-                            <div>
-                              <strong>
-                                Doctor unavailable
-                              </strong>
-
-                              <p>
-                                Please choose
-                                another date.
-                              </p>
-                            </div>
-                          </>
-                        )}
-
-                      </div>
-                    )}
-
-                    {selectedDayAvailability && (
-                      <div className="booking-time-grid">
-
+                    {selectedDay && (
+                      <>
                         <div className="booking-field">
-                          <label>
-                            Start time
-                          </label>
+                          <label>Doctor's time frames on this day</label>
 
-                          <input
-                            type="time"
-                            name="startTime"
-                            value={
-                              form.startTime
-                            }
-                            min={
-                              selectedDayAvailability.startTime
-                            }
-                            max={
-                              selectedDayAvailability.endTime
-                            }
-                            onChange={
-                              handleStartTimeChange
-                            }
-                            required
-                          />
+                          <div className="date-chip-row">
+                            {selectedDay.slots.map((slot, i) => (
+                              <button
+                                type="button"
+                                key={i}
+                                className={`date-chip ${
+                                  form.startTime === slot.startTime &&
+                                  form.endTime === slot.endTime
+                                    ? "active"
+                                    : ""
+                                }`}
+                                onClick={() => selectRange(slot)}
+                              >
+                                {slot.startTime} – {slot.endTime}
+                              </button>
+                            ))}
+                          </div>
+
+                          <small>
+                            Pick a time frame, then narrow down your exact start and
+                            end time if you want a shorter slot.
+                          </small>
                         </div>
 
-                        <div className="booking-field">
-                          <label>
-                            End time
-                          </label>
+                        <div className="booking-time-grid">
+                          <div className="booking-field">
+                            <label>Start time</label>
+                            <input
+                              type="time"
+                              name="startTime"
+                              value={form.startTime}
+                              onChange={handleChange}
+                              required
+                            />
+                          </div>
 
-                          <input
-                            type="time"
-                            name="endTime"
-                            value={
-                              form.endTime
-                            }
-                            min={
-                              form.startTime ||
-                              selectedDayAvailability.startTime
-                            }
-                            max={
-                              selectedDayAvailability.endTime
-                            }
-                            onChange={
-                              handleChange
-                            }
-                            required
-                          />
+                          <div className="booking-field">
+                            <label>End time</label>
+                            <input
+                              type="time"
+                              name="endTime"
+                              value={form.endTime}
+                              min={form.startTime || undefined}
+                              max={activeRange?.endTime}
+                              onChange={handleChange}
+                              required
+                            />
+                          </div>
                         </div>
-
-                      </div>
+                      </>
                     )}
                   </>
                 )}
-
               </div>
 
-              {/* REASON */}
+              {/* 04 DETAILS */}
               <div className="booking-section">
-
                 <div className="booking-section-heading">
                   <span>04</span>
-
                   <div>
-                    <h2>
-                      Consultation Details
-                    </h2>
-
-                    <p>
-                      Tell the doctor what you
-                      need help with.
-                    </p>
+                    <h2>Consultation Details</h2>
+                    <p>Tell the doctor what you need help with.</p>
                   </div>
                 </div>
 
                 <div className="booking-field">
-
-                  <label>
-                    Reason for consultation
-                  </label>
-
+                  <label>Reason for consultation</label>
                   <input
                     type="text"
                     name="reason"
@@ -851,38 +523,22 @@ export default function BookAppointment() {
                     onChange={handleChange}
                     maxLength={200}
                   />
-
                 </div>
 
                 <div className="booking-field">
-
-                  <label>
-                    Message for doctor
-                  </label>
-
+                  <label>Message for doctor</label>
                   <textarea
                     name="patientMessage"
                     rows="5"
                     placeholder="Describe your symptoms or anything you want the doctor to know..."
-                    value={
-                      form.patientMessage
-                    }
-                    onChange={
-                      handleChange
-                    }
+                    value={form.patientMessage}
+                    onChange={handleChange}
                     maxLength={1000}
                   />
-
-                  <small>
-                    {form.patientMessage.length}
-                    /1000 characters
-                  </small>
-
+                  <small>{form.patientMessage.length}/1000 characters</small>
                 </div>
-
               </div>
 
-              {/* ERROR */}
               {error && (
                 <div className="booking-alert booking-alert-error">
                   <span>!</span>
@@ -890,7 +546,6 @@ export default function BookAppointment() {
                 </div>
               )}
 
-              {/* SUCCESS */}
               {success && (
                 <div className="booking-alert booking-alert-success">
                   <span>✓</span>
@@ -898,15 +553,10 @@ export default function BookAppointment() {
                 </div>
               )}
 
-              {/* SUBMIT */}
               <button
                 type="submit"
                 className="booking-submit-btn"
-                disabled={
-                  booking ||
-                  !doctor.isAvailable ||
-                  enabledSlots.length === 0
-                }
+                disabled={booking || !doctor.isAvailable || availableDates.length === 0}
               >
                 {booking ? (
                   <>
@@ -914,94 +564,51 @@ export default function BookAppointment() {
                     Sending Request...
                   </>
                 ) : (
-                  <>
-                    Book Consultation →
-                  </>
+                  <>Book Consultation →</>
                 )}
               </button>
-
             </form>
-
           </div>
 
-          {/* RIGHT */}
+          {/* SIDEBAR */}
           <aside className="booking-sidebar">
-
-            {/* SUMMARY */}
             <div className="booking-card summary-card">
-
-              <h3>
-                Appointment Summary
-              </h3>
+              <h3>Appointment Summary</h3>
 
               <div className="summary-doctor">
-
                 <div className="summary-avatar">
-
-                  {doctor.profileImage ? (
-                    <img
-                      src={
-                        doctor.profileImage
-                      }
-                      alt={
-                        user.fullName ||
-                        "Doctor"
-                      }
-                    />
-                  ) : (
-                    <span>
-                      {(user.fullName ||
-                        "D")
-                        .charAt(0)
-                        .toUpperCase()}
-                    </span>
-                  )}
-
+                  <Avatar />
                 </div>
 
                 <div>
-                  <strong>
-                    Dr.{" "}
-                    {user.fullName ||
-                      "Doctor"}
-                  </strong>
-
-                  <small>
-                    {doctor.specialization}
-                  </small>
+                  <strong>Dr. {user.fullName || "Doctor"}</strong>
+                  <small>{doctor.specialization || "Dermatologist"}</small>
                 </div>
-
               </div>
 
               <div className="summary-list">
-
                 <div>
                   <span>Mode</span>
-
                   <strong>
                     {form.mode === "video"
                       ? "🎥 Video"
                       : form.mode === "text"
                       ? "💬 Text"
+                      : form.mode === "in-person"
+                      ? "🏥 In-person"
                       : "Not selected"}
                   </strong>
                 </div>
 
                 <div>
                   <span>Date</span>
-
-                  <strong>
-                    {form.date ||
-                      "Not selected"}
-                  </strong>
+                  <strong>{form.date || "Not selected"}</strong>
                 </div>
 
                 <div>
                   <span>Time</span>
-
                   <strong>
-                    {form.startTime &&
-                    form.endTime
+                    {form.startTime && form.endTime
                       ? `${form.startTime} - ${form.endTime}`
                       : "Not selected"}
                   </strong>
@@ -1009,89 +616,45 @@ export default function BookAppointment() {
 
                 <div>
                   <span>AI Report</span>
-
-                  <strong>
-                    {form.assessmentId
-                      ? "Attached"
-                      : "Not attached"}
-                  </strong>
+                  <strong>{form.assessmentId ? "Attached" : "Not attached"}</strong>
                 </div>
 
                 <div className="summary-total">
-                  <span>
-                    Consultation fee
-                  </span>
-
-                  <strong>
-                    ₹
-                    {doctor.consultationFee ||
-                      0}
-                  </strong>
+                  <span>Consultation fee</span>
+                  <strong>₹{doctor.consultationFee || 0}</strong>
                 </div>
-
               </div>
-
             </div>
 
-            {/* AVAILABILITY */}
             <div className="booking-card sidebar-availability">
+              <h3>Doctor's Upcoming Availability</h3>
 
-              <h3>
-                Doctor's Availability
-              </h3>
-
-              {enabledSlots.length > 0 ? (
-                enabledSlots.map(
-                  (slot, index) => (
-                    <div
-                      className="sidebar-slot"
-                      key={index}
-                    >
-                      <span>
-                        {slot.day}
-                      </span>
-
-                      <strong>
-                        {slot.startTime} –{" "}
-                        {slot.endTime}
-                      </strong>
-                    </div>
-                  )
-                )
+              {availableDates.length > 0 ? (
+                availableDates.slice(0, 10).map((d) => (
+                  <div className="sidebar-slot" key={d.date}>
+                    <span>{formatDay(d.date)}</span>
+                    <strong>
+                      {d.slots.map((s) => `${s.startTime}–${s.endTime}`).join(", ")}
+                    </strong>
+                  </div>
+                ))
               ) : (
-                <p>
-                  No availability added.
-                </p>
+                <p>No availability added.</p>
               )}
-
             </div>
 
-            {/* REPORT INFO */}
             <div className="booking-card privacy-card">
-
-              <div className="privacy-icon">
-                🔒
-              </div>
-
+              <div className="privacy-icon">🔒</div>
               <div>
-                <h3>
-                  Your information
-                </h3>
-
+                <h3>Your information</h3>
                 <p>
-                  Only the assessment you
-                  select will be linked to this
-                  appointment for the doctor
-                  to review.
+                  Only the assessment you select is shared with the doctor, along
+                  with your basic profile details (name, age, gender).
                 </p>
               </div>
-
             </div>
-
           </aside>
-
         </div>
-
       </div>
     </div>
   );

@@ -1,0 +1,137 @@
+/* Save as: src/components/styles/doctor-extra.css */
+
+.slot-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+  margin-top: 16px;
+}
+
+.slot-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+  flex: 1;
+}
+
+.slot-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.slot-field input,
+.slot-field select,
+.slot-field textarea {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+}
+
+.slot-field input:focus,
+.slot-field select:focus,
+.slot-field textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.day-block {
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.day-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.slot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.slot-chip button {
+  border: none;
+  background: transparent;
+  color: #dc2626;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.slot-clear {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.toggle-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.date-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.date-chip {
+  padding: 8px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.date-chip.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
