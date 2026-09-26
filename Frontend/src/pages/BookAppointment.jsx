@@ -32,15 +32,24 @@ const formatDay = (dateString) =>
     month: "short",
   });
 
-export default function BookAppointment() {
-  const { doctorId } = useParams();
+export default function BookAppointment({
+  doctorId: doctorIdProp,
+  assessmentId: assessmentIdProp,
+  onBack,
+  onBooked,
+}) {
+  const { doctorId: doctorIdParam } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
   const { showToast } = useToast();
 
+  const doctorId = doctorIdProp || doctorIdParam;
+
   const passedAssessmentId =
-    location.state?.assessmentId || "";
+    assessmentIdProp ||
+    location.state?.assessmentId ||
+    "";
 
   const [doctor, setDoctor] =
     useState(null);
@@ -80,6 +89,7 @@ export default function BookAppointment() {
     }
 
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doctorId]);
 
   const loadData = async () => {
@@ -230,26 +240,18 @@ export default function BookAppointment() {
   // =====================================================
 
   const activeRange = useMemo(() => {
-    if (
-      !selectedDay ||
-      !form.startTime
-    ) {
+    if (!selectedDay || !form.startTime) {
       return null;
     }
 
     return (
       selectedDay.slots.find(
         (slot) =>
-          form.startTime >=
-            slot.startTime &&
-          form.startTime <
-            slot.endTime
+          form.startTime >= slot.startTime &&
+          form.startTime < slot.endTime
       ) || null
     );
-  }, [
-    selectedDay,
-    form.startTime,
-  ]);
+  }, [selectedDay, form.startTime]);
 
   // =====================================================
   // FORM HANDLERS
@@ -292,6 +294,19 @@ export default function BookAppointment() {
         form.endTime <=
           slot.endTime
     );
+
+  // =====================================================
+  // BACK
+  // =====================================================
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+
+    navigate(`/doctors/${doctorId}`);
+  };
 
   // =====================================================
   // BOOK APPOINTMENT
@@ -424,6 +439,11 @@ export default function BookAppointment() {
       );
 
       setTimeout(() => {
+        if (onBooked) {
+          onBooked({ appointment, doctor });
+          return;
+        }
+
         navigate(
           "/appointment-confirmation",
           {
@@ -488,9 +508,7 @@ export default function BookAppointment() {
           </p>
 
           <button
-            onClick={() =>
-              navigate("/dashboard")
-            }
+            onClick={handleBack}
           >
             ← Back
           </button>
@@ -568,11 +586,7 @@ export default function BookAppointment() {
 
         <button
           className="booking-back-btn"
-          onClick={() =>
-            navigate(
-              `/doctors/${doctorId}`
-            )
-          }
+          onClick={handleBack}
         >
           ← Back to Doctor
         </button>

@@ -1,33 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import api from "../api/axios";
+import { useToast } from "../components/context/ToastContext.jsx";
 
 import "../components/styles/doctor-appointments.css";
 
+const STATUS_TABS = [
+  { key: "all", label: "All" },
+  { key: "pending", label: "Pending" },
+  { key: "accepted", label: "Accepted" },
+  { key: "rejected", label: "Rejected" },
+  { key: "completed", label: "Completed" },
+];
+
 export default function DoctorAppointments() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
-  const [
-    appointments,
-    setAppointments,
-  ] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [actionLoadingId, setActionLoadingId] = useState(null);
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const fetchAppointments = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const response =
-        await api.get(
-          "/api/appointments/doctor"
-        );
+      const response = await api.get(
+        "/api/appointments/doctor"
+      );
 
       setAppointments(
         response.data?.appointments || []
@@ -38,10 +44,13 @@ export default function DoctorAppointments() {
         err
       );
 
-      setError(
+      const message =
         err.response?.data?.message ||
-          "Unable to load appointments"
-      );
+        "Unable to load appointments";
+
+      setError(message);
+
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -51,34 +60,169 @@ export default function DoctorAppointments() {
     fetchAppointments();
   }, []);
 
+  // =====================================================
+  // ACCEPT / REJECT
+  // =====================================================
+
   const updateStatus = async (
     appointmentId,
     status
   ) => {
-    try {
-      await api.patch(
-        `/api/appointments/${appointmentId}/status`,
-        {
-          status,
-        }
+    const actionPath =
+      status === "accepted"
+        ? "accept"
+        : status === "rejected"
+        ? "reject"
+        : null;
+
+    if (!actionPath) {
+      console.error(
+        "Unsupported status:",
+        status
       );
 
-      fetchAppointments();
-    } catch (err) {
-      alert(
-        err.response?.data?.message ||
-          "Unable to update appointment"
+      showToast(
+        "Unsupported appointment status",
+        "error"
       );
+
+      return;
+    }
+
+    try {
+      setActionLoadingId(appointmentId);
+
+      await api.patch(
+        `/api/appointments/${appointmentId}/${actionPath}`
+      );
+
+      // Refresh appointments
+      await fetchAppointments();
+
+      // Success toast
+      if (status === "accepted") {
+        showToast(
+          "Appointment accepted successfully",
+          "success"
+        );
+      } else {
+        showToast(
+          "Appointment rejected successfully",
+          "success"
+        );
+      }
+    } catch (err) {
+      console.error(
+        `APPOINTMENT ${actionPath.toUpperCase()} ERROR:`,
+        err.response?.data || err.message
+      );
+
+      showToast(
+        err.response?.data?.message ||
+          "Unable to update appointment",
+        "error"
+      );
+    } finally {
+      setActionLoadingId(null);
     }
   };
+
+  // =====================================================
+  // NEWEST FIRST + SEARCH + CATEGORY FILTER
+  // -----------------------------------------------------
+  // Sort: newest booked appointment first, using createdAt
+  // when the backend provides it, otherwise falling back to
+  // the appointment's date/startTime so the list still makes
+  // sense.
+  // =====================================================
+
+  const getAppointmentTimestamp = (appointment) => {
+    if (appointment.createdAt) {
+      const created = new Date(appointment.createdAt).getTime();
+      if (!Number.isNaN(created)) {
+        return created;
+      }
+    }
+
+    const combined = new Date(
+      `${appointment.date || ""}T${appointment.startTime || "00:00"}`
+    ).getTime();
+
+    return Number.isNaN(combined) ? 0 : combined;
+  };
+
+  const visibleAppointments = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return [...appointments]
+      .filter((appointment) => {
+        const status = String(
+          appointment.status || "pending"
+        ).toLowerCase();
+
+        const matchesStatus =
+          statusFilter === "all" ||
+          status === statusFilter;
+
+        if (!matchesStatus) {
+          return false;
+        }
+
+        if (!query) {
+          return true;
+        }
+
+        const patient = appointment.patient || {};
+
+        const searchableText = [
+          patient.fullName,
+          patient.email,
+          appointment.assessment?.prediction?.disease,
+          appointment.reason,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(query);
+      })
+      .sort(
+        (a, b) =>
+          getAppointmentTimestamp(b) -
+          getAppointmentTimestamp(a)
+      );
+  }, [appointments, search, statusFilter]);
+
+  const statusCounts = useMemo(() => {
+    const counts = {
+      all: appointments.length,
+      pending: 0,
+      accepted: 0,
+      rejected: 0,
+      completed: 0,
+    };
+
+    appointments.forEach((appointment) => {
+      const status = String(
+        appointment.status || "pending"
+      ).toLowerCase();
+
+      if (counts[status] !== undefined) {
+        counts[status] += 1;
+      }
+    });
+
+    return counts;
+  }, [appointments]);
 
   return (
     <div className="doctor-appointments-page">
       <div className="doctor-appointments-container">
 
-        {/* Header */}
+        {/* ================= HEADER ================= */}
 
         <div className="doctor-appointments-header">
+
           <button
             onClick={() =>
               navigate("/doctor-dashboard")
@@ -101,9 +245,46 @@ export default function DoctorAppointments() {
               and patient reports.
             </span>
           </div>
+
         </div>
 
-        {/* Loading */}
+        {/* ================= SEARCH + FILTERS ================= */}
+
+        {!loading && !error && appointments.length > 0 && (
+          <div className="appointment-toolbar">
+
+            <div className="appointment-search">
+              🔍
+              <input
+                type="text"
+                placeholder="Search by patient name, email, condition..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="appointment-tabs">
+              {STATUS_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  className={`appointment-tab ${
+                    statusFilter === tab.key ? "active" : ""
+                  }`}
+                  onClick={() => setStatusFilter(tab.key)}
+                >
+                  {tab.label}
+                  <span className="appointment-tab-count">
+                    {statusCounts[tab.key] ?? 0}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+          </div>
+        )}
+
+        {/* ================= LOADING ================= */}
 
         {loading && (
           <div className="appointment-state">
@@ -111,30 +292,35 @@ export default function DoctorAppointments() {
           </div>
         )}
 
-        {/* Error */}
+        {/* ================= ERROR ================= */}
 
         {!loading && error && (
           <div className="appointment-state error">
+
             <h3>
               Unable to load appointments
             </h3>
 
-            <p>{error}</p>
+            <p>
+              {error}
+            </p>
 
             <button
               onClick={fetchAppointments}
             >
               Try Again
             </button>
+
           </div>
         )}
 
-        {/* Empty */}
+        {/* ================= EMPTY (no appointments at all) ================= */}
 
         {!loading &&
           !error &&
           appointments.length === 0 && (
             <div className="appointment-state">
+
               <h3>
                 No appointments yet
               </h3>
@@ -143,47 +329,73 @@ export default function DoctorAppointments() {
                 Patient consultation requests
                 will appear here.
               </p>
+
             </div>
           )}
 
-        {/* Appointment list */}
+        {/* ================= EMPTY (filters matched nothing) ================= */}
 
         {!loading &&
           !error &&
-          appointments.length > 0 && (
+          appointments.length > 0 &&
+          visibleAppointments.length === 0 && (
+            <div className="appointment-state">
+
+              <h3>
+                No matching appointments
+              </h3>
+
+              <p>
+                Try a different search term or category.
+              </p>
+
+            </div>
+          )}
+
+        {/* ================= APPOINTMENT LIST ================= */}
+
+        {!loading &&
+          !error &&
+          visibleAppointments.length > 0 && (
+
             <div className="appointment-list">
 
-              {appointments.map(
+              {visibleAppointments.map(
                 (appointment) => {
+
                   const patient =
-                    appointment.patient ||
-                    {};
+                    appointment.patient || {};
 
                   const assessment =
                     appointment.assessment;
 
+                  const isActing =
+                    actionLoadingId ===
+                    appointment._id;
+
                   return (
                     <div
                       className="appointment-card"
-                      key={
-                        appointment._id
-                      }
+                      key={appointment._id}
                     >
 
-                      {/* Patient */}
+                      {/* ================= PATIENT ================= */}
 
                       <div className="appointment-main">
 
                         <div className="patient-avatar">
+
                           {(
                             patient.fullName ||
                             "P"
                           )
                             .charAt(0)
                             .toUpperCase()}
+
                         </div>
 
                         <div>
+
                           <h2>
                             {
                               patient.fullName ||
@@ -204,43 +416,43 @@ export default function DoctorAppointments() {
                               ? ` • ${patient.age} years`
                               : ""}
                           </span>
+
                         </div>
 
                       </div>
 
-                      {/* Appointment info */}
+                      {/* ================= APPOINTMENT INFO ================= */}
 
                       <div className="appointment-info">
 
                         <div>
+
                           <span>
                             Date
                           </span>
 
                           <strong>
-                            {
-                              appointment.date
-                            }
+                            {appointment.date}
                           </strong>
+
                         </div>
 
                         <div>
+
                           <span>
                             Time
                           </span>
 
                           <strong>
-                            {
-                              appointment.startTime
-                            }{" "}
-                            -
-                            {
-                              appointment.endTime
-                            }
+                            {appointment.startTime}{" "}
+                            -{" "}
+                            {appointment.endTime}
                           </strong>
+
                         </div>
 
                         <div>
+
                           <span>
                             Mode
                           </span>
@@ -251,9 +463,11 @@ export default function DoctorAppointments() {
                               ? "🎥 Video"
                               : "💬 Text"}
                           </strong>
+
                         </div>
 
                         <div>
+
                           <span>
                             Status
                           </span>
@@ -261,19 +475,19 @@ export default function DoctorAppointments() {
                           <strong
                             className={`status ${appointment.status}`}
                           >
-                            {
-                              appointment.status
-                            }
+                            {appointment.status}
                           </strong>
+
                         </div>
 
                       </div>
 
-                      {/* Report */}
+                      {/* ================= REPORT ================= */}
 
                       <div className="report-preview">
 
                         <div>
+
                           <span>
                             Latest Skin Report
                           </span>
@@ -290,10 +504,12 @@ export default function DoctorAppointments() {
                               No report attached
                             </strong>
                           )}
+
                         </div>
 
                         {assessment && (
                           <div>
+
                             <span>
                               Severity
                             </span>
@@ -304,12 +520,13 @@ export default function DoctorAppointments() {
                                 ?.severity ||
                                 "Not available"}
                             </strong>
+
                           </div>
                         )}
 
                       </div>
 
-                      {/* Actions */}
+                      {/* ================= ACTIONS ================= */}
 
                       <div className="appointment-actions">
 
@@ -318,6 +535,7 @@ export default function DoctorAppointments() {
                           <>
                             <button
                               className="accept-btn"
+                              disabled={isActing}
                               onClick={() =>
                                 updateStatus(
                                   appointment._id,
@@ -325,11 +543,14 @@ export default function DoctorAppointments() {
                                 )
                               }
                             >
-                              Accept
+                              {isActing
+                                ? "Please wait..."
+                                : "Accept"}
                             </button>
 
                             <button
                               className="reject-btn"
+                              disabled={isActing}
                               onClick={() =>
                                 updateStatus(
                                   appointment._id,
@@ -337,7 +558,9 @@ export default function DoctorAppointments() {
                                 )
                               }
                             >
-                              Reject
+                              {isActing
+                                ? "Please wait..."
+                                : "Reject"}
                             </button>
                           </>
                         )}
@@ -362,6 +585,7 @@ export default function DoctorAppointments() {
 
             </div>
           )}
+
       </div>
     </div>
   );

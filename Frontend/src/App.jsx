@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route ,Navigate} from "react-router-dom";
 
 import "./App.css";
 
@@ -46,52 +46,53 @@ import DoctorAssessment from "./pages/DoctorAssessment";
 import BookAppointment from "./pages/BookAppointment";
 import MyAppointments from "./pages/MyAppointments";
 import Appointmentconfirmation from "./pages/Appointmentconfirmation";
+import DoctorList from "./pages/Doctorlist";
 
 // Utility
 import ScrollToTop from "./pages/ScrollToTop";
 
 function App() {
-  const { loading } = useAuth();
-
+   const { loading } = useAuth();
+ 
   // --------------------------------------------------
   // AUTH LOADING
   // --------------------------------------------------
-
+ 
   if (loading) {
     return <Loader1 />;
   }
-
+ 
   return (
     <>
       <ScrollToTop />
-
+ 
       <Navbar />
-
+ 
       <Routes>
         {/* =================================================
             PUBLIC ROUTES
         ================================================= */}
-
+ 
         <Route path="/" element={<Home />} />
-
+ 
         <Route path="/about" element={<About />} />
-
+ 
         <Route path="/contact" element={<Contact />} />
-
+ 
         <Route path="/features" element={<Features />} />
-
+ 
         <Route path="/how-its-works" element={<HowItWorks />} />
-
+ 
         <Route path="/login" element={<Login />} />
-
+ 
         <Route path="/register" element={<Register />} />
-
+ 
         <Route path="/choose" element={<Choose />} />
-
+ 
         {/* =================================================
             PATIENT ROUTES
         ================================================= */}
-
+ 
         <Route
           path="/dashboard"
           element={
@@ -100,7 +101,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         <Route
           path="/choose-this-device"
           element={
@@ -109,7 +110,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         <Route
           path="/skinAssessment"
           element={
@@ -118,7 +119,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         <Route
           path="/skinAssessmentResult"
           element={
@@ -127,7 +128,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         <Route
           path="/report"
           element={
@@ -136,13 +137,13 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         <Route path="/mobile-scan/:sessionId" element={<MobileScan />} />
-
+ 
         {/* =================================================
             DOCTOR DASHBOARD
         ================================================= */}
-
+ 
         <Route
           path="/doctor-dashboard"
           element={
@@ -151,11 +152,11 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         {/* =================================================
             DOCTOR PROFILE / ONBOARDING
         ================================================= */}
-
+ 
         <Route
           path="/doctor-onboarding"
           element={
@@ -164,7 +165,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         <Route
           path="/doctor-profile"
           element={
@@ -173,11 +174,11 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         {/* =================================================
             DOCTOR AVAILABILITY
         ================================================= */}
-
+ 
         <Route
           path="/doctor-availability"
           element={
@@ -186,11 +187,11 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         {/* =================================================
             DOCTOR APPOINTMENTS
         ================================================= */}
-
+ 
         <Route
           path="/doctor-appointments"
           element={
@@ -199,7 +200,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         <Route
           path="/doctor-appointments/:appointmentId"
           element={
@@ -208,11 +209,11 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         {/* =================================================
             DOCTOR PATIENT ASSESSMENT
         ================================================= */}
-
+ 
         <Route
           path="/doctor/assessment/:assessmentId"
           element={
@@ -221,11 +222,27 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
+        {/* =================================================
+            DOCTOR LIST  (was missing — DoctorList.jsx existed
+            as a file but was never routed, so any navigate("/doctors")
+            call, e.g. from DoctorDetails' "Back to Doctors" button,
+            matched no route and rendered a blank page)
+        ================================================= */}
+ 
+        <Route
+          path="/doctors"
+          element={
+            <ProtectedRoute>
+              <DoctorList />
+            </ProtectedRoute>
+          }
+        />
+ 
         {/* =================================================
             DOCTOR DETAILS
         ================================================= */}
-
+ 
         <Route
           path="/doctors/:id"
           element={
@@ -234,11 +251,11 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         {/* =================================================
             BOOK APPOINTMENT
         ================================================= */}
-
+ 
         <Route
           path="/doctors/:doctorId/book"
           element={
@@ -247,11 +264,11 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         {/* =================================================
             MY APPOINTMENTS
         ================================================= */}
-
+ 
         <Route
           path="/my-appointments"
           element={
@@ -260,11 +277,11 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ 
         {/* =================================================
             APPOINTMENT CONFIRMATION
         ================================================= */}
-
+ 
         <Route
           path="/appointment-confirmation"
           element={
@@ -273,11 +290,22 @@ function App() {
             </ProtectedRoute>
           }
         />
+ 
+        {/* =================================================
+            CATCH-ALL
+            Any unmatched or malformed URL (e.g. an empty/undefined
+            id landing on "/doctors/") used to render nothing at
+            all. Now it redirects home instead of showing a blank
+            screen.
+        ================================================= */}
+ 
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-
+ 
       {/* =================================================
           GLOBAL COMPONENTS
       ================================================= */}
+
 
       <ChatBot />
 

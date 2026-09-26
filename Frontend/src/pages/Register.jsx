@@ -1,19 +1,20 @@
 import { useState } from "react";
 import "../components/styles/register.css";
 import api from "../api/axios.js";
-import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../components/context/ToastContext.jsx";
 
 const Register = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [registerFormData, setRegisterFormData] = useState({
-    fullName: "Nikit Kumar",
-    email: "nikit2@gmail.com",
-    password: "12345678",
-    confirmPassword: "12345678",
-    gender: "Male",
-    age: "19",
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    gender: "",
+    age: "",
     role: "user",
   });
 
@@ -31,28 +32,27 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (loading) return;
+
     if (registerFormData.password.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      showToast("Password must be at least 8 characters", "error");
       return;
     }
 
-    if (
-      registerFormData.password !==
-      registerFormData.confirmPassword
-    ) {
-      toast.error("Passwords don't match");
+    if (registerFormData.password !== registerFormData.confirmPassword) {
+      showToast("Passwords don't match", "error");
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await api.post(
-        "/api/auth/register",
-        registerFormData
-      );
+      const response = await api.post("/api/auth/register", registerFormData);
 
-      toast.success(response.data.message);
+      showToast(
+        response.data?.message || "Account created successfully",
+        "success",
+      );
 
       navigate("/login", {
         state: {
@@ -60,17 +60,17 @@ const Register = () => {
         },
       });
     } catch (err) {
-      console.log("REGISTER ERROR:", err.response?.data);
+      console.error("REGISTER ERROR:", err.response?.data || err);
 
-      if (err.response?.status === 409) {
-        toast.error(
-          "Account already exists. Please login."
-        );
+      const status = err.response?.status;
+      const message = err.response?.data?.message;
+
+      if (status === 409) {
+        showToast("Account already exists. Please login.", "error");
+      } else if (status === 400) {
+        showToast(message || "Invalid registration details", "error");
       } else {
-        toast.error(
-          err.response?.data?.message ||
-            "Registration failed"
-        );
+        showToast(message || "Registration failed. Please try again.", "error");
       }
     } finally {
       setLoading(false);
@@ -80,32 +80,24 @@ const Register = () => {
   return (
     <div className="stage-wrapper">
       <div className="stage">
-
         {/* ================= LEFT PANEL ================= */}
 
         <div className="scan-panel">
-
           <div className="scan-copy">
-
             <div className="brand">
               <span className="brand-dot"></span>
               DermaDetect AI
             </div>
 
-            <h1>
-              Early detection starts with a clear picture.
-            </h1>
+            <h1>Early detection starts with a clear picture.</h1>
 
             <p>
-              Create your account to start scanning,
-              tracking, and understanding skin changes
-              over time.
+              Create your account to start scanning, tracking, and understanding
+              skin changes over time.
             </p>
-
           </div>
 
           <div className="scan-frame">
-
             <div className="crosshair">
               <span className="h"></span>
               <span className="v"></span>
@@ -116,41 +108,27 @@ const Register = () => {
             <div className="cell c3"></div>
             <div className="cell c4"></div>
             <div className="cell c5"></div>
-
           </div>
 
-          <div className="status-line">
-            Analyzing sample
-          </div>
-
+          <div className="status-line">Analyzing sample</div>
         </div>
 
         {/* ================= RIGHT PANEL ================= */}
 
         <div className="form-panel">
-
           <div className="form-head">
-
             <h2>Create your account</h2>
 
-            <p>
-              It only takes a minute to get started.
-            </p>
-
+            <p>It only takes a minute to get started.</p>
           </div>
 
           <form onSubmit={handleSubmit}>
-
             {/* ACCOUNT TYPE */}
 
             <div className="field">
-
-              <label htmlFor="role">
-                Account type
-              </label>
+              <label htmlFor="role">Account type</label>
 
               <div className="input-wrap">
-
                 <select
                   id="role"
                   name="role"
@@ -158,31 +136,19 @@ const Register = () => {
                   onChange={handleChange}
                   required
                 >
+                  <option value="user">Patient / User</option>
 
-                  <option value="user">
-                    Patient / User
-                  </option>
-
-                  <option value="doctor">
-                    Doctor
-                  </option>
-
+                  <option value="doctor">Doctor</option>
                 </select>
-
               </div>
-
             </div>
 
             {/* FULL NAME */}
 
             <div className="field">
-
-              <label htmlFor="name">
-                Full name
-              </label>
+              <label htmlFor="name">Full name</label>
 
               <div className="input-wrap">
-
                 <input
                   id="name"
                   value={registerFormData.fullName}
@@ -192,21 +158,15 @@ const Register = () => {
                   placeholder="Enter your full name"
                   required
                 />
-
               </div>
-
             </div>
 
             {/* EMAIL */}
 
             <div className="field">
-
-              <label htmlFor="email">
-                Email address
-              </label>
+              <label htmlFor="email">Email address</label>
 
               <div className="input-wrap">
-
                 <input
                   id="email"
                   type="email"
@@ -216,23 +176,16 @@ const Register = () => {
                   placeholder="you@example.com"
                   required
                 />
-
               </div>
-
             </div>
 
             {/* GENDER + AGE */}
 
             <div className="field-row">
-
               <div className="field">
-
-                <label htmlFor="gender">
-                  Gender
-                </label>
+                <label htmlFor="gender">Gender</label>
 
                 <div className="input-wrap">
-
                   <select
                     id="gender"
                     value={registerFormData.gender}
@@ -240,41 +193,25 @@ const Register = () => {
                     name="gender"
                     required
                   >
-
                     <option value="" disabled>
                       Select gender
                     </option>
 
-                    <option value="Male">
-                      Male
-                    </option>
+                    <option value="Male">Male</option>
 
-                    <option value="Female">
-                      Female
-                    </option>
+                    <option value="Female">Female</option>
 
-                    <option value="Other">
-                      Other
-                    </option>
+                    <option value="Other">Other</option>
 
-                    <option value="prefer_not_to_say">
-                      Prefer not to say
-                    </option>
-
+                    <option value="prefer_not_to_say">Prefer not to say</option>
                   </select>
-
                 </div>
-
               </div>
 
               <div className="field">
-
-                <label htmlFor="age">
-                  Age
-                </label>
+                <label htmlFor="age">Age</label>
 
                 <div className="input-wrap">
-
                   <input
                     id="age"
                     type="number"
@@ -286,23 +223,16 @@ const Register = () => {
                     max="120"
                     required
                   />
-
                 </div>
-
               </div>
-
             </div>
 
             {/* PASSWORD */}
 
             <div className="field">
-
-              <label htmlFor="password">
-                Password
-              </label>
+              <label htmlFor="password">Password</label>
 
               <div className="input-wrap">
-
                 <input
                   id="password"
                   type="password"
@@ -313,25 +243,17 @@ const Register = () => {
                   minLength="8"
                   required
                 />
-
               </div>
 
-              <p className="hint">
-                Use at least 8 characters.
-              </p>
-
+              <p className="hint">Use at least 8 characters.</p>
             </div>
 
             {/* CONFIRM PASSWORD */}
 
             <div className="field">
-
-              <label htmlFor="confirm">
-                Confirm password
-              </label>
+              <label htmlFor="confirm">Confirm password</label>
 
               <div className="input-wrap">
-
                 <input
                   id="confirm"
                   type="password"
@@ -341,32 +263,23 @@ const Register = () => {
                   placeholder="Re-enter your password"
                   required
                 />
-
               </div>
-
             </div>
 
             {/* SUBMIT */}
 
-            <button
-              type="submit"
-              className="submit-btn"
-              disabled={loading}
-            >
-
+            <button type="submit" className="submit-btn" disabled={loading}>
               {loading ? (
                 <>
                   <span className="spinner"></span>
                   Creating account...
                 </>
+              ) : registerFormData.role === "doctor" ? (
+                "Create Doctor Account"
               ) : (
-                registerFormData.role === "doctor"
-                  ? "Create Doctor Account"
-                  : "Create Account"
+                "Create Account"
               )}
-
             </button>
-
           </form>
 
           <div className="divider">
@@ -374,17 +287,10 @@ const Register = () => {
           </div>
 
           <p className="login-row">
-
             Already have an account?
-
-            <a href="/login">
-              {" "}Log in
-            </a>
-
+            <a href="/login"> Log in</a>
           </p>
-
         </div>
-
       </div>
     </div>
   );

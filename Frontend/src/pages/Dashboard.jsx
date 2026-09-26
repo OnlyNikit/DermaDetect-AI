@@ -2,10 +2,13 @@ import React, { useEffect, useState } from "react";
 import "../components/styles/dashboard.css";
 
 import { useAuth } from "../components/context/AuthContext";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import api from "../api/axios";
 import Choose from "../pages/Choose";
+import DoctorList from "../pages/Doctorlist";
+import DoctorDetails from "../pages/DoctorDetails";
+import BookAppointment from "../pages/BookAppointment";
 
 /* ============================================================
    CONSTANTS
@@ -38,6 +41,8 @@ const MODE_ICONS = {
   chat: "💬",
   "in-person": "🏥",
 };
+
+const VALID_VIEWS = new Set(Object.keys(TITLE_MAP));
 
 /* ============================================================
    DISEASE INFO
@@ -288,11 +293,36 @@ export default function DermaDetectAI() {
 
   const { logout } = useAuth();
 
-  const [activeView, setActiveView] = useState("dashboard");
+  /* ==========================================================
+     VIEW / URL-BACKED NAVIGATION
+     -----------------------------------------------------------
+     The active tab lives in the URL (?view=...). Every time we
+     switch tabs we push a new history entry, so the browser's
+     back/forward buttons move between tabs correctly (e.g. if
+     "Consult Doctor" is open and the user presses back, they
+     land back on the previous tab instead of leaving the page).
+  ========================================================== */
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const initialView = searchParams.get("view");
+
+  const [activeView, setActiveView] = useState(
+    VALID_VIEWS.has(initialView) ? initialView : "dashboard",
+  );
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [consultAssessmentId, setConsultAssessmentId] = useState(null);
+
+  /* ==========================================================
+     CONSULT FLOW (all handled inside the dashboard, no route
+     navigation: list -> details -> book)
+  ========================================================== */
+
+  const [consultStep, setConsultStep] = useState("list"); // "list" | "details" | "book"
+
+  const [selectedDoctorId, setSelectedDoctorId] = useState(null);
 
   /* ==========================================================
      DATA
@@ -371,19 +401,52 @@ export default function DermaDetectAI() {
 
   /* ==========================================================
      NAVIGATION
+     goTo pushes a new URL (?view=...). The searchParams effect
+     below is the single source of truth that updates
+     activeView — this way both clicking a nav item AND using
+     the browser's back/forward buttons go through the same
+     code path and stay in sync.
   ========================================================== */
 
   function goTo(view) {
-    setActiveView(view);
     setSidebarOpen(false);
 
-    if (view === "appointments") {
-      loadAppointments();
-    }
+    const next = new URLSearchParams(searchParams);
+
+    next.set("view", view);
+
+    setSearchParams(next);
   }
 
+  useEffect(() => {
+    const view = searchParams.get("view");
+
+    setActiveView(VALID_VIEWS.has(view) ? view : "dashboard");
+  }, [searchParams]);
+
+  // Reload appointments whenever the user lands on that tab,
+  // whether by clicking the nav item or by navigating
+  // back/forward in browser history.
+  useEffect(() => {
+    if (activeView === "appointments") {
+      loadAppointments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView]);
+
+  // Whenever the user (re)enters the "consult" tab — via the nav
+  // item, or via a "Consult Doctor" button elsewhere — start the
+  // flow fresh from the doctor list.
+  useEffect(() => {
+    if (activeView === "consult") {
+      setConsultStep("list");
+      setSelectedDoctorId(null);
+    }
+  }, [activeView]);
+
   /* ==========================================================
-     ROUTER STATE
+     ROUTER STATE (deep-links from other pages, e.g. after a
+     booking flow redirects back here with a target tab)
   ========================================================== */
 
   useEffect(() => {
@@ -395,9 +458,14 @@ export default function DermaDetectAI() {
       setConsultAssessmentId(assessmentId);
     }
 
-    if (requestedView) {
-      setActiveView(requestedView);
+    if (requestedView && VALID_VIEWS.has(requestedView)) {
+      const next = new URLSearchParams(searchParams);
+
+      next.set("view", requestedView);
+
+      setSearchParams(next, { replace: true });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routerLocation.state]);
 
   /* ==========================================================
@@ -659,6 +727,17 @@ export default function DermaDetectAI() {
   return (
     <div className="dtc-app" data-theme={darkMode ? "dark" : "light"}>
       {/* ======================================================
+          MOBILE SIDEBAR OVERLAY
+          Tapping anywhere outside the sidebar box closes it.
+      ====================================================== */}
+
+      <div
+        className={`sidebar-overlay ${sidebarOpen ? "show" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden="true"
+      />
+
+      {/* ======================================================
           SIDEBAR
       ====================================================== */}
 
@@ -715,16 +794,11 @@ export default function DermaDetectAI() {
         {/* TOPBAR */}
 
         <div className="topbar">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
+          <div className="topbar-left">
             <button
               className="menu-btn"
               onClick={() => setSidebarOpen((value) => !value)}
+              aria-label="Toggle menu"
             >
               ☰
             </button>
@@ -748,27 +822,11 @@ export default function DermaDetectAI() {
 
         <div className="content">
           {dashboardLoading && (
-            <div
-              className="card"
-              style={{
-                textAlign: "center",
-                padding: 40,
-              }}
-            >
-              Loading your dashboard...
-            </div>
+            <div className="card state-card">Loading your dashboard...</div>
           )}
 
           {!dashboardLoading && dashboardError && (
-            <div
-              className="card"
-              style={{
-                textAlign: "center",
-                padding: 40,
-              }}
-            >
-              {dashboardError}
-            </div>
+            <div className="card state-card">{dashboardError}</div>
           )}
 
           {!dashboardLoading && !dashboardError && (
@@ -813,8 +871,39 @@ export default function DermaDetectAI() {
                 <ReportsView reports={reports} onAction={handleReportAction} />
               )}
 
-              {activeView === "consult" && (
-                <ConsultView assessmentId={consultAssessmentId} />
+              {/* =========================================
+                  CONSULT FLOW — all inside the dashboard.
+                  list -> details -> book, no route changes.
+              ========================================= */}
+
+              {activeView === "consult" && consultStep === "list" && (
+                <DoctorList
+                  onBack={() => goTo("dashboard")}
+                  onSelectDoctor={(doctorId) => {
+                    setSelectedDoctorId(doctorId);
+                    setConsultStep("details");
+                  }}
+                />
+              )}
+
+              {activeView === "consult" && consultStep === "details" && (
+                <DoctorDetails
+                  doctorId={selectedDoctorId}
+                  onBack={() => setConsultStep("list")}
+                  onBook={() => setConsultStep("book")}
+                />
+              )}
+
+              {activeView === "consult" && consultStep === "book" && (
+                <BookAppointment
+                  doctorId={selectedDoctorId}
+                  assessmentId={consultAssessmentId}
+                  onBack={() => setConsultStep("details")}
+                  onBooked={() => {
+                    setConsultStep("list");
+                    goTo("appointments");
+                  }}
+                />
               )}
 
               {activeView === "appointments" && (
@@ -933,12 +1022,7 @@ function DashboardView({
 
         <div className="card">
           <div className="result-preview-row">
-            <div
-              className="section-title"
-              style={{
-                marginBottom: 0,
-              }}
-            >
+            <div className="section-title no-margin">
               📈 Recent Scan Result
             </div>
 
@@ -968,10 +1052,7 @@ function DashboardView({
           </div>
 
           <button
-            className="btn btn-outline"
-            style={{
-              marginTop: 16,
-            }}
+            className="btn btn-outline btn-block mt-16"
             onClick={() => onViewResult(recentResult)}
           >
             View Full Report
@@ -984,23 +1065,14 @@ function DashboardView({
           <div className="section-title">📜 Recent History</div>
 
           {history.length === 0 ? (
-            <p
-              style={{
-                color: "var(--text-secondary)",
-                fontSize: 13.5,
-              }}
-            >
-              No scans yet.
-            </p>
+            <p className="muted-text">No scans yet.</p>
           ) : (
             <ul className="history-mini">
               {history.slice(0, 4).map((item) => (
                 <li
                   key={item.id}
                   onClick={() => onViewResult(item)}
-                  style={{
-                    cursor: "pointer",
-                  }}
+                  className="clickable"
                 >
                   <span>
                     <span
@@ -1012,25 +1084,14 @@ function DashboardView({
                     {item.disease}
                   </span>
 
-                  <span
-                    style={{
-                      color: "var(--text-secondary)",
-                      fontSize: 12.5,
-                    }}
-                  >
-                    {item.date}
-                  </span>
+                  <span className="muted-text small-text">{item.date}</span>
                 </li>
               ))}
             </ul>
           )}
 
           <button
-            className="btn btn-outline"
-            style={{
-              marginTop: 14,
-              width: "100%",
-            }}
+            className="btn btn-outline btn-block mt-14"
             onClick={() => goTo("history")}
           >
             View All History
@@ -1085,15 +1146,7 @@ function ResultView({ result, goTo }) {
               Severity: {result.severity}
             </span>
 
-            <div
-              style={{
-                marginTop: 14,
-                fontSize: 13,
-                color: "var(--text-secondary)",
-              }}
-            >
-              Confidence Score
-            </div>
+            <div className="confidence-label">Confidence Score</div>
 
             <div className="confidence-bar-track">
               <div
@@ -1104,12 +1157,7 @@ function ResultView({ result, goTo }) {
               ></div>
             </div>
 
-            <div
-              style={{
-                fontWeight: 700,
-                fontSize: 14,
-              }}
-            >
+            <div className="confidence-value">
               {Number(result.confidence || 0).toFixed(0)}%
             </div>
 
@@ -1123,14 +1171,7 @@ function ResultView({ result, goTo }) {
           <div className="info-box">
             <div className="lbl">Short Description</div>
 
-            <div
-              className="val"
-              style={{
-                fontWeight: 500,
-              }}
-            >
-              {result.description}
-            </div>
+            <div className="val val-normal">{result.description}</div>
           </div>
 
           <div className="info-box">
@@ -1146,13 +1187,7 @@ function ResultView({ result, goTo }) {
           </div>
         </div>
 
-        <div
-          className="scan-actions"
-          style={{
-            justifyContent: "flex-start",
-            marginTop: 22,
-          }}
-        >
+        <div className="scan-actions scan-actions-start">
           <button
             className="btn btn-primary"
             onClick={() => goTo("diseaseInfo")}
@@ -1242,54 +1277,51 @@ function HistoryView({ rows, search, setSearch, filter, setFilter, onView }) {
         </div>
 
         {rows.length === 0 ? (
-          <p
-            style={{
-              color: "var(--text-secondary)",
-              padding: "16px 4px",
-            }}
-          >
-            No scans found.
-          </p>
+          <p className="muted-text table-empty">No scans found.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
+          <div className="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
 
-                <th>Disease</th>
+                  <th>Disease</th>
 
-                <th>Confidence</th>
+                  <th>Confidence</th>
 
-                <th>Status</th>
+                  <th>Status</th>
 
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {rows.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.date}</td>
-
-                  <td>{item.disease}</td>
-
-                  <td>{Number(item.confidence || 0).toFixed(0)}%</td>
-
-                  <td>{statusBadge(item.status)}</td>
-
-                  <td>
-                    <button
-                      className="icon-btn"
-                      title="View Report"
-                      onClick={() => onView(item)}
-                    >
-                      👁
-                    </button>
-                  </td>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {rows.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.date}</td>
+
+                    <td>{item.disease}</td>
+
+                    <td>{Number(item.confidence || 0).toFixed(0)}%</td>
+
+                    <td>{statusBadge(item.status)}</td>
+
+                    <td>
+                      <div className="row-actions">
+                        <button
+                          className="icon-btn"
+                          title="View Report"
+                          onClick={() => onView(item)}
+                        >
+                          👁
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </section>
@@ -1307,13 +1339,7 @@ function ReportsView({ reports, onAction }) {
 
       <div className="card">
         {reports.length === 0 ? (
-          <p
-            style={{
-              color: "var(--text-secondary)",
-            }}
-          >
-            No reports available yet.
-          </p>
+          <p className="muted-text">No reports available yet.</p>
         ) : (
           reports.map((report, index) => (
             <div className="report-card" key={report._id || report.id || index}>
@@ -1329,21 +1355,21 @@ function ReportsView({ reports, onAction }) {
 
               <div className="report-actions">
                 <button
-                  className="btn btn-outline"
+                  className="btn btn-outline btn-sm"
                   onClick={() => onAction("download-pdf")}
                 >
                   ⬇ Download
                 </button>
 
                 <button
-                  className="btn btn-outline"
+                  className="btn btn-outline btn-sm"
                   onClick={() => onAction("print-report")}
                 >
                   🖨 Print
                 </button>
 
                 <button
-                  className="btn btn-outline"
+                  className="btn btn-outline btn-sm"
                   onClick={() => onAction("share-report")}
                 >
                   🔗 Share
@@ -1353,290 +1379,6 @@ function ReportsView({ reports, onAction }) {
           ))
         )}
       </div>
-    </section>
-  );
-}
-
-/* ============================================================
-   CONSULT DOCTOR
-   IMPORTANT:
-   NO HARDCODED DOCTORS
-============================================================ */
-
-function ConsultView({ assessmentId }) {
-  const navigate = useNavigate();
-
-  const [doctors, setDoctors] = useState([]);
-
-  const [loading, setLoading] = useState(true);
-
-  const [error, setError] = useState("");
-
-  const [activeFilter, setActiveFilter] = useState("All doctors");
-
-  /* ==========================================================
-     FETCH REAL DOCTORS
-  ========================================================== */
-
-  useEffect(() => {
-    loadDoctors();
-  }, []);
-
-  async function loadDoctors() {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await api.get("/api/doctors");
-
-      const fetchedDoctors =
-        response.data?.doctors || response.data?.data || [];
-
-      setDoctors(fetchedDoctors);
-    } catch (error) {
-      console.error(
-        "DOCTORS FETCH ERROR:",
-        error.response?.data || error.message,
-      );
-
-      setError(error.response?.data?.message || "Unable to load doctors.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  /* ==========================================================
-     FILTER
-  ========================================================== */
-
-  const visibleDoctors =
-    activeFilter === "Available now"
-      ? doctors.filter(
-          (doctor) =>
-            doctor.isAvailable === true || doctor.status === "available",
-        )
-      : doctors;
-
-  /* ==========================================================
-     LOADING
-  ========================================================== */
-
-  if (loading) {
-    return (
-      <section className="view active">
-        <div className="section-title">🩺 Find a Dermatologist</div>
-
-        <div
-          className="card"
-          style={{
-            textAlign: "center",
-            padding: 40,
-          }}
-        >
-          Loading doctors...
-        </div>
-      </section>
-    );
-  }
-
-  /* ==========================================================
-     VIEW
-  ========================================================== */
-
-  return (
-    <section className="view active">
-      <div className="section-title">🩺 Find a Dermatologist</div>
-
-      <p
-        style={{
-          color: "var(--text-secondary)",
-          marginTop: -6,
-          marginBottom: 16,
-        }}
-      >
-        Choose a verified dermatologist for your consultation.
-      </p>
-
-      {/* FILTER */}
-
-      <div className="filters">
-        {["All doctors", "Available now"].map((filter) => (
-          <div
-            key={filter}
-            className={`filter-chip ${
-              activeFilter === filter ? "is-active" : ""
-            }`}
-            onClick={() => setActiveFilter(filter)}
-          >
-            {filter}
-          </div>
-        ))}
-      </div>
-
-      {/* ERROR */}
-
-      {error && (
-        <div
-          className="card"
-          style={{
-            marginBottom: 16,
-          }}
-        >
-          <p>{error}</p>
-
-          <button className="btn btn-primary" onClick={loadDoctors}>
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* EMPTY */}
-
-      {!error && visibleDoctors.length === 0 && (
-        <div
-          className="card"
-          style={{
-            textAlign: "center",
-            padding: 40,
-          }}
-        >
-          <h3>No doctors available</h3>
-
-          <p
-            style={{
-              color: "var(--text-secondary)",
-            }}
-          >
-            No verified and available doctors were found.
-          </p>
-        </div>
-      )}
-
-      {/* DOCTORS */}
-
-      {visibleDoctors.map((doctor) => {
-        const user = doctor.user || {};
-
-        const doctorId = doctor._id || doctor.id;
-
-        const name =
-          user.fullName || doctor.fullName || doctor.name || "Doctor";
-
-        const specialization = doctor.specialization || "Dermatologist";
-
-        const qualification = doctor.qualification || "";
-
-        const experience = doctor.experience;
-
-        const modes = doctor.consultationModes || [];
-
-        const profileImage = doctor.profileImage || doctor.profilePhoto || "";
-
-        return (
-          <div
-            className="doctor-card"
-            key={doctorId}
-            onClick={() => navigate(`/doctors/${doctorId}`)}
-          >
-            {/* AVATAR */}
-
-            <div className="doctor-card__avatar">
-              {profileImage ? (
-                <img
-                  src={profileImage}
-                  alt={name}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    borderRadius: "50%",
-                  }}
-                />
-              ) : (
-                name.charAt(0).toUpperCase()
-              )}
-            </div>
-
-            {/* BODY */}
-
-            <div className="doctor-card__body">
-              <div className="doctor-card__name">
-                Dr. {name.replace(/^Dr\.\s*/i, "")}
-              </div>
-
-              <div className="doctor-card__role">
-                {specialization}
-
-                {qualification ? ` · ${qualification}` : ""}
-
-                {experience != null ? ` · ${experience} yrs experience` : ""}
-              </div>
-
-              <div className="doctor-card__meta">
-                {doctor.rating != null && <span>⭐ {doctor.rating}</span>}
-
-                {doctor.city && <span>📍 {doctor.city}</span>}
-              </div>
-
-              {/* AVAILABILITY */}
-
-              {doctor.isAvailable ? (
-                <span className="status-dot">Available</span>
-              ) : (
-                <span
-                  className="status-dot"
-                  style={{
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  Currently unavailable
-                </span>
-              )}
-
-              {/* MODES */}
-
-              <div className="mode-row">
-                {modes.map((mode) => (
-                  <span className="mode-tag" key={mode}>
-                    {MODE_ICONS[mode] || "💬"} {MODE_LABELS[mode] || mode}
-                  </span>
-                ))}
-              </div>
-
-              {/* BOOK BUTTON */}
-
-              <div
-                style={{
-                  marginTop: 12,
-                }}
-              >
-                <button
-                  className="btn btn-primary"
-                  disabled={!doctorId}
-                  onClick={(event) => {
-                    event.stopPropagation();
-
-                    if (!doctorId) {
-                      console.error("Doctor ID is missing");
-                      return;
-                    }
-
-                    console.log("Opening booking page for doctor:", doctorId);
-
-                    navigate(`/book-appointment/${doctorId}/book`, {
-                      state: {
-                        assessmentId: assessmentId || "",
-                      },
-                    });
-                  }}
-                >
-                  Book Consultation
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })}
     </section>
   );
 }
@@ -1657,40 +1399,21 @@ function AppointmentsView({
     <section className="view active">
       {/* HEADER */}
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 12,
-          marginBottom: 18,
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="appointments-header">
         <div>
-          <div className="section-title">📅 My Appointments</div>
+          <div className="section-title no-margin">📅 My Appointments</div>
 
-          <p
-            style={{
-              color: "var(--text-secondary)",
-              marginTop: -8,
-            }}
-          >
+          <p className="muted-text">
             View and manage your dermatologist consultations.
           </p>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-          }}
-        >
-          <button className="btn btn-outline" onClick={onRefresh}>
+        <div className="appointments-header-actions">
+          <button className="btn btn-outline btn-sm" onClick={onRefresh}>
             🔄 Refresh
           </button>
 
-          <button className="btn btn-primary" onClick={onGoDoctors}>
+          <button className="btn btn-primary btn-sm" onClick={onGoDoctors}>
             + Book Consultation
           </button>
         </div>
@@ -1698,17 +1421,7 @@ function AppointmentsView({
 
       {/* LOADING */}
 
-      {loading && (
-        <div
-          className="card"
-          style={{
-            textAlign: "center",
-            padding: 40,
-          }}
-        >
-          Loading appointments...
-        </div>
-      )}
+      {loading && <div className="card state-card">Loading appointments...</div>}
 
       {/* ERROR */}
 
@@ -1716,7 +1429,7 @@ function AppointmentsView({
         <div className="card">
           <p>{error}</p>
 
-          <button className="btn btn-primary" onClick={onRefresh}>
+          <button className="btn btn-primary mt-14" onClick={onRefresh}>
             Try Again
           </button>
         </div>
@@ -1725,33 +1438,16 @@ function AppointmentsView({
       {/* EMPTY */}
 
       {!loading && !error && appointments.length === 0 && (
-        <div
-          className="card"
-          style={{
-            textAlign: "center",
-            padding: 50,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 48,
-              marginBottom: 12,
-            }}
-          >
-            📅
-          </div>
+        <div className="card state-card">
+          <div className="state-card-icon">📅</div>
 
           <h3>No appointments yet</h3>
 
-          <p
-            style={{
-              color: "var(--text-secondary)",
-            }}
-          >
+          <p className="muted-text">
             You have not booked a dermatologist consultation yet.
           </p>
 
-          <button className="btn btn-primary" onClick={onGoDoctors}>
+          <button className="btn btn-primary mt-14" onClick={onGoDoctors}>
             Find a Doctor
           </button>
         </div>
@@ -1760,12 +1456,7 @@ function AppointmentsView({
       {/* APPOINTMENTS */}
 
       {!loading && !error && appointments.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gap: 16,
-          }}
-        >
+        <div className="appointments-list">
           {appointments.map((appointment) => {
             const doctor = getAppointmentDoctor(appointment);
 
@@ -1785,40 +1476,14 @@ function AppointmentsView({
               <div className="card" key={appointment._id}>
                 {/* TOP */}
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: 16,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 14,
-                      alignItems: "center",
-                    }}
-                  >
-                    <div
-                      className="doctor-card__avatar"
-                      style={{
-                        width: 58,
-                        height: 58,
-                        flexShrink: 0,
-                      }}
-                    >
+                <div className="appointment-top">
+                  <div className="appointment-top-left">
+                    <div className="doctor-card__avatar appointment-avatar">
                       {doctor.fullName?.charAt(0).toUpperCase() || "D"}
                     </div>
 
                     <div>
-                      <div
-                        style={{
-                          fontWeight: 700,
-                          fontSize: 17,
-                        }}
-                      >
+                      <div className="appointment-doctor-name">
                         Dr.{" "}
                         {getAppointmentDoctorName(appointment).replace(
                           /^Dr\.\s*/i,
@@ -1826,13 +1491,7 @@ function AppointmentsView({
                         )}
                       </div>
 
-                      <div
-                        style={{
-                          color: "var(--text-secondary)",
-                          fontSize: 13,
-                          marginTop: 4,
-                        }}
-                      >
+                      <div className="appointment-doctor-spec">
                         {specialization}
                       </div>
                     </div>
@@ -1845,14 +1504,7 @@ function AppointmentsView({
 
                 {/* DETAILS */}
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                    gap: 16,
-                    marginTop: 22,
-                  }}
-                >
+                <div className="appointment-details">
                   <AppointmentDetail
                     icon="📅"
                     label="Date"
@@ -1883,29 +1535,12 @@ function AppointmentsView({
                 {/* REPORT */}
 
                 {appointment.assessment && (
-                  <div
-                    style={{
-                      marginTop: 18,
-                      padding: 14,
-                      borderRadius: 10,
-                      background: "var(--bg-section)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        marginBottom: 6,
-                      }}
-                    >
+                  <div className="appointment-linked-report">
+                    <div className="appointment-linked-report-title">
                       📄 Linked Skin Report
                     </div>
 
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: "var(--text-secondary)",
-                      }}
-                    >
+                    <div className="muted-text small-text">
                       {appointment.assessment?.prediction?.disease ||
                         "Skin assessment"}
 
@@ -1919,16 +1554,9 @@ function AppointmentsView({
 
                 {/* ACTIONS */}
 
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    marginTop: 20,
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div className="appointment-actions">
                   <button
-                    className="btn btn-outline"
+                    className="btn btn-outline btn-sm"
                     onClick={() => alert(`Appointment ID: ${appointment._id}`)}
                   >
                     View Details
@@ -1936,11 +1564,7 @@ function AppointmentsView({
 
                   {canCancel && (
                     <button
-                      className="btn btn-outline"
-                      style={{
-                        color: "#dc2626",
-                        borderColor: "#dc2626",
-                      }}
+                      className="btn btn-outline btn-sm btn-danger-outline"
                       onClick={() => onCancel(appointment)}
                     >
                       Cancel Appointment
@@ -1950,7 +1574,7 @@ function AppointmentsView({
                   {String(status).toLowerCase() === "accepted" &&
                     mode === "video" && (
                       <button
-                        className="btn btn-primary"
+                        className="btn btn-primary btn-sm"
                         onClick={() =>
                           alert("Video consultation will open here.")
                         }
@@ -1975,23 +1599,11 @@ function AppointmentsView({
 function AppointmentDetail({ icon, label, value }) {
   return (
     <div>
-      <div
-        style={{
-          color: "var(--text-secondary)",
-          fontSize: 12,
-          marginBottom: 5,
-        }}
-      >
+      <div className="appointment-detail-label">
         {icon} {label}
       </div>
 
-      <strong
-        style={{
-          fontSize: 14,
-        }}
-      >
-        {value}
-      </strong>
+      <strong className="appointment-detail-value">{value}</strong>
     </div>
   );
 }
@@ -2007,27 +1619,14 @@ function NotificationsView({ items }) {
 
       <div className="card">
         {items.length === 0 ? (
-          <p
-            style={{
-              color: "var(--text-secondary)",
-            }}
-          >
-            You're all caught up.
-          </p>
+          <p className="muted-text">You're all caught up.</p>
         ) : (
           items.map((item, index) => (
             <div
               className={`notif-item ${item.unread ? "unread" : ""}`}
               key={item._id || item.id || index}
             >
-              <div
-                className="notif-icon"
-                style={{
-                  background: "var(--bg-main)",
-                }}
-              >
-                {item.icon || "🔔"}
-              </div>
+              <div className="notif-icon">{item.icon || "🔔"}</div>
 
               <div>
                 <div className="notif-title">{item.title}</div>
@@ -2140,14 +1739,7 @@ function ProfileView({
           </div>
         </div>
 
-        <div
-          style={{
-            marginTop: 20,
-            display: "flex",
-            gap: 12,
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="profile-actions">
           <button className="btn btn-primary" onClick={onSave}>
             Save Changes
           </button>

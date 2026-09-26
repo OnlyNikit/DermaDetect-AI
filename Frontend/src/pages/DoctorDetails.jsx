@@ -3,9 +3,15 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios";
 import "../components/styles/doctorDetails.css";
 
-export default function DoctorDetails() {
-  const { id } = useParams();
+export default function DoctorDetails({
+  doctorId: doctorIdProp,
+  onBack,
+  onBook,
+}) {
+  const { id: doctorIdParam } = useParams();
   const navigate = useNavigate();
+
+  const doctorId = doctorIdProp || doctorIdParam;
 
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -13,14 +19,21 @@ export default function DoctorDetails() {
 
   useEffect(() => {
     fetchDoctor();
-  }, [id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doctorId]);
 
   const fetchDoctor = async () => {
+    if (!doctorId) {
+      setLoading(false);
+      setError("Doctor ID is missing.");
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
-      const response = await api.get(`/api/doctors/${id}`);
+      const response = await api.get(`/api/doctors/${doctorId}`);
 
       setDoctor(response.data?.doctor || null);
     } catch (err) {
@@ -36,6 +49,24 @@ export default function DoctorDetails() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+
+    navigate("/doctors");
+  };
+
+  const handleBook = () => {
+    if (onBook) {
+      onBook();
+      return;
+    }
+
+    navigate(`/doctors/${doctor._id}/book`);
   };
 
   if (loading) {
@@ -59,7 +90,7 @@ export default function DoctorDetails() {
 
           <button
             className="doctor-primary-btn"
-            onClick={() => navigate("/doctors")}
+            onClick={handleBack}
           >
             ← Back to Doctors
           </button>
@@ -87,7 +118,7 @@ export default function DoctorDetails() {
         {/* BACK */}
         <button
           className="doctor-back-btn"
-          onClick={() => navigate("/doctors")}
+          onClick={handleBack}
         >
           ← Back to Doctors
         </button>
@@ -438,11 +469,7 @@ export default function DoctorDetails() {
               <button
                 className="book-doctor-btn"
                 disabled={!doctor.isAvailable}
-                onClick={() =>
-                  navigate(
-                    `/doctors/${doctor._id}/book`
-                  )
-                }
+                onClick={handleBook}
               >
                 {doctor.isAvailable
                   ? "Book Consultation"
