@@ -3,9 +3,20 @@ import { useRef, useState } from "react";
 import "../styles/camera.css";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import { useToast } from "../context/ToastContext";
 
-function Camera() {
+function Camera({
+  onValidationStart,
+  onValidationEnd,
+}) {
   const navigate = useNavigate();
+
+  const {
+    showSuccess,
+    showError,
+    showWarning,
+    showInfo,
+  } = useToast();
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -21,6 +32,7 @@ function Camera() {
   // =========================
   // OPEN CAMERA
   // =========================
+
   const openCamera = async () => {
     try {
       setError(null);
@@ -40,10 +52,17 @@ function Camera() {
       setStream(cameraStream);
       setCameraOn(true);
     } catch (error) {
-      console.error("Error accessing camera:", error);
+      console.error(
+        "Error accessing camera:",
+        error
+      );
 
       setError(
         "Unable to access camera. Please allow camera permission."
+      );
+
+      showError(
+        "Camera access was blocked. Please allow camera permission and try again."
       );
     }
   };
@@ -51,6 +70,7 @@ function Camera() {
   // =========================
   // CAPTURE IMAGE
   // =========================
+
   const captureImage = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -89,6 +109,7 @@ function Camera() {
   // =========================
   // RETAKE IMAGE
   // =========================
+
   const retakeImage = async () => {
     if (uploading) return;
 
@@ -109,6 +130,7 @@ function Camera() {
   // =========================
   // UPLOAD IMAGE TO SERVER
   // =========================
+
   const uploadToServer = async (
     blob,
     filename
@@ -148,6 +170,7 @@ function Camera() {
   // =========================
   // VALIDATE IMAGE
   // =========================
+
   const validateImage = async (
     imageUrl
   ) => {
@@ -157,6 +180,7 @@ function Camera() {
         imageUrl,
       }
     );
+    console.log("VALIDATION API RESPONSE:", response.data);
 
     if (!response.data?.success) {
       throw new Error(
@@ -171,6 +195,7 @@ function Camera() {
   // =========================
   // HANDLE VALIDATION RESULT
   // =========================
+
   const handleValidationResult = (
     validationResult,
     imageUrl
@@ -183,16 +208,22 @@ function Camera() {
     const {
       status,
       message,
-      confidence,
     } = validationResult;
 
     // --------------------------------
     // INVALID / NON-SKIN IMAGE
     // --------------------------------
+
     if (status === "invalid_image") {
+      const userMessage =
+        "Please upload a clear photo of the affected skin area. The current image doesn't appear to show skin clearly.";
+
       setError(
-        message ||
-          "Please upload a clear skin image."
+        message || userMessage
+      );
+
+      showWarning(
+        message || userMessage
       );
 
       return;
@@ -201,10 +232,17 @@ function Camera() {
     // --------------------------------
     // NORMAL SKIN
     // --------------------------------
+
     if (status === "normal_skin") {
+      const userMessage =
+        "No visible signs of the supported skin conditions were detected. If you're experiencing a skin problem, try a clear photo of the affected area.";
+
       setError(
-        message ||
-          "No apparent skin disease detected."
+        message || userMessage
+      );
+
+      showInfo(
+        message || userMessage
       );
 
       return;
@@ -213,7 +251,14 @@ function Camera() {
     // --------------------------------
     // VALID DISEASE-LIKE SKIN IMAGE
     // --------------------------------
+
     if (status === "valid_skin") {
+      setError(null);
+
+      showSuccess(
+        "Image checked successfully. Let's continue with your skin assessment."
+      );
+
       navigate(
         "/skinAssessment",
         {
@@ -229,14 +274,19 @@ function Camera() {
     // --------------------------------
     // UNKNOWN STATUS
     // --------------------------------
-    setError(
-      "Unable to validate this image. Please try another image."
-    );
+
+    const userMessage =
+      "We couldn't understand this image. Please try another clear, well-lit photo.";
+
+    setError(userMessage);
+
+    showError(userMessage);
   };
 
   // =========================
   // USE THIS IMAGE
   // =========================
+
   const useThisImage = async () => {
     if (
       uploading ||
@@ -249,12 +299,20 @@ function Camera() {
       setUploading(true);
       setError(null);
 
+      // Tell ScanPage to show loader
+      onValidationStart?.();
+
+      showInfo(
+        "Checking your image. Please wait..."
+      );
+
       let blob;
       let filename;
 
       // --------------------------------
       // SELECTED FILE
       // --------------------------------
+
       if (selectedFile) {
         blob = selectedFile;
         filename = selectedFile.name;
@@ -263,6 +321,7 @@ function Camera() {
       // --------------------------------
       // CAMERA CAPTURE
       // --------------------------------
+
       else {
         const blobResponse =
           await fetch(
@@ -279,6 +338,7 @@ function Camera() {
       // --------------------------------
       // UPLOAD TO CLOUDINARY
       // --------------------------------
+
       console.log(
         "Uploading image..."
       );
@@ -297,6 +357,7 @@ function Camera() {
       // --------------------------------
       // VALIDATE IMAGE
       // --------------------------------
+
       console.log(
         "Validating image..."
       );
@@ -309,10 +370,12 @@ function Camera() {
       // --------------------------------
       // HANDLE RESULT
       // --------------------------------
+
       handleValidationResult(
         validationResult,
         imageUrl
       );
+
     } catch (err) {
       console.error(
         "Image processing failed:",
@@ -324,25 +387,40 @@ function Camera() {
         err.response?.data
       );
 
-      setError(
+      const errorMessage =
         err.response?.data?.message ||
-          err.message ||
-          "Unable to process image. Please try again."
-      );
+        err.message ||
+        "We couldn't process your image. Please try again with a clear, well-lit photo.";
+
+      setError(errorMessage);
+
+      showError(errorMessage);
+
     } finally {
       setUploading(false);
+
+      // Tell ScanPage to hide loader
+      onValidationEnd?.();
     }
   };
 
   // =========================
   // DEMO IMAGE
   // =========================
+
   const useDemoImage = async () => {
     if (uploading) return;
 
     try {
       setUploading(true);
       setError(null);
+
+      // Tell ScanPage to show loader
+      onValidationStart?.();
+
+      showInfo(
+        "Checking the demo image. Please wait..."
+      );
 
       const imageUrl =
         "https://res.cloudinary.com/di6ryzdy2/image/upload/v1787156579/dermaScan-uploads/knaemf928f1n2vtq6jfm.jpg";
@@ -355,6 +433,7 @@ function Camera() {
       // --------------------------------
       // VALIDATE DEMO IMAGE
       // --------------------------------
+
       const validationResult =
         await validateImage(
           imageUrl
@@ -364,6 +443,7 @@ function Camera() {
         validationResult,
         imageUrl
       );
+
     } catch (error) {
       console.error(
         "Demo image validation failed:",
@@ -375,19 +455,27 @@ function Camera() {
         error.response?.data
       );
 
-      setError(
+      const errorMessage =
         error.response?.data?.message ||
-          error.message ||
-          "Unable to validate demo image."
-      );
+        error.message ||
+        "We couldn't validate the demo image. Please try again.";
+
+      setError(errorMessage);
+
+      showError(errorMessage);
+
     } finally {
       setUploading(false);
+
+      // Tell ScanPage to hide loader
+      onValidationEnd?.();
     }
   };
 
   // =========================
   // FILE SELECT
   // =========================
+
   const handleFileChange = (
     event
   ) => {
@@ -399,14 +487,18 @@ function Camera() {
     // --------------------------------
     // CHECK FILE TYPE
     // --------------------------------
+
     if (
       !file.type.startsWith(
         "image/"
       )
     ) {
-      setError(
-        "Please select a valid image file."
-      );
+      const errorMessage =
+        "Please select a valid image file such as JPG, JPEG, or PNG.";
+
+      setError(errorMessage);
+
+      showWarning(errorMessage);
 
       return;
     }
@@ -414,6 +506,7 @@ function Camera() {
     // --------------------------------
     // STOP CAMERA
     // --------------------------------
+
     if (stream) {
       stream
         .getTracks()
@@ -427,6 +520,7 @@ function Camera() {
     // --------------------------------
     // CREATE PREVIEW
     // --------------------------------
+
     const imagePreview =
       URL.createObjectURL(
         file
@@ -443,12 +537,14 @@ function Camera() {
   // =========================
   // UI
   // =========================
+
   return (
     <div className="camera-widget">
 
       {/* =========================
           STATUS
       ========================== */}
+
       <div className="camera-status">
         <span
           className={`status-dot ${
@@ -472,6 +568,7 @@ function Camera() {
       {/* =========================
           VIEWFINDER
       ========================== */}
+
       <div
         className={`viewfinder ${
           cameraOn
@@ -522,6 +619,7 @@ function Camera() {
           )}
 
         {/* CAMERA VIDEO */}
+
         <video
           ref={videoRef}
           autoPlay
@@ -537,6 +635,7 @@ function Camera() {
         />
 
         {/* IMAGE PREVIEW */}
+
         {capturedImage && (
           <img
             src={capturedImage}
@@ -549,6 +648,7 @@ function Camera() {
       {/* =========================
           HIDDEN CANVAS
       ========================== */}
+
       <canvas
         ref={canvasRef}
         style={{
@@ -559,6 +659,7 @@ function Camera() {
       {/* =========================
           ERROR
       ========================== */}
+
       {error && (
         <p className="camera-error">
           {typeof error === "string"
@@ -570,6 +671,7 @@ function Camera() {
       {/* =========================
           FILE INPUT
       ========================== */}
+
       <input
         type="file"
         ref={fileInputRef}
@@ -585,11 +687,11 @@ function Camera() {
       {/* =========================
           ACTION BUTTONS
       ========================== */}
+
       <div className="camera-actions">
 
-        {/* --------------------------------
-            CAMERA / FILE BUTTONS
-        --------------------------------- */}
+        {/* CAMERA / FILE BUTTONS */}
+
         {!cameraOn &&
           !capturedImage && (
             <>
@@ -633,9 +735,8 @@ function Camera() {
             </>
           )}
 
-        {/* --------------------------------
-            CAPTURE BUTTON
-        --------------------------------- */}
+        {/* CAPTURE BUTTON */}
+
         {cameraOn &&
           !capturedImage && (
             <button
@@ -651,9 +752,8 @@ function Camera() {
             </button>
           )}
 
-        {/* --------------------------------
-            PREVIEW BUTTONS
-        --------------------------------- */}
+        {/* PREVIEW BUTTONS */}
+
         {capturedImage && (
           <>
             <button
