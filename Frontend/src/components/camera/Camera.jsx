@@ -185,7 +185,7 @@ function Camera({
     if (!response.data?.success) {
       throw new Error(
         response.data?.message ||
-          "Image validation failed"
+          "Please try again with a clear photo."
       );
     }
 
