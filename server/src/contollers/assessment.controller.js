@@ -10,19 +10,17 @@ const Assessment = require("../models/skinAssessment");
 
 async function getLatestAssessment(req, res) {
   try {
-    const assessment =
-      await Assessment.findOne({
-        user: req.user._id,
-        status: "analyzed",
-      }).sort({
-        createdAt: -1,
-      });
+    const assessment = await Assessment.findOne({
+      user: req.user._id,
+      status: "analyzed",
+    }).sort({
+      createdAt: -1,
+    });
 
     if (!assessment) {
       return res.status(404).json({
         success: false,
-        message:
-          "No analyzed assessment found",
+        message: "No analyzed assessment found",
       });
     }
 
@@ -31,15 +29,11 @@ async function getLatestAssessment(req, res) {
       assessment,
     });
   } catch (error) {
-    console.error(
-      "GET LATEST ASSESSMENT ERROR:",
-      error
-    );
+    console.error("GET LATEST ASSESSMENT ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch latest assessment",
+      message: "Failed to fetch latest assessment",
     });
   }
 }
@@ -49,40 +43,19 @@ async function getLatestAssessment(req, res) {
 // POST /api/assessment
 // =====================================================
 
-async function createAssessment(
-  req,
-  res
-) {
+async function createAssessment(req, res) {
   try {
-    const {
-      image,
-      answers,
-      optionalAnswers,
-    } = req.body;
+    const { image, answers, optionalAnswers } = req.body;
 
-    console.log(
-      "========== ASSESSMENT =========="
-    );
+    console.log("========== ASSESSMENT ==========");
 
-    console.log(
-      "Image:",
-      image
-    );
+    console.log("Image:", image);
 
-    console.log(
-      "Answers:",
-      answers
-    );
+    console.log("Answers:", answers);
 
-    console.log(
-      "Optional Answers:",
-      optionalAnswers
-    );
+    console.log("Optional Answers:", optionalAnswers);
 
-    console.log(
-      "User:",
-      req.user?._id
-    );
+    console.log("User:", req.user?._id);
 
     // ==========================================
     // VALIDATION
@@ -91,8 +64,7 @@ async function createAssessment(
     if (!image || !answers) {
       return res.status(400).json({
         success: false,
-        message:
-          "Image and answers are required",
+        message: "Image and answers are required",
       });
     }
 
@@ -100,98 +72,70 @@ async function createAssessment(
     // CREATE ASSESSMENT
     // ==========================================
 
-    const assessment =
-      await Assessment.create({
-        user: req.user._id,
+    const assessment = await Assessment.create({
+      user: req.user._id,
 
-        image,
+      image,
 
-        location:
-          answers.location,
+      location: answers.location,
 
-        duration:
-          answers.duration,
+      duration: answers.duration,
 
-        itching:
-          answers.itching,
+      itching: answers.itching,
 
-        painBurning:
-          answers.painBurning,
+      painBurning: answers.painBurning,
 
-        changeSpread:
-          answers.changeSpread,
+      changeSpread: answers.changeSpread,
 
-        changeDetails:
-          answers.changeDetails || [],
+      changeDetails: answers.changeDetails || [],
 
-        worsensAroundPeriod:
-          answers.worsensAroundPeriod ||
-          null,
+      worsensAroundPeriod: answers.worsensAroundPeriod || null,
 
-        repeatsAroundPeriod:
-          answers.repeatsAroundPeriod ||
-          null,
+      repeatsAroundPeriod: answers.repeatsAroundPeriod || null,
 
-        optionalDetails:
-          optionalAnswers || {},
+      optionalDetails: optionalAnswers || {},
 
-        status: "pending",
-      });
+      status: "pending",
+    });
 
-    console.log(
-      "Assessment created:",
-      assessment._id
-    );
+    console.log("Assessment created:", assessment._id);
 
     // ==========================================
     // AI SERVICE
     // ==========================================
 
-    if (
-      !process.env.AI_SERVICE_URL
-    ) {
-      assessment.status =
-        "failed";
+    if (!process.env.AI_SERVICE_URL) {
+      assessment.status = "failed";
 
       await assessment.save();
 
       return res.status(500).json({
         success: false,
-        message:
-          "AI service URL is not configured",
+        message: "AI service URL is not configured",
       });
     }
 
-    console.log(
-      "AI Service:",
-      process.env.AI_SERVICE_URL
+    console.log("AI Service:", process.env.AI_SERVICE_URL);
+
+    const aiResponse = await axios.post(
+      `${process.env.AI_SERVICE_URL}/predict`,
+      {
+        imageUrl: image,
+      },
+      {
+        timeout: 60000,
+      },
     );
 
-    const aiResponse =
-      await axios.post(
-        `${process.env.AI_SERVICE_URL}/predict`,
-        {
-          imageUrl: image,
-        },
-        {
-          timeout: 60000,
-        }
-      );
-
-    console.log(
-      "AI Response:",
-      aiResponse.data
-    );
+    console.log("AI Response:", aiResponse.data);
 
     // ==========================================
     // AI RESULT
     // ==========================================
 
-    const aiResult =
-      aiResponse.data;
+    const aiResult = aiResponse.data;
 
-    const prediction =
-      aiResult?.prediction;
+    const prediction = aiResult?.prediction;
 
     let disease;
     let confidence;
@@ -201,59 +145,38 @@ async function createAssessment(
     // prediction as object
     // OR prediction as string
 
-    if (
-      prediction &&
-      typeof prediction ===
-        "object"
-    ) {
-      disease =
-        prediction.disease;
+    if (prediction && typeof prediction === "object") {
+      disease = prediction.disease;
 
-      confidence =
-        prediction.confidence;
+      confidence = prediction.confidence;
 
-      severity =
-        prediction.severity;
+      severity = prediction.severity;
     } else {
-      disease =
-        prediction;
+      disease = prediction;
 
-      confidence =
-        aiResult?.confidence;
+      confidence = aiResult?.confidence;
 
-      severity =
-        aiResult?.severity;
+      severity = aiResult?.severity;
     }
 
-    console.log(
-      "Disease:",
-      disease
-    );
+    console.log("Disease:", disease);
 
-    console.log(
-      "Confidence:",
-      confidence
-    );
+    console.log("Confidence:", confidence);
 
-    console.log(
-      "Severity:",
-      severity
-    );
+    console.log("Severity:", severity);
 
     // ==========================================
     // VALIDATE AI
     // ==========================================
 
     if (!disease) {
-      assessment.status =
-        "failed";
+      assessment.status = "failed";
 
       await assessment.save();
 
       return res.status(500).json({
         success: false,
-        message:
-          "AI did not return prediction",
+        message: "AI did not return prediction",
       });
     }
 
@@ -264,22 +187,16 @@ async function createAssessment(
     assessment.prediction = {
       disease,
 
-      confidence:
-        confidence ?? 0,
+      confidence: confidence ?? 0,
 
-      severity:
-        severity || "Unknown",
+      severity: severity || "Unknown",
     };
 
-    assessment.status =
-      "analyzed";
+    assessment.status = "analyzed";
 
     await assessment.save();
 
-    console.log(
-      "Assessment analyzed:",
-      assessment._id
-    );
+    console.log("Assessment analyzed:", assessment._id);
 
     // ==========================================
     // RESPONSE
@@ -288,48 +205,30 @@ async function createAssessment(
     return res.status(201).json({
       success: true,
 
-      message:
-        "Skin analysis completed successfully",
+      message: "Skin analysis completed successfully",
 
-      assessmentId:
-        assessment._id,
+      assessmentId: assessment._id,
 
       assessment,
 
-      prediction:
-        assessment.prediction,
+      prediction: assessment.prediction,
     });
   } catch (error) {
-    console.error(
-      "========== ASSESSMENT ERROR =========="
-    );
+    console.error("========== ASSESSMENT ERROR ==========");
 
-    console.error(
-      "Message:",
-      error.message
-    );
+    console.error("Message:", error.message);
 
-    console.error(
-      "Status:",
-      error.response?.status
-    );
+    console.error("Status:", error.response?.status);
 
-    console.error(
-      "Response:",
-      error.response?.data
-    );
+    console.error("Response:", error.response?.data);
 
-    return res.status(
-      error.response?.status || 500
-    ).json({
+    return res.status(error.response?.status || 500).json({
       success: false,
 
-      message:
-        "Skin analysis failed",
+      message: "Skin analysis failed",
 
       error:
-        typeof error.response?.data ===
-        "object"
+        typeof error.response?.data === "object"
           ? error.response.data
           : error.message,
     });
@@ -341,41 +240,27 @@ async function createAssessment(
 // GET /api/assessment/:id
 // =====================================================
 
-async function getAssessmentById(
-  req,
-  res
-) {
+async function getAssessmentById(req, res) {
   try {
-    const { id } =
-      req.params;
+    const { id } = req.params;
 
-    if (
-      !mongoose.Types.ObjectId.isValid(
-        id
-      )
-    ) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message:
-          "Invalid assessment ID",
+        message: "Invalid assessment ID",
       });
     }
 
-    const assessment =
-      await Assessment.findOne({
-        _id: id,
+    const assessment = await Assessment.findOne({
+      _id: id,
 
-        user: req.user._id,
-      }).populate(
-        "user",
-        "fullName age gender"
-      );
+      user: req.user._id,
+    }).populate("user", "fullName age gender");
 
     if (!assessment) {
       return res.status(404).json({
         success: false,
-        message:
-          "Assessment not found",
+        message: "Assessment not found",
       });
     }
 
@@ -384,18 +269,13 @@ async function getAssessmentById(
       assessment,
     });
   } catch (error) {
-    console.error(
-      "GET ASSESSMENT ERROR:",
-      error
-    );
+    console.error("GET ASSESSMENT ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch assessment",
+      message: "Failed to fetch assessment",
 
-      error:
-        error.message,
+      error: error.message,
     });
   }
 }
@@ -405,19 +285,15 @@ async function getAssessmentById(
 // GET /api/assessment/history
 // =====================================================
 
-async function getHistory(
-  req,
-  res
-) {
+async function getHistory(req, res) {
   try {
-    const history =
-      await Assessment.find({
-        user: req.user._id,
+    const history = await Assessment.find({
+      user: req.user._id,
 
-        status: "analyzed",
-      }).sort({
-        createdAt: -1,
-      });
+      status: "analyzed",
+    }).sort({
+      createdAt: -1,
+    });
 
     return res.status(200).json({
       success: true,
@@ -427,19 +303,69 @@ async function getHistory(
       history,
     });
   } catch (error) {
-    console.error(
-      "GET ASSESSMENT HISTORY ERROR:",
-      error
-    );
+    console.error("GET ASSESSMENT HISTORY ERROR:", error);
 
     return res.status(500).json({
       success: false,
 
-      message:
-        "Failed to fetch scan history",
+      message: "Failed to fetch scan history",
 
-      error:
-        error.message,
+      error: error.message,
+    });
+  }
+}
+
+// =====================================================
+// VALIDATE IMAGE
+// POST /api/assessment/validate-image
+// =====================================================
+
+async function validateImage(req, res) {
+  try {
+    const { imageUrl } = req.body;
+
+    if (!imageUrl) {
+      return res.status(400).json({
+        success: false,
+        message: "Image URL is required",
+      });
+    }
+
+    if (!process.env.AI_SERVICE_URL) {
+      return res.status(500).json({
+        success: false,
+        message: "AI service URL is not configured",
+      });
+    }
+
+    console.log("========== IMAGE VALIDATION ==========");
+
+    console.log("Image URL:", imageUrl);
+
+    const aiResponse = await axios.post(
+      `${process.env.AI_SERVICE_URL}/validate`,
+      {
+        imageUrl,
+      },
+      {
+        timeout: 60000,
+      },
+    );
+
+    console.log("Validation response:", aiResponse.data);
+
+    return res.status(200).json({
+      success: true,
+      ...aiResponse.data,
+    });
+  } catch (error) {
+    console.error("IMAGE VALIDATION ERROR:", error.message);
+
+    console.error("AI response:", error.response?.data);
+
+    return res.status(error.response?.status || 500).json({
+      success: false,
+      message: error.response?.data?.detail || "Image validation failed",
     });
   }
 }
@@ -449,4 +375,5 @@ module.exports = {
   createAssessment,
   getAssessmentById,
   getHistory,
+  validateImage,
 };

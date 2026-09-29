@@ -9,24 +9,42 @@ const phoneSessionSchema = new mongoose.Schema(
       unique: true,
       default: () => crypto.randomUUID(),
     },
+
     status: {
       type: String,
-      enum: ["waiting", "uploaded", "complete", "expired"],
+      enum: [
+        "waiting",
+        "uploaded",
+        "complete",
+        "expired",
+        "invalid_image",
+        "normal_skin",
+        "failed",
+      ],
       default: "waiting",
     },
+
     imageUrl: {
+      type: String,
+      default: null,
+    },
+
+    message: {
       type: String,
       default: null,
     },
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 phoneSessionSchema.index(
-    {createdAt:-1},
-    {expireAfterSeconds:600},
-)
+  { createdAt: -1 },
+  { expireAfterSeconds: 600 }
+);
 
-module.exports= mongoose.model("PhoneSession", phoneSessionSchema);
+module.exports = mongoose.model(
+  "PhoneSession",
+  phoneSessionSchema
+);

@@ -4,9 +4,9 @@ import shutil
 import random
 from collections import defaultdict
 
-# ==============================
+# ============================================================
 # SETTINGS
-# ==============================
+# ============================================================
 
 SOURCE_DIR = "dataset/final_dataset"
 
@@ -18,176 +18,321 @@ SEED = 42
 
 random.seed(SEED)
 
+IMAGE_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp"
+}
 
-# ==============================
-# GET IMAGE GROUP ID
-# ==============================
+
+# ============================================================
+# GET GROUP ID
+# ============================================================
 
 def get_group_id(filename):
+
     name = os.path.splitext(filename)[0]
 
-    # ==============================
-    # FRAME DATASETS
     # Example:
-    # IMG-1189_frame_25 -> IMG-1189
-    # ==============================
-    match = re.match(r"(.+?)_frame_\d+", name)
+    # IMG-1189_frame_25
+    # IMG-1189_frame_26
+    #
+    # Both belong to same original image.
+
+    match = re.match(
+        r"(.+?)_frame_\d+",
+        name,
+        re.IGNORECASE
+    )
 
     if match:
         return match.group(1)
 
-    # ==============================
-    # ACNE DATASET
-    # All acne augmentations belong
-    # to an original 3-digit ID.
-    # ==============================
+
+    # Handle augmentation naming
+    #
+    # Example:
+    # image123__aug1
+    # image123__aug2
+
     if "__" in name:
-        before = name.split("__")[0]
 
-        # Take last 3 digits
-        match = re.search(r"(\d{3})$", before)
+        original = name.split("__")[0]
 
-        if match:
-            return f"acne_{match.group(1)}"
+        return original
 
-    # Other images = separate group
+
+    # Otherwise image itself becomes group
+
     return name
 
 
-# ==============================
-# CREATE SPLIT FOLDERS
-# ==============================
+# ============================================================
+# GET IMAGE FILES
+# ============================================================
 
-for split in ["train", "validation", "test"]:
-    split_path = os.path.join(SOURCE_DIR, split)
+def get_images(class_path):
+
+    files = []
+
+    for filename in os.listdir(class_path):
+
+        path = os.path.join(
+            class_path,
+            filename
+        )
+
+        if not os.path.isfile(path):
+            continue
+
+        extension = os.path.splitext(
+            filename
+        )[1].lower()
+
+        if extension in IMAGE_EXTENSIONS:
+
+            files.append(filename)
+
+    return files
+
+
+# ============================================================
+# CREATE OUTPUT DIRECTORIES
+# ============================================================
+
+splits = [
+    "train",
+    "validation",
+    "test"
+]
+
+classes = [
+    "Acne",
+    "Psoriasis",
+    "Ringworm",
+    "Vitiligo"
+]
+
+
+for split in splits:
+
+    split_path = os.path.join(
+        SOURCE_DIR,
+        split
+    )
 
     if os.path.exists(split_path):
+
+        print(
+            f"Removing old {split} folder..."
+        )
+
         shutil.rmtree(split_path)
 
-    os.makedirs(split_path)
+    os.makedirs(
+        split_path,
+        exist_ok=True
+    )
 
 
-# ==============================
-# FIND CLASSES
-# ==============================
+# ============================================================
+# PROCESS EACH CLASS
+# ============================================================
 
-classes = []
+for class_name in classes:
 
-for item in os.listdir(SOURCE_DIR):
-    path = os.path.join(SOURCE_DIR, item)
+    print("\n================================")
+    print(f"CLASS: {class_name}")
+    print("================================")
 
-    if (
-        os.path.isdir(path)
-        and item not in [
-            "train",
-            "validation",
-            "test",
-            "train_old",
-            "validation_old",
-            "test_old"
-        ]
-    ):
-        classes.append(item)
+    class_path = os.path.join(
+        SOURCE_DIR,
+        class_name
+    )
 
+    if not os.path.exists(class_path):
 
-print("\nClasses found:")
-
-for cls in classes:
-    print("-", cls)
+        raise FileNotFoundError(
+            f"Class folder not found: {class_path}"
+        )
 
 
-# ==============================
-# SPLIT EACH CLASS
-# ==============================
+    files = get_images(
+        class_path
+    )
 
-for cls in classes:
+    print(
+        f"Total images: {len(files)}"
+    )
 
-    class_path = os.path.join(SOURCE_DIR, cls)
 
-    files = [
-        f for f in os.listdir(class_path)
-        if os.path.isfile(os.path.join(class_path, f))
-    ]
-
-    # --------------------------
-    # CREATE GROUPS
-    # --------------------------
+    # ========================================================
+    # GROUP IMAGES
+    # ========================================================
 
     groups = defaultdict(list)
 
-    for file in files:
-        group_id = get_group_id(file)
+    for filename in files:
 
-        groups[group_id].append(file)
+        group_id = get_group_id(
+            filename
+        )
 
-    group_ids = list(groups.keys())
+        groups[group_id].append(
+            filename
+        )
 
-    random.shuffle(group_ids)
 
-    total_groups = len(group_ids)
+    group_ids = list(
+        groups.keys()
+    )
 
-    train_end = int(total_groups * TRAIN_RATIO)
-    val_end = train_end + int(total_groups * VAL_RATIO)
+    print(
+        f"Unique groups: {len(group_ids)}"
+    )
 
-    train_groups = group_ids[:train_end]
-    val_groups = group_ids[train_end:val_end]
-    test_groups = group_ids[val_end:]
 
-    splits = {
+    # ========================================================
+    # SHUFFLE GROUPS
+    # ========================================================
+
+    random.shuffle(
+        group_ids
+    )
+
+
+    # ========================================================
+    # CALCULATE SPLIT
+    # ========================================================
+
+    total_groups = len(
+        group_ids
+    )
+
+    train_end = int(
+        total_groups * TRAIN_RATIO
+    )
+
+    val_end = (
+        train_end
+        + int(total_groups * VAL_RATIO)
+    )
+
+
+    train_groups = group_ids[
+        :train_end
+    ]
+
+    validation_groups = group_ids[
+        train_end:val_end
+    ]
+
+    test_groups = group_ids[
+        val_end:
+    ]
+
+
+    split_groups = {
+
         "train": train_groups,
-        "validation": val_groups,
+
+        "validation": validation_groups,
+
         "test": test_groups
     }
 
-    # --------------------------
-    # COPY FILES
-    # --------------------------
 
-    print(f"\n===== {cls} =====")
+    # ========================================================
+    # COPY IMAGES
+    # ========================================================
 
-    print(f"Total images: {len(files)}")
-    print(f"Total groups: {total_groups}")
-
-    for split, selected_groups in splits.items():
+    for split, selected_groups in split_groups.items():
 
         destination = os.path.join(
             SOURCE_DIR,
             split,
-            cls
+            class_name
         )
 
-        os.makedirs(destination, exist_ok=True)
+        os.makedirs(
+            destination,
+            exist_ok=True
+        )
 
         image_count = 0
 
         for group_id in selected_groups:
 
-            for file in groups[group_id]:
+            for filename in groups[group_id]:
 
-                source_file = os.path.join(
+                source = os.path.join(
                     class_path,
-                    file
+                    filename
                 )
 
                 destination_file = os.path.join(
                     destination,
-                    file
+                    filename
                 )
 
                 shutil.copy2(
-                    source_file,
+                    source,
                     destination_file
                 )
 
                 image_count += 1
 
+
         print(
-            f"{split.capitalize()}: "
-            f"{len(selected_groups)} groups, "
-            f"{image_count} images"
+            f"{split.capitalize():12} "
+            f"groups={len(selected_groups):4} "
+            f"images={image_count:5}"
         )
 
 
-print("\n===================================")
-print("Leakage-aware dataset split completed.")
-print("===================================")
+# ============================================================
+# FINAL SUMMARY
+# ============================================================
+
+print("\n")
+print("==============================================")
+print("       LEAKAGE-SAFE DATASET SPLIT DONE")
+print("==============================================")
+
+for split in splits:
+
+    print(f"\n{split.upper()}")
+
+    total = 0
+
+    for class_name in classes:
+
+        folder = os.path.join(
+            SOURCE_DIR,
+            split,
+            class_name
+        )
+
+        count = len([
+            f
+            for f in os.listdir(folder)
+            if os.path.isfile(
+                os.path.join(folder, f)
+            )
+        ])
+
+        total += count
+
+        print(
+            f"{class_name:12}: {count}"
+        )
+
+    print(
+        f"TOTAL        : {total}"
+    )
+
+
+print("\n==============================================")
+print("Split completed successfully.")
+print("==============================================")

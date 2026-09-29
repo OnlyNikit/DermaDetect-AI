@@ -20,27 +20,80 @@ app.add_middleware(
 )
 
 
-model = load_model("best_model.keras")
+# =====================================================
+# LOAD MODELS
+# =====================================================
+
+disease_model = load_model("best_model.keras")
+
+skin_validator = load_model(
+    "skin_validator.keras"
+)
+
+normal_disease_model = load_model(
+    "normal_disease_model.keras"
+)
 
 
-class_names = [
+# =====================================================
+# LABELS
+# =====================================================
+
+disease_classes = [
     "Acne",
     "Psoriasis",
     "Ringworm",
     "Vitiligo"
 ]
 
+skin_classes = [
+    "non_skin",
+    "normal_skin"
+]
 
-# Node backend exactly this field bhejega
+normal_disease_classes = [
+    "disease",
+    "normal_skin"
+]
+
+
+# =====================================================
+# REQUEST MODEL
+# =====================================================
+
 class ImageUrlRequest(BaseModel):
     imageUrl: str
 
 
-def predict_from_image(image):
+# =====================================================
+# LOAD IMAGE FROM URL
+# =====================================================
+
+def download_image(image_url):
+
+    response = requests.get(
+        image_url,
+        timeout=30
+    )
+
+    response.raise_for_status()
+
+    return Image.open(
+        io.BytesIO(response.content)
+    )
+
+
+# =====================================================
+# PREPARE IMAGE
+# =====================================================
+
+def prepare_image(image):
 
     image = image.convert("RGB")
 
-    image = image.resize((224, 224))
+    image = image.resize(
+        (224, 224)
+    )
 
     image_array = np.array(image)
 
@@ -49,13 +102,100 @@ def predict_from_image(image):
         axis=0
     )
 
-    predictions = model.predict(image_array)
+    return image_array
+
+
+# =====================================================
+# STAGE 1
+# SKIN vs NON-SKIN
+# =====================================================
+
+def validate_skin(image):
+
+    image_array = prepare_image(image)
+
+    predictions = skin_validator.predict(
+        image_array,
+        verbose=0
+    )
 
     predicted_index = int(
         np.argmax(predictions[0])
     )
 
-    predicted_class = class_names[predicted_index]
+    predicted_class = skin_classes[
+        predicted_index
+    ]
+
+    confidence = float(
+        predictions[0][predicted_index]
+    ) * 100
+
+    return {
+        "class": predicted_class,
+        "confidence": round(
+            confidence,
+            2
+        )
+    }
+
+
+# =====================================================
+# STAGE 2
+# NORMAL SKIN vs DISEASE
+# =====================================================
+
+def validate_normal_or_disease(image):
+
+    image_array = prepare_image(image)
+
+    predictions = normal_disease_model.predict(
+        image_array,
+        verbose=0
+    )
+
+    predicted_index = int(
+        np.argmax(predictions[0])
+    )
+
+    predicted_class = normal_disease_classes[
+        predicted_index
+    ]
+
+    confidence = float(
+        predictions[0][predicted_index]
+    ) * 100
+
+    return {
+        "class": predicted_class,
+        "confidence": round(
+            confidence,
+            2
+        )
+    }
+
+
+# =====================================================
+# STAGE 3
+# DISEASE CLASSIFICATION
+# =====================================================
+
+def predict_disease(image):
+
+    image_array = prepare_image(image)
+
+    predictions = disease_model.predict(
+        image_array,
+        verbose=0
+    )
+
+    predicted_index = int(
+        np.argmax(predictions[0])
+    )
+
+    predicted_class = disease_classes[
+        predicted_index
+    ]
 
     confidence = float(
         predictions[0][predicted_index]
@@ -75,54 +215,204 @@ def predict_from_image(image):
 
     return {
         "prediction": predicted_class,
-        "confidence": round(confidence, 2),
+        "confidence": round(
+            confidence,
+            2
+        ),
         "severity": severity
     }
 
 
+# =====================================================
+# HOME
+# =====================================================
+
 @app.get("/")
 def home():
+
     return {
-        "message": "DermaDetect AI API is running"
+        "message":
+        "DermaDetect AI API is running"
     }
 
-@app.api_route("/health", methods=["GET", "HEAD"])
+
+# =====================================================
+# HEALTH
+# =====================================================
+
+@app.api_route(
+    "/health",
+    methods=["GET", "HEAD"]
+)
 def health():
+
     return {
         "status": "ok",
-        "service": "DermaDetect AI Service"
+        "service":
+        "DermaDetect AI Service"
     }
 
-@app.post("/predict")
-async def predict_url(data: ImageUrlRequest):
+
+# =====================================================
+# VALIDATE IMAGE
+# =====================================================
+
+@app.post("/validate")
+async def validate_image(
+    data: ImageUrlRequest
+):
 
     try:
 
-        print("========== RECEIVED BY AI ==========")
-        print("Image URL:", data.imageUrl)
-
-        response = requests.get(
-            data.imageUrl,
-            timeout=30
+        print(
+            "\n========== IMAGE VALIDATION =========="
         )
 
-        response.raise_for_status()
-
-        image = Image.open(
-            io.BytesIO(response.content)
+        print(
+            "Image URL:",
+            data.imageUrl
         )
 
-        result = predict_from_image(image)
+        image = download_image(
+            data.imageUrl
+        )
 
-        print("Prediction:", result)
+        # -----------------------------------------
+        # STAGE 1
+        # -----------------------------------------
 
-        return result
+        skin_result = validate_skin(
+            image
+        )
+
+        print(
+            "Skin validation:",
+            skin_result
+        )
+
+        if skin_result["class"] == "non_skin":
+
+            return {
+                "status": "invalid_image",
+
+                "message":
+                    "Please upload a clear skin image.",
+
+                "confidence":
+                    skin_result["confidence"]
+            }
+
+        # -----------------------------------------
+        # STAGE 2
+        # -----------------------------------------
+
+        normal_result = validate_normal_or_disease(
+            image
+        )
+
+        print(
+            "Normal/Disease:",
+            normal_result
+        )
+
+        if (
+            normal_result["class"]
+            == "normal_skin"
+        ):
+
+            return {
+                "status": "normal_skin",
+
+                "message":
+                    "No apparent skin disease detected.",
+
+                "confidence":
+                    normal_result["confidence"]
+            }
+
+        # -----------------------------------------
+        # VALID DISEASE IMAGE
+        # -----------------------------------------
+
+        return {
+            "status": "valid_skin",
+
+            "message":
+                "Skin image accepted.",
+
+            "confidence":
+                normal_result["confidence"]
+        }
 
     except Exception as error:
 
-        print("AI ERROR:", str(error))
+        print(
+            "VALIDATION ERROR:",
+            str(error)
+        )
 
         raise HTTPException(
             status_code=500,
             detail=str(error)
         )
+
+
+# =====================================================
+# DISEASE PREDICTION
+# =====================================================
+
+@app.post("/predict")
+async def predict_url(
+    data: ImageUrlRequest
+):
+
+    try:
+
+        print(
+            "\n========== DISEASE PREDICTION =========="
+        )
+
+        print(
+            "Image URL:",
+            data.imageUrl
+        )
+
+        image = download_image(
+            data.imageUrl
+        )
+
+        result = predict_disease(
+            image
+        )
+
+        print(
+            "Disease prediction:",
+            result
+        )
+
+        return result
+
+    except Exception as error:
+
+        print(
+            "AI ERROR:",
+            str(error)
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(error)
+        )
+
+# =====================================================
+# START SERVER
+# =====================================================
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8000
+    )

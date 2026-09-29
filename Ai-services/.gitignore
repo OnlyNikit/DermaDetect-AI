@@ -3,6 +3,5 @@ dataset/
 __pycache__/
 *.pyc
 .env
-*.keras
 *.h5
 *.pkl

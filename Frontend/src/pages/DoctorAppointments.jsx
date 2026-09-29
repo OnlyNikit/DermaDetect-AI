@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import api from "../api/axios";
@@ -14,6 +14,11 @@ const STATUS_TABS = [
   { key: "completed", label: "Completed" },
 ];
 
+// Poll the backend every 10s for new appointments, without
+// showing a loading spinner or disturbing whatever the doctor
+// is doing (typing in search, etc).
+const POLL_INTERVAL_MS = 10000;
+
 export default function DoctorAppointments() {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -26,6 +31,14 @@ export default function DoctorAppointments() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  // Tracks appointment ids we've already shown, so we can detect
+  // genuinely *new* ones on each poll and toast about them.
+  const knownIdsRef = useRef(new Set());
+
+  // =====================================================
+  // FETCH (initial load — shows spinner/error UI)
+  // =====================================================
+
   const fetchAppointments = async () => {
     try {
       setLoading(true);
@@ -35,9 +48,13 @@ export default function DoctorAppointments() {
         "/api/appointments/doctor"
       );
 
-      setAppointments(
-        response.data?.appointments || []
+      const list = response.data?.appointments || [];
+
+      knownIdsRef.current = new Set(
+        list.map((appointment) => appointment._id)
       );
+
+      setAppointments(list);
     } catch (err) {
       console.error(
         "GET DOCTOR APPOINTMENTS ERROR:",
@@ -56,9 +73,96 @@ export default function DoctorAppointments() {
     }
   };
 
+  // =====================================================
+  // SILENT REFRESH (used by polling — no spinner, no error
+  // banner, just quietly swaps in the latest data and lets
+  // the doctor know if something new showed up)
+  // =====================================================
+
+  const refreshSilently = useCallback(async () => {
+    try {
+      const response = await api.get(
+        "/api/appointments/doctor"
+      );
+
+      const list = response.data?.appointments || [];
+
+      const previousIds = knownIdsRef.current;
+
+      const newOnes = list.filter(
+        (appointment) => !previousIds.has(appointment._id)
+      );
+
+      knownIdsRef.current = new Set(
+        list.map((appointment) => appointment._id)
+      );
+
+      setAppointments(list);
+
+      if (previousIds.size > 0 && newOnes.length > 0) {
+        const patientName =
+          newOnes[0]?.patient?.fullName || "A patient";
+
+        showToast(
+          newOnes.length === 1
+            ? `New appointment request from ${patientName}`
+            : `${newOnes.length} new appointment requests`,
+          "info"
+        );
+      }
+    } catch (err) {
+      // Silent refresh failures are not shown to the doctor —
+      // they'll see the real error next time they manually
+      // retry, and we don't want a background poll to spam
+      // toasts every 10 seconds if the network hiccups.
+      console.error(
+        "SILENT APPOINTMENTS REFRESH ERROR:",
+        err
+      );
+    }
+  }, [showToast]);
+
   useEffect(() => {
     fetchAppointments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // =====================================================
+  // POLLING
+  // -----------------------------------------------------
+  // Runs in the background every POLL_INTERVAL_MS. Paused
+  // while the tab isn't visible so we don't hammer the API
+  // when the doctor has switched away.
+  // =====================================================
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        refreshSilently();
+      }
+    }, POLL_INTERVAL_MS);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Catch up immediately when the doctor comes back to
+        // this tab, instead of waiting for the next tick.
+        refreshSilently();
+      }
+    };
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+    };
+  }, [refreshSilently]);
 
   // =====================================================
   // ACCEPT / REJECT
@@ -96,8 +200,9 @@ export default function DoctorAppointments() {
         `/api/appointments/${appointmentId}/${actionPath}`
       );
 
-      // Refresh appointments
-      await fetchAppointments();
+      // Refresh appointments (silent — we already know the
+      // outcome, we're just syncing the list)
+      await refreshSilently();
 
       // Success toast
       if (status === "accepted") {
@@ -129,11 +234,6 @@ export default function DoctorAppointments() {
 
   // =====================================================
   // NEWEST FIRST + SEARCH + CATEGORY FILTER
-  // -----------------------------------------------------
-  // Sort: newest booked appointment first, using createdAt
-  // when the backend provides it, otherwise falling back to
-  // the appointment's date/startTime so the list still makes
-  // sense.
   // =====================================================
 
   const getAppointmentTimestamp = (appointment) => {

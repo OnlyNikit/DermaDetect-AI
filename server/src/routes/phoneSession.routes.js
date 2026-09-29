@@ -1,17 +1,31 @@
-    const express = require("express");
-    const router = express.Router();
+const express = require("express");
+const router = express.Router();
 
-    const {createPhoneSession,getPhoneSession, uploadPhoneImage} = require("../contollers/phoneSession.controller");
-    const upload =require("../middlewares/upload");
+const {
+  createPhoneSession,
+  getPhoneSession,
+  uploadPhoneImage,
+} = require("../contollers/phoneSession.controller");
 
-    //create qr session
-    router.post("/phone-session",createPhoneSession);
+const upload = require("../middlewares/upload");
 
-    //laptop polling endpoint
-    router.get( "/phone-session/:sessionId",getPhoneSession);
+// ================================
+// CREATE QR PHONE SESSION
+// ================================
+router.post("/phone-session", createPhoneSession);
 
-    //phone photo upload
-    router.post("/phone-upload/:sessionId",upload.single("image"),uploadPhoneImage);
+// ================================
+// LAPTOP POLLING
+// ================================
+router.get("/phone-session/:sessionId", getPhoneSession);
 
-    module.exports= router;
+// ================================
+// PHONE IMAGE UPLOAD
+// ================================
+router.post(
+  "/phone-upload/:sessionId",
+  upload.single("image"),
+  uploadPhoneImage,
+);
 
+module.exports = router;
