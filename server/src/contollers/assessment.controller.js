@@ -48,13 +48,9 @@ async function createAssessment(req, res) {
     const { image, answers, optionalAnswers } = req.body;
 
     console.log("========== ASSESSMENT ==========");
-
     console.log("Image:", image);
-
     console.log("Answers:", answers);
-
     console.log("Optional Answers:", optionalAnswers);
-
     console.log("User:", req.user?._id);
 
     // ==========================================
@@ -124,7 +120,7 @@ async function createAssessment(req, res) {
       },
       {
         timeout: 60000,
-      },
+      }
     );
 
     console.log("AI Response:", aiResponse.data);
@@ -147,22 +143,16 @@ async function createAssessment(req, res) {
 
     if (prediction && typeof prediction === "object") {
       disease = prediction.disease;
-
       confidence = prediction.confidence;
-
       severity = prediction.severity;
     } else {
       disease = prediction;
-
       confidence = aiResult?.confidence;
-
       severity = aiResult?.severity;
     }
 
     console.log("Disease:", disease);
-
     console.log("Confidence:", confidence);
-
     console.log("Severity:", severity);
 
     // ==========================================
@@ -253,7 +243,6 @@ async function getAssessmentById(req, res) {
 
     const assessment = await Assessment.findOne({
       _id: id,
-
       user: req.user._id,
     }).populate("user", "fullName age gender");
 
@@ -274,7 +263,6 @@ async function getAssessmentById(req, res) {
     return res.status(500).json({
       success: false,
       message: "Failed to fetch assessment",
-
       error: error.message,
     });
   }
@@ -289,7 +277,6 @@ async function getHistory(req, res) {
   try {
     const history = await Assessment.find({
       user: req.user._id,
-
       status: "analyzed",
     }).sort({
       createdAt: -1,
@@ -297,9 +284,7 @@ async function getHistory(req, res) {
 
     return res.status(200).json({
       success: true,
-
       count: history.length,
-
       history,
     });
   } catch (error) {
@@ -307,9 +292,7 @@ async function getHistory(req, res) {
 
     return res.status(500).json({
       success: false,
-
       message: "Failed to fetch scan history",
-
       error: error.message,
     });
   }
@@ -323,6 +306,10 @@ async function getHistory(req, res) {
 async function validateImage(req, res) {
   try {
     const { imageUrl } = req.body;
+
+    // ==========================================
+    // VALIDATION
+    // ==========================================
 
     if (!imageUrl) {
       return res.status(400).json({
@@ -338,9 +325,15 @@ async function validateImage(req, res) {
       });
     }
 
+    // ==========================================
+    // SEND IMAGE TO AI SERVICE
+    // ==========================================
+
     console.log("========== IMAGE VALIDATION ==========");
 
     console.log("Image URL:", imageUrl);
+
+    console.log("AI Service:", process.env.AI_SERVICE_URL);
 
     const aiResponse = await axios.post(
       `${process.env.AI_SERVICE_URL}/validate`,
@@ -349,8 +342,12 @@ async function validateImage(req, res) {
       },
       {
         timeout: 60000,
-      },
+      }
     );
+
+    // ==========================================
+    // AI RESPONSE
+    // ==========================================
 
     console.log("Validation response:", aiResponse.data);
 
@@ -358,45 +355,44 @@ async function validateImage(req, res) {
       success: true,
       ...aiResponse.data,
     });
-  }  catch (error) {
-  console.error(
-    "========== IMAGE VALIDATION ERROR =========="
-  );
+  } catch (error) {
+    // ==========================================
+    // ERROR DETAILS
+    // ==========================================
 
-  console.error(
-    "Message:",
-    error.message
-  );
+    console.error("========== IMAGE VALIDATION ERROR ==========");
 
-  console.error(
-    "Status:",
-    error.response?.status
-  );
+    console.error("Message:", error.message);
 
-  console.error(
-    "AI Response:",
-    error.response?.data
-  );
+    console.error("Status:", error.response?.status);
 
-  console.error(
-    "AI URL:",
-    process.env.AI_SERVICE_URL
-  );
+    console.error("AI Response:", error.response?.data);
 
-  return res.status(
-    error.response?.status || 500
-  ).json({
-    success: false,
-    message:
-      error.response?.data?.detail ||
-      error.response?.data?.message ||
-      "Please try again with a clear photo.",
-    debug:
-      process.env.NODE_ENV !== "production"
-        ? error.message
-        : undefined,
-  });
+    console.error("AI URL:", process.env.AI_SERVICE_URL);
+
+    // ==========================================
+    // RESPONSE
+    // ==========================================
+
+    return res.status(error.response?.status || 500).json({
+      success: false,
+
+      message:
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        "Please try again with a clear photo.",
+
+      debug:
+        process.env.NODE_ENV !== "production"
+          ? error.message
+          : undefined,
+    });
+  }
 }
+
+// =====================================================
+// EXPORTS
+// =====================================================
 
 module.exports = {
   getLatestAssessment,
