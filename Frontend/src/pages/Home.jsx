@@ -1,348 +1,190 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import "./home.css";
 
-import "../components/styles/home.css";
+import ButtonPrimary from "../components/ButtonPrimary";
+import Buttonsecondary from "../components/Buttonsecondary";
+import ScanSvg from "../assets/ScanSvg";
+import SkinProblems from "../components/SkinProblems";
+import { useAuth } from "../components/context/AuthContext.jsx";
 
-import ButtonPrimary from "../components/ui/ButtonPrimary";
-import Buttonsecondary from "../components/ui/ButtonSecondary";
-
-import ScanSvg from "../assets/animations/skin-scan.svg";
-import SkinProblems from "../components/ui/Skinproblem";
-
-const diseases = ["Acne", "Psoriasis", "Ringworm", "Vitiligo"];
+const diseases = [
+  "Acne",
+  "Psoriasis",
+  "Ringworm",
+  "Vitiligo",
+];
 
 export default function Home() {
-  const items = [...diseases, ...diseases];
+  const { user } = useAuth();
+
+  // Doctor login check
+  const isDoctorLoggedIn = user?.role?.toLowerCase() === "doctor";
+
+  const duplicatedDiseases = [...diseases, ...diseases];
 
   return (
-    <>
-      {/* =====================================================
-          HERO SECTION
-      ====================================================== */}
+    <div className="home">
 
-      <section className="container main-container">
-        <div className="row align-items-center">
+      {/* ================= HERO ================= */}
+      <section className="hero-section">
+        <div className="hero-left">
+          <h1>
+            See what's on your skin,
+            <span> clearly.</span>
+          </h1>
 
-          {/* ================= LEFT ================= */}
+          <p>
+            Upload medical images, receive AI-assisted analysis,
+            understand potential risks, and monitor your health
+            through an intuitive platform.
+          </p>
 
-          <div className="col-12 col-lg-6 order-2 order-lg-1 container-left">
-            <div className="heading">
-              <h1>
-                See what's on
-                <br />
-                your skin,
-                <span className="highlight"> clearly</span>.
-              </h1>
-            </div>
+          <div className="hero-buttons">
 
-            <div className="description">
-              <h4>
-                Upload medical images, receive AI-assisted analysis,
-                understand potential risks, and monitor your health
-                through an intuitive platform.
-              </h4>
+            {/* GET STARTED / DASHBOARD */}
+            <ButtonPrimary
+              to={isDoctorLoggedIn ? "/doctor-dashboard" : "/choose"}
+            >
+              {isDoctorLoggedIn ? "Dashboard" : "Get Started"}
+            </ButtonPrimary>
 
-              {/* ================= HERO BUTTONS ================= */}
+            <Buttonsecondary to="/about">
+              Learn More
+            </Buttonsecondary>
 
-              <div className="hero-btns">
-
-                {/* GET STARTED */}
-
-                <Link
-                  to="/choose"
-                  className="hero-btn-link"
-                  aria-label="Get Started"
-                >
-                  <Buttonsecondary>
-                    Get Started
-                  </Buttonsecondary>
-                </Link>
-
-                {/* LEARN MORE */}
-
-                <Link
-                  to="/about"
-                  className="hero-btn-link"
-                  aria-label="Learn More"
-                >
-                  <ButtonPrimary>
-                    Learn More
-                  </ButtonPrimary>
-                </Link>
-
-              </div>
-            </div>
           </div>
+        </div>
 
-          {/* ================= RIGHT ================= */}
-
-          <div className="col-12 col-lg-6 order-1 order-lg-2 container-right">
-            <div className="scan">
-              <img
-                src={ScanSvg}
-                alt="AI skin scanning illustration"
-              />
-            </div>
-          </div>
-
+        <div className="hero-right">
+          <ScanSvg />
         </div>
       </section>
 
-      {/* =====================================================
-          SKIN PROBLEMS
-      ====================================================== */}
 
+      {/* ================= SKIN PROBLEMS ================= */}
       <SkinProblems />
 
-      {/* =====================================================
-          THREE STEPS
-      ====================================================== */}
 
-      <section className="container">
-
-        <hr />
-
-        <div className="row">
-          <div className="col-12">
-
-            <div className="card-head">
-              <h2>
-                Three steps, no waiting room.
-              </h2>
-            </div>
-
-            <div className="card-des">
-              <h6>
-                Capture, analyze, understand — the whole check
-                happens on your phone, in under a minute.
-              </h6>
-            </div>
-
-          </div>
+      {/* ================= HOW IT WORKS ================= */}
+      <section className="how-section">
+        <div className="section-heading">
+          <h2>How DermaDetect AI Works</h2>
+          <p>
+            Simple steps to understand your skin better.
+          </p>
         </div>
 
-        <div className="row">
+        <div className="how-cards">
 
-          <div className="cards">
+          <div className="how-card">
+            <div className="card-number">01</div>
+            <h3>Capture</h3>
+            <p>
+              Capture or upload a clear image of the affected
+              skin area.
+            </p>
+          </div>
 
-            {/* ================= CARD 1 ================= */}
+          <div className="how-card">
+            <div className="card-number">02</div>
+            <h3>Analyze</h3>
+            <p>
+              Our AI analyzes the image for supported skin
+              conditions.
+            </p>
+          </div>
 
-            <div className="card red">
-              <p className="tip">
-                01 — Capture
-              </p>
-
-              <p className="second-text">
-                Photograph the area
-              </p>
-
-              <p className="third-text">
-                Frame the mark in good light. Derma guides you
-                to the right distance and focus before it lets
-                you shoot.
-              </p>
-            </div>
-
-            {/* ================= CARD 2 ================= */}
-
-            <div className="card blue">
-              <p className="tip">
-                02 — Analyze
-              </p>
-
-              <p className="second-text">
-                The model gets to work
-              </p>
-
-              <p className="third-text">
-                Shape, border, colour variation and size are
-                analyzed against patterns learned from
-                dermatology image sets.
-              </p>
-            </div>
-
-            {/* ================= CARD 3 ================= */}
-
-            <div className="card green">
-              <p className="tip">
-                03 — Understand
-              </p>
-
-              <p className="second-text">
-                Get a plain-language read
-              </p>
-
-              <p className="third-text">
-                Get a risk indication, understand what it may
-                mean, and see a clear next step — track it at
-                home or consult a dermatologist.
-              </p>
-            </div>
-
+          <div className="how-card">
+            <div className="card-number">03</div>
+            <h3>Understand</h3>
+            <p>
+              Review the result and understand what may
+              require further attention.
+            </p>
           </div>
 
         </div>
-
-        <hr />
-
       </section>
 
-      {/* =====================================================
-          DISEASE SECTION HEADING
-      ====================================================== */}
 
-      <section className="container">
+      {/* ================= DISEASES ================= */}
+      <section className="disease-section">
 
-        <div className="row">
+        <div className="section-heading">
+          <h2>
+            Skin Conditions Included in Our AI Screening.
+          </h2>
 
-          <div className="col-12">
-
-            <div className="card-head">
-              <h2 className="card-text">
-                Skin Conditions Included in Our AI Screening.
-              </h2>
-            </div>
-
-            <div className="card-des">
-              <h6>
-                Our current AI screening prototype covers
-                multiple common skin conditions.
-              </h6>
-            </div>
-
-          </div>
-
+          <p>
+            DermaDetect AI currently screens for these
+            supported skin conditions.
+          </p>
         </div>
 
-      </section>
-
-      {/* =====================================================
-          DISEASE MARQUEE
-      ====================================================== */}
-
-      <section className="cards2">
-
-        <div className="card2">
-
-          <div className="marquee-label">
-            <span className="dot"></span>
-            Scanning Diseases
-          </div>
-
-          <div className="marquee-wrap">
-
-            <div className="marquee-track">
-
-              {items.map((name, index) => (
-                <div
-                  className="item-group"
-                  key={`${name}-${index}`}
-                >
-
-                  <div className="item alert">
-                    <span className="ring"></span>
-                    <span>{name}</span>
-                  </div>
-
-                  <span className="sep">
-                    &#8226;
-                  </span>
-
-                </div>
-              ))}
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* =====================================================
-          DISCLAIMER + FEATURES
-      ====================================================== */}
-
-      <section className="container">
-
-        <hr />
-
-        <div className="row">
-
-          {/* ================= DISCLAIMER ================= */}
-
-          <div className="col-12 col-lg-5">
-
-            <div className="cards">
-
-              <div className="card red">
-
-                <p className="tip">
-                  NOT A DIAGNOSIS
-                </p>
-
-                <p className="second-text">
-                  DermaDetect AI flags what deserves a closer
-                  look. A licensed dermatologist always makes
-                  the final call.
-                </p>
-
+        <div className="disease-marquee">
+          <div className="disease-track">
+            {duplicatedDiseases.map((disease, index) => (
+              <div className="disease-item" key={index}>
+                <span>{disease}</span>
               </div>
+            ))}
+          </div>
+        </div>
 
-            </div>
+      </section>
 
+
+      {/* ================= DISCLAIMER ================= */}
+      <section className="disclaimer-section">
+
+        <div className="disclaimer-card">
+
+          <div className="disclaimer-title">
+            <span>NOT A DIAGNOSIS</span>
           </div>
 
-          {/* ================= FEATURES ================= */}
-
-          <div className="col-12 col-lg-7">
-
-            <div className="feature">
-
-              <ul>
-
-                <li className="item1">
-                  <span>
-                    Photos stay on your device
-                  </span>
-
-                  <p>
-                    Images are processed for your scan and
-                    are not stored on our servers by default.
-                  </p>
-                </li>
-
-                <li className="item1">
-                  <span>
-                    Built on dermatology data
-                  </span>
-
-                  <p>
-                    The model is trained using labelled
-                    dermatology image datasets.
-                  </p>
-                </li>
-
-                <li className="item1">
-                  <span>
-                    Track changes over time
-                  </span>
-
-                  <p>
-                    Re-scan the same area later to compare
-                    changes in size, shape, or appearance.
-                  </p>
-                </li>
-
-              </ul>
-
-            </div>
-
-          </div>
+          <p>
+            DermaDetect AI flags what may deserve a closer look.
+            It does not replace a professional medical diagnosis.
+            A dermatologist or qualified healthcare professional
+            should make the final assessment.
+          </p>
 
         </div>
 
       </section>
-    </>
+
+
+      {/* ================= FEATURES ================= */}
+      <section className="features-section">
+
+        <div className="feature-card">
+          <h3>Photos stay on your device</h3>
+          <p>
+            Images are processed for analysis and are not stored
+            on servers by default.
+          </p>
+        </div>
+
+        <div className="feature-card">
+          <h3>Built on dermatology data</h3>
+          <p>
+            Our AI models are trained using image datasets
+            representing supported skin conditions.
+          </p>
+        </div>
+
+        <div className="feature-card">
+          <h3>Track changes over time</h3>
+          <p>
+            Keep track of your previous assessments and monitor
+            changes in your skin.
+          </p>
+        </div>
+
+      </section>
+
+    </div>
   );
 }
