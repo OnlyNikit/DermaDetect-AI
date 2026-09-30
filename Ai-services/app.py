@@ -37,25 +37,50 @@ print("========== LOADING MODELS ==========")
 
 model_start = time.time()
 
-# Disease classification model
-disease_model = load_model(
-    "best_model.keras"
+
+# =====================================================
+# MODEL 1
+# NON-SKIN vs NORMAL SKIN
+# =====================================================
+
+skin_validator_model = load_model(
+    "skin_validator.keras"
 )
 
 print(
-    "Disease model loaded:",
+    "Skin Validator loaded:",
     round(time.time() - model_start, 2),
     "seconds",
 )
 
 
-# Normal skin vs disease model
+# =====================================================
+# MODEL 2
+# NORMAL SKIN vs DISEASE
+# =====================================================
+
 normal_disease_model = load_model(
     "normal_disease_model.keras"
 )
 
 print(
     "Normal/Disease model loaded:",
+    round(time.time() - model_start, 2),
+    "seconds",
+)
+
+
+# =====================================================
+# MODEL 3
+# DISEASE CLASSIFICATION
+# =====================================================
+
+disease_model = load_model(
+    "best_model.keras"
+)
+
+print(
+    "Disease model loaded:",
     round(time.time() - model_start, 2),
     "seconds",
 )
@@ -72,16 +97,26 @@ print(
 # LABELS
 # =====================================================
 
+# Model 1
+skin_validator_classes = [
+    "non_skin",
+    "normal_skin",
+]
+
+
+# Model 2
+normal_disease_classes = [
+    "disease",
+    "normal_skin",
+]
+
+
+# Model 3
 disease_classes = [
     "Acne",
     "Psoriasis",
     "Ringworm",
     "Vitiligo",
-]
-
-normal_disease_classes = [
-    "disease",
-    "normal_skin",
 ]
 
 
@@ -94,7 +129,7 @@ class ImageUrlRequest(BaseModel):
 
 
 # =====================================================
-# LOAD IMAGE FROM URL
+# DOWNLOAD IMAGE
 # =====================================================
 
 def download_image(image_url):
@@ -164,6 +199,71 @@ def prepare_image(image):
 
 
 # =====================================================
+# MODEL 1
+# NON-SKIN vs NORMAL SKIN
+# =====================================================
+
+def validate_skin_type(image):
+
+    start = time.time()
+
+    print(
+        "Running Skin Validator..."
+    )
+
+    image_array = prepare_image(
+        image
+    )
+
+    predictions = skin_validator_model.predict(
+        image_array,
+        verbose=0,
+    )
+
+    predicted_index = int(
+        np.argmax(predictions[0])
+    )
+
+    predicted_class = (
+        skin_validator_classes[
+            predicted_index
+        ]
+    )
+
+    confidence = (
+        float(
+            predictions[0][predicted_index]
+        )
+        * 100
+    )
+
+    result = {
+        "class": predicted_class,
+        "confidence": round(
+            confidence,
+            2,
+        ),
+    }
+
+    print(
+        "Skin Validator result:",
+        result,
+    )
+
+    print(
+        "Skin Validator time:",
+        round(
+            time.time() - start,
+            2,
+        ),
+        "seconds",
+    )
+
+    return result
+
+
+# =====================================================
+# MODEL 2
 # NORMAL SKIN vs DISEASE
 # =====================================================
 
@@ -215,7 +315,7 @@ def validate_normal_or_disease(image):
     )
 
     print(
-        "Validation model time:",
+        "Normal/Disease model time:",
         round(
             time.time() - start,
             2,
@@ -227,6 +327,7 @@ def validate_normal_or_disease(image):
 
 
 # =====================================================
+# MODEL 3
 # DISEASE CLASSIFICATION
 # =====================================================
 
@@ -362,9 +463,10 @@ async def validate_image(
             "========================================"
         )
 
-        # -----------------------------------------
+
+        # =================================================
         # DOWNLOAD IMAGE
-        # -----------------------------------------
+        # =================================================
 
         image = download_image(
             data.imageUrl
@@ -374,19 +476,22 @@ async def validate_image(
             "Download completed."
         )
 
-        # -----------------------------------------
-        # NORMAL vs DISEASE
-        # -----------------------------------------
 
-        result = validate_normal_or_disease(
+        # =================================================
+        # STEP 1
+        # NON-SKIN vs NORMAL SKIN
+        # =================================================
+
+        skin_result = validate_skin_type(
             image
         )
 
-        # -----------------------------------------
-        # NORMAL IMAGE
-        # -----------------------------------------
 
-        if result["class"] == "normal_skin":
+        # =================================================
+        # NON-SKIN IMAGE
+        # =================================================
+
+        if skin_result["class"] == "non_skin":
 
             total_time = round(
                 time.time() - request_start,
@@ -394,7 +499,59 @@ async def validate_image(
             )
 
             print(
-                "Upload Valid Image"
+                "Non-skin image detected."
+            )
+
+            print(
+                "Validation finished in:",
+                total_time,
+                "seconds",
+            )
+
+            return {
+                "status":
+                    "invalid_image",
+
+                "message":
+                    "Please upload a clear image of the skin area.",
+
+                "confidence":
+                    skin_result["confidence"],
+            }
+
+
+        # =================================================
+        # STEP 2
+        # NORMAL SKIN vs DISEASE
+        # =================================================
+
+        print(
+            "Image passed Skin Validator."
+        )
+
+        normal_disease_result = (
+            validate_normal_or_disease(
+                image
+            )
+        )
+
+
+        # =================================================
+        # NORMAL SKIN
+        # =================================================
+
+        if (
+            normal_disease_result["class"]
+            == "normal_skin"
+        ):
+
+            total_time = round(
+                time.time() - request_start,
+                2,
+            )
+
+            print(
+                "Normal skin detected."
             )
 
             print(
@@ -411,12 +568,15 @@ async def validate_image(
                     "Please upload a clear image of the affected skin area.",
 
                 "confidence":
-                    result["confidence"],
+                    normal_disease_result[
+                        "confidence"
+                    ],
             }
 
-        # -----------------------------------------
-        # DISEASE-LIKE IMAGE
-        # -----------------------------------------
+
+        # =================================================
+        # VALID DISEASE-LIKE SKIN
+        # =================================================
 
         total_time = round(
             time.time() - request_start,
@@ -441,8 +601,11 @@ async def validate_image(
                 "Skin image accepted.",
 
             "confidence":
-                result["confidence"],
+                normal_disease_result[
+                    "confidence"
+                ],
         }
+
 
     except Exception as error:
 
@@ -494,13 +657,28 @@ async def predict_url(
             data.imageUrl,
         )
 
+        print(
+            "========================================"
+        )
+
+
+        # =================================================
+        # DOWNLOAD IMAGE
+        # =================================================
+
         image = download_image(
             data.imageUrl
         )
 
+
+        # =================================================
+        # FINAL DISEASE PREDICTION
+        # =================================================
+
         result = predict_disease(
             image
         )
+
 
         total_time = round(
             time.time() - request_start,
@@ -514,6 +692,7 @@ async def predict_url(
         )
 
         return result
+
 
     except Exception as error:
 
