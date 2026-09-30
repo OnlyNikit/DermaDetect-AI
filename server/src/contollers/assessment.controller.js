@@ -358,16 +358,44 @@ async function validateImage(req, res) {
       success: true,
       ...aiResponse.data,
     });
-  } catch (error) {
-    console.error("IMAGE VALIDATION ERROR:", error.message);
+  }  catch (error) {
+  console.error(
+    "========== IMAGE VALIDATION ERROR =========="
+  );
 
-    console.error("AI response:", error.response?.data);
+  console.error(
+    "Message:",
+    error.message
+  );
 
-    return res.status(error.response?.status || 500).json({
-      success: false,
-      message: error.response?.data?.detail || "Image validation failed",
-    });
-  }
+  console.error(
+    "Status:",
+    error.response?.status
+  );
+
+  console.error(
+    "AI Response:",
+    error.response?.data
+  );
+
+  console.error(
+    "AI URL:",
+    process.env.AI_SERVICE_URL
+  );
+
+  return res.status(
+    error.response?.status || 500
+  ).json({
+    success: false,
+    message:
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      "Please try again with a clear photo.",
+    debug:
+      process.env.NODE_ENV !== "production"
+        ? error.message
+        : undefined,
+  });
 }
 
 module.exports = {
