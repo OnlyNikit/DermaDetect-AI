@@ -37,26 +37,19 @@ print("========== LOADING MODELS ==========")
 
 model_start = time.time()
 
-disease_model = load_model("best_model.keras")
+# Disease classification model
+disease_model = load_model(
+    "best_model.keras"
+)
 
 print(
     "Disease model loaded:",
     round(time.time() - model_start, 2),
-    "seconds"
+    "seconds",
 )
 
 
-skin_validator = load_model(
-    "skin_validator.keras"
-)
-
-print(
-    "Skin validator loaded:",
-    round(time.time() - model_start, 2),
-    "seconds"
-)
-
-
+# Normal skin vs disease model
 normal_disease_model = load_model(
     "normal_disease_model.keras"
 )
@@ -64,14 +57,14 @@ normal_disease_model = load_model(
 print(
     "Normal/Disease model loaded:",
     round(time.time() - model_start, 2),
-    "seconds"
+    "seconds",
 )
 
 
 print(
     "ALL MODELS LOADED IN:",
     round(time.time() - model_start, 2),
-    "seconds"
+    "seconds",
 )
 
 
@@ -84,11 +77,6 @@ disease_classes = [
     "Psoriasis",
     "Ringworm",
     "Vitiligo",
-]
-
-skin_classes = [
-    "non_skin",
-    "normal_skin",
 ]
 
 normal_disease_classes = [
@@ -163,7 +151,9 @@ def prepare_image(image):
         (224, 224)
     )
 
-    image_array = np.array(image)
+    image_array = np.array(
+        image
+    )
 
     image_array = np.expand_dims(
         image_array,
@@ -174,63 +164,6 @@ def prepare_image(image):
 
 
 # =====================================================
-# STAGE 1
-# SKIN vs NON-SKIN
-# =====================================================
-
-def validate_skin(image):
-
-    start = time.time()
-
-    print(
-        "Running Stage 1: Skin vs Non-Skin..."
-    )
-
-    image_array = prepare_image(
-        image
-    )
-
-    predictions = skin_validator.predict(
-        image_array,
-        verbose=0,
-    )
-
-    predicted_index = int(
-        np.argmax(predictions[0])
-    )
-
-    predicted_class = skin_classes[
-        predicted_index
-    ]
-
-    confidence = float(
-        predictions[0][predicted_index]
-    ) * 100
-
-    result = {
-        "class": predicted_class,
-        "confidence": round(
-            confidence,
-            2,
-        ),
-    }
-
-    print(
-        "Stage 1 result:",
-        result,
-    )
-
-    print(
-        "Stage 1 time:",
-        round(time.time() - start, 2),
-        "seconds",
-    )
-
-    return result
-
-
-# =====================================================
-# STAGE 2
 # NORMAL SKIN vs DISEASE
 # =====================================================
 
@@ -239,7 +172,7 @@ def validate_normal_or_disease(image):
     start = time.time()
 
     print(
-        "Running Stage 2: Normal Skin vs Disease..."
+        "Running Normal Skin vs Disease..."
     )
 
     image_array = prepare_image(
@@ -255,13 +188,18 @@ def validate_normal_or_disease(image):
         np.argmax(predictions[0])
     )
 
-    predicted_class = normal_disease_classes[
-        predicted_index
-    ]
+    predicted_class = (
+        normal_disease_classes[
+            predicted_index
+        ]
+    )
 
-    confidence = float(
-        predictions[0][predicted_index]
-    ) * 100
+    confidence = (
+        float(
+            predictions[0][predicted_index]
+        )
+        * 100
+    )
 
     result = {
         "class": predicted_class,
@@ -272,13 +210,16 @@ def validate_normal_or_disease(image):
     }
 
     print(
-        "Stage 2 result:",
+        "Normal/Disease result:",
         result,
     )
 
     print(
-        "Stage 2 time:",
-        round(time.time() - start, 2),
+        "Validation model time:",
+        round(
+            time.time() - start,
+            2,
+        ),
         "seconds",
     )
 
@@ -286,7 +227,6 @@ def validate_normal_or_disease(image):
 
 
 # =====================================================
-# STAGE 3
 # DISEASE CLASSIFICATION
 # =====================================================
 
@@ -295,7 +235,7 @@ def predict_disease(image):
     start = time.time()
 
     print(
-        "Running Stage 3: Disease Classification..."
+        "Running Disease Classification..."
     )
 
     image_array = prepare_image(
@@ -311,13 +251,18 @@ def predict_disease(image):
         np.argmax(predictions[0])
     )
 
-    predicted_class = disease_classes[
-        predicted_index
-    ]
+    predicted_class = (
+        disease_classes[
+            predicted_index
+        ]
+    )
 
-    confidence = float(
-        predictions[0][predicted_index]
-    ) * 100
+    confidence = (
+        float(
+            predictions[0][predicted_index]
+        )
+        * 100
+    )
 
     severity_map = {
         "Acne": "Low",
@@ -341,13 +286,16 @@ def predict_disease(image):
     }
 
     print(
-        "Stage 3 result:",
+        "Disease result:",
         result,
     )
 
     print(
-        "Stage 3 time:",
-        round(time.time() - start, 2),
+        "Disease model time:",
+        round(
+            time.time() - start,
+            2,
+        ),
         "seconds",
     )
 
@@ -427,17 +375,18 @@ async def validate_image(
         )
 
         # -----------------------------------------
-        # STAGE 1
+        # NORMAL vs DISEASE
         # -----------------------------------------
 
-        skin_result = validate_skin(
+        result = validate_normal_or_disease(
             image
         )
 
-        if (
-            skin_result["class"]
-            == "non_skin"
-        ):
+        # -----------------------------------------
+        # NORMAL IMAGE
+        # -----------------------------------------
+
+        if result["class"] == "normal_skin":
 
             total_time = round(
                 time.time() - request_start,
@@ -445,40 +394,7 @@ async def validate_image(
             )
 
             print(
-                "Validation finished in:",
-                total_time,
-                "seconds",
-            )
-
-            return {
-                "status":
-                    "invalid_image",
-
-                "message":
-                    "Please upload a clear skin image.",
-
-                "confidence":
-                    skin_result["confidence"],
-            }
-
-        # -----------------------------------------
-        # STAGE 2
-        # -----------------------------------------
-
-        normal_result = (
-            validate_normal_or_disease(
-                image
-            )
-        )
-
-        if (
-            normal_result["class"]
-            == "normal_skin"
-        ):
-
-            total_time = round(
-                time.time() - request_start,
-                2,
+                "Normal image detected."
             )
 
             print(
@@ -492,19 +408,23 @@ async def validate_image(
                     "normal_skin",
 
                 "message":
-                    "No apparent skin disease detected.",
+                    "Please upload a clear image of the affected skin area.",
 
                 "confidence":
-                    normal_result["confidence"],
+                    result["confidence"],
             }
 
         # -----------------------------------------
-        # VALID DISEASE IMAGE
+        # DISEASE-LIKE IMAGE
         # -----------------------------------------
 
         total_time = round(
             time.time() - request_start,
             2,
+        )
+
+        print(
+            "Potentially affected skin image accepted."
         )
 
         print(
@@ -521,7 +441,7 @@ async def validate_image(
                 "Skin image accepted.",
 
             "confidence":
-                normal_result["confidence"],
+                result["confidence"],
         }
 
     except Exception as error:
