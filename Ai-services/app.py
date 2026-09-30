@@ -394,7 +394,7 @@ async def validate_image(
             )
 
             print(
-                "Normal image detected."
+                "Upload Valid Image"
             )
 
             print(
