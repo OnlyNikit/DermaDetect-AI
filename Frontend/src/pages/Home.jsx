@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import "./home.css";
+import "../components/styles/home.css";
 
 import ButtonPrimary from "../components/ButtonPrimary";
 import Buttonsecondary from "../components/Buttonsecondary";
