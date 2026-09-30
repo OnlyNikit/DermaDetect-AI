@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from tensorflow.keras.models import load_model
 from PIL import Image
 from pydantic import BaseModel
 
+import tensorflow as tf
 import numpy as np
 import io
 import requests
@@ -30,64 +30,71 @@ app.add_middleware(
 
 
 # =====================================================
-# LOAD MODELS
+# LOAD TFLITE MODELS
 # =====================================================
 
-print("========== LOADING MODELS ==========")
+print("========== LOADING TFLITE MODELS ==========")
 
 model_start = time.time()
 
 
+def load_tflite_model(model_path):
+
+    print(
+        "Loading:",
+        model_path
+    )
+
+    interpreter = tf.lite.Interpreter(
+        model_path=model_path
+    )
+
+    interpreter.allocate_tensors()
+
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+    print(
+        "Loaded:",
+        model_path
+    )
+
+    return (
+        interpreter,
+        input_details,
+        output_details,
+    )
+
+
 # =====================================================
 # MODEL 1
-# NON-SKIN vs NORMAL SKIN
 # =====================================================
 
-skin_validator_model = load_model(
-    "skin_validator.keras"
-)
-
-print(
-    "Skin Validator loaded:",
-    round(time.time() - model_start, 2),
-    "seconds",
+skin_validator_model = load_tflite_model(
+    "skin_validator.tflite"
 )
 
 
 # =====================================================
 # MODEL 2
-# NORMAL SKIN vs DISEASE
 # =====================================================
 
-normal_disease_model = load_model(
-    "normal_disease_model.keras"
-)
-
-print(
-    "Normal/Disease model loaded:",
-    round(time.time() - model_start, 2),
-    "seconds",
+normal_disease_model = load_tflite_model(
+    "normal_disease_model.tflite"
 )
 
 
 # =====================================================
 # MODEL 3
-# DISEASE CLASSIFICATION
 # =====================================================
 
-disease_model = load_model(
-    "best_model.keras"
-)
-
-print(
-    "Disease model loaded:",
-    round(time.time() - model_start, 2),
-    "seconds",
+disease_model = load_tflite_model(
+    "best_model.tflite"
 )
 
 
 print(
-    "ALL MODELS LOADED IN:",
+    "ALL TFLITE MODELS LOADED IN:",
     round(time.time() - model_start, 2),
     "seconds",
 )
@@ -97,21 +104,18 @@ print(
 # LABELS
 # =====================================================
 
-# Model 1
 skin_validator_classes = [
     "non_skin",
     "normal_skin",
 ]
 
 
-# Model 2
 normal_disease_classes = [
     "disease",
     "normal_skin",
 ]
 
 
-# Model 3
 disease_classes = [
     "Acne",
     "Psoriasis",
@@ -125,6 +129,7 @@ disease_classes = [
 # =====================================================
 
 class ImageUrlRequest(BaseModel):
+
     imageUrl: str
 
 
@@ -136,7 +141,9 @@ def download_image(image_url):
 
     start = time.time()
 
-    print("Downloading image...")
+    print(
+        "Downloading image..."
+    )
 
     response = requests.get(
         image_url,
@@ -147,18 +154,17 @@ def download_image(image_url):
 
     print(
         "Image downloaded in:",
-        round(time.time() - start, 2),
+        round(
+            time.time() - start,
+            2,
+        ),
         "seconds",
     )
 
-    print(
-        "Image size:",
-        len(response.content),
-        "bytes",
-    )
-
     image = Image.open(
-        io.BytesIO(response.content)
+        io.BytesIO(
+            response.content
+        )
     )
 
     print(
@@ -180,14 +186,17 @@ def download_image(image_url):
 
 def prepare_image(image):
 
-    image = image.convert("RGB")
+    image = image.convert(
+        "RGB"
+    )
 
     image = image.resize(
         (224, 224)
     )
 
     image_array = np.array(
-        image
+        image,
+        dtype=np.float32,
     )
 
     image_array = np.expand_dims(
@@ -199,8 +208,43 @@ def prepare_image(image):
 
 
 # =====================================================
+# TFLITE PREDICTION
+# =====================================================
+
+def run_tflite_model(
+    model_data,
+    image_array,
+):
+
+    interpreter, input_details, output_details = (
+        model_data
+    )
+
+    input_index = (
+        input_details[0]["index"]
+    )
+
+    output_index = (
+        output_details[0]["index"]
+    )
+
+    interpreter.set_tensor(
+        input_index,
+        image_array,
+    )
+
+    interpreter.invoke()
+
+    output = interpreter.get_tensor(
+        output_index
+    )
+
+    return output[0]
+
+
+# =====================================================
 # MODEL 1
-# NON-SKIN vs NORMAL SKIN
+# SKIN VALIDATOR
 # =====================================================
 
 def validate_skin_type(image):
@@ -215,25 +259,21 @@ def validate_skin_type(image):
         image
     )
 
-    predictions = skin_validator_model.predict(
+    predictions = run_tflite_model(
+        skin_validator_model,
         image_array,
-        verbose=0,
     )
 
-    predicted_index = int(
-        np.argmax(predictions[0])
+    index = int(
+        np.argmax(predictions)
     )
 
     predicted_class = (
-        skin_validator_classes[
-            predicted_index
-        ]
+        skin_validator_classes[index]
     )
 
     confidence = (
-        float(
-            predictions[0][predicted_index]
-        )
+        float(predictions[index])
         * 100
     )
 
@@ -264,7 +304,7 @@ def validate_skin_type(image):
 
 # =====================================================
 # MODEL 2
-# NORMAL SKIN vs DISEASE
+# NORMAL vs DISEASE
 # =====================================================
 
 def validate_normal_or_disease(image):
@@ -279,25 +319,21 @@ def validate_normal_or_disease(image):
         image
     )
 
-    predictions = normal_disease_model.predict(
+    predictions = run_tflite_model(
+        normal_disease_model,
         image_array,
-        verbose=0,
     )
 
-    predicted_index = int(
-        np.argmax(predictions[0])
+    index = int(
+        np.argmax(predictions)
     )
 
     predicted_class = (
-        normal_disease_classes[
-            predicted_index
-        ]
+        normal_disease_classes[index]
     )
 
     confidence = (
-        float(
-            predictions[0][predicted_index]
-        )
+        float(predictions[index])
         * 100
     )
 
@@ -312,15 +348,6 @@ def validate_normal_or_disease(image):
     print(
         "Normal/Disease result:",
         result,
-    )
-
-    print(
-        "Normal/Disease model time:",
-        round(
-            time.time() - start,
-            2,
-        ),
-        "seconds",
     )
 
     return result
@@ -343,32 +370,32 @@ def predict_disease(image):
         image
     )
 
-    predictions = disease_model.predict(
+    predictions = run_tflite_model(
+        disease_model,
         image_array,
-        verbose=0,
     )
 
-    predicted_index = int(
-        np.argmax(predictions[0])
+    index = int(
+        np.argmax(predictions)
     )
 
     predicted_class = (
-        disease_classes[
-            predicted_index
-        ]
+        disease_classes[index]
     )
 
     confidence = (
-        float(
-            predictions[0][predicted_index]
-        )
+        float(predictions[index])
         * 100
     )
 
     severity_map = {
+
         "Acne": "Low",
+
         "Psoriasis": "Medium",
+
         "Ringworm": "Medium",
+
         "Vitiligo": "Low",
     }
 
@@ -378,26 +405,23 @@ def predict_disease(image):
     )
 
     result = {
-        "prediction": predicted_class,
-        "confidence": round(
-            confidence,
-            2,
-        ),
-        "severity": severity,
+
+        "prediction":
+            predicted_class,
+
+        "confidence":
+            round(
+                confidence,
+                2,
+            ),
+
+        "severity":
+            severity,
     }
 
     print(
         "Disease result:",
         result,
-    )
-
-    print(
-        "Disease model time:",
-        round(
-            time.time() - start,
-            2,
-        ),
-        "seconds",
     )
 
     return result
@@ -427,14 +451,17 @@ def home():
 def health():
 
     return {
-        "status": "ok",
+
+        "status":
+            "ok",
+
         "service":
             "DermaDetect AI Service",
     }
 
 
 # =====================================================
-# VALIDATE IMAGE
+# VALIDATE
 # =====================================================
 
 @app.post("/validate")
@@ -464,51 +491,38 @@ async def validate_image(
         )
 
 
-        # =================================================
-        # DOWNLOAD IMAGE
-        # =================================================
+        # -----------------------------------------
+        # DOWNLOAD
+        # -----------------------------------------
 
         image = download_image(
             data.imageUrl
         )
 
-        print(
-            "Download completed."
-        )
 
-
-        # =================================================
-        # STEP 1
-        # NON-SKIN vs NORMAL SKIN
-        # =================================================
+        # -----------------------------------------
+        # MODEL 1
+        # -----------------------------------------
 
         skin_result = validate_skin_type(
             image
         )
 
 
-        # =================================================
-        # NON-SKIN IMAGE
-        # =================================================
+        # -----------------------------------------
+        # NON-SKIN
+        # -----------------------------------------
 
         if skin_result["class"] == "non_skin":
 
             total_time = round(
-                time.time() - request_start,
+                time.time()
+                - request_start,
                 2,
             )
 
-            print(
-                "Non-skin image detected."
-            )
-
-            print(
-                "Validation finished in:",
-                total_time,
-                "seconds",
-            )
-
             return {
+
                 "status":
                     "invalid_image",
 
@@ -516,18 +530,15 @@ async def validate_image(
                     "Please upload a clear image of the skin area.",
 
                 "confidence":
-                    skin_result["confidence"],
+                    skin_result[
+                        "confidence"
+                    ],
             }
 
 
-        # =================================================
-        # STEP 2
-        # NORMAL SKIN vs DISEASE
-        # =================================================
-
-        print(
-            "Image passed Skin Validator."
-        )
+        # -----------------------------------------
+        # MODEL 2
+        # -----------------------------------------
 
         normal_disease_result = (
             validate_normal_or_disease(
@@ -536,9 +547,9 @@ async def validate_image(
         )
 
 
-        # =================================================
+        # -----------------------------------------
         # NORMAL SKIN
-        # =================================================
+        # -----------------------------------------
 
         if (
             normal_disease_result["class"]
@@ -546,21 +557,13 @@ async def validate_image(
         ):
 
             total_time = round(
-                time.time() - request_start,
+                time.time()
+                - request_start,
                 2,
             )
 
-            print(
-                "Normal skin detected."
-            )
-
-            print(
-                "Validation finished in:",
-                total_time,
-                "seconds",
-            )
-
             return {
+
                 "status":
                     "normal_skin",
 
@@ -574,26 +577,18 @@ async def validate_image(
             }
 
 
-        # =================================================
-        # VALID DISEASE-LIKE SKIN
-        # =================================================
+        # -----------------------------------------
+        # VALID SKIN
+        # -----------------------------------------
 
         total_time = round(
-            time.time() - request_start,
+            time.time()
+            - request_start,
             2,
         )
 
-        print(
-            "Potentially affected skin image accepted."
-        )
-
-        print(
-            "Validation finished in:",
-            total_time,
-            "seconds",
-        )
-
         return {
+
             "status":
                 "valid_skin",
 
@@ -609,20 +604,9 @@ async def validate_image(
 
     except Exception as error:
 
-        total_time = round(
-            time.time() - request_start,
-            2,
-        )
-
         print(
             "VALIDATION ERROR:",
             str(error),
-        )
-
-        print(
-            "Failed after:",
-            total_time,
-            "seconds",
         )
 
         raise HTTPException(
@@ -632,15 +616,13 @@ async def validate_image(
 
 
 # =====================================================
-# DISEASE PREDICTION
+# PREDICT
 # =====================================================
 
 @app.post("/predict")
 async def predict_url(
     data: ImageUrlRequest,
 ):
-
-    request_start = time.time()
 
     try:
 
@@ -657,38 +639,12 @@ async def predict_url(
             data.imageUrl,
         )
 
-        print(
-            "========================================"
-        )
-
-
-        # =================================================
-        # DOWNLOAD IMAGE
-        # =================================================
-
         image = download_image(
             data.imageUrl
         )
 
-
-        # =================================================
-        # FINAL DISEASE PREDICTION
-        # =================================================
-
         result = predict_disease(
             image
-        )
-
-
-        total_time = round(
-            time.time() - request_start,
-            2,
-        )
-
-        print(
-            "Prediction finished in:",
-            total_time,
-            "seconds",
         )
 
         return result
@@ -696,20 +652,9 @@ async def predict_url(
 
     except Exception as error:
 
-        total_time = round(
-            time.time() - request_start,
-            2,
-        )
-
         print(
             "AI ERROR:",
             str(error),
-        )
-
-        print(
-            "Failed after:",
-            total_time,
-            "seconds",
         )
 
         raise HTTPException(
